@@ -1,0 +1,51 @@
+const { Sequelize } = require('sequelize');
+require('dotenv').config();
+
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'bank_queue_db',
+  process.env.DB_USER || 'root',
+  process.env.DB_PASSWORD || '',
+  {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
+    dialect: process.env.DB_DIALECT || 'mysql',
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    pool: {
+      max: 10,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    },
+    define: {
+      timestamps: true,
+      underscored: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at'
+    },
+    timezone: '+01:00'
+  }
+);
+
+const testConnection = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Connexion à la base de données établie avec succès.');
+    return true;
+  } catch (error) {
+    console.error('❌ Impossible de se connecter à la base de données:', error.message);
+    return false;
+  }
+};
+
+const syncDatabase = async (force = false) => {
+  try {
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ force });
+      console.log(`✅ Base de données synchronisée (force: ${force})`);
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors de la synchronisation:', error.message);
+  }
+};
+
+module.exports = { sequelize, testConnection, syncDatabase };
