@@ -4,277 +4,74 @@ const { sequelize } = require('./config/database');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Import models
-const { User, Service, Ticket, Counter } = require('./models');
-
-// Test database connection
-sequelize.authenticate()
-  .then(() => console.log('✅ Connected to SQLite database'))
-  .catch(err => console.log('❌ Database connection error:', err.message));
-
-// ==================== ROUTES ====================
-
-// Home route
+// Routes de base
 app.get('/', (req, res) => {
-  res.json({
-    project: "🏦 Bank Queue Management System",
-    version: "1.0.0",
-    status: "✅ Online",
-    database: "SQLite (Active)",
-    endpoints: {
-      home: "/",
-      health: "/health",
-      auth: {
-        register: "POST /api/auth/register",
-        login: "POST /api/auth/login",
-        profile: "GET /api/auth/profile"
-      },
-      test_models: "/api/test/models",
-      services: "/api/services",
-      counters: "/api/counters"
-    },
-    timestamp: new Date().toISOString()
-  });
+  res.json({ message: 'Bank Queue API', status: 'OK' });
 });
 
-// Health check
-app.get('/health', async (req, res) => {
-  try {
-    await sequelize.authenticate();
-    res.json({
-      status: 'healthy',
-      server_time: new Date().toISOString(),
-      uptime: process.uptime(),
-      database: 'connected',
-      environment: process.env.NODE_ENV
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'unhealthy',
-      error: error.message,
-      database: 'disconnected'
-    });
-  }
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date() });
 });
 
-// Test database models
-app.get('/api/test/models', async (req, res) => {
-  try {
-    const userCount = await User.count();
-    const serviceCount = await Service.count();
-    const counterCount = await Counter.count();
-    const ticketCount = await Ticket.count();
-    
-    res.json({
-      success: true,
-      message: '✅ Database models are working!',
-      counts: {
-        users: userCount,
-        services: serviceCount,
-        counters: counterCount,
-        tickets: ticketCount
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error testing models:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// List all services
+// Routes API
 app.get('/api/services', async (req, res) => {
-  try {
-    const services = await Service.findAll({
-      where: { is_active: true },
-      attributes: ['id', 'code', 'name', 'description', 'estimated_time']
-    });
-    
-    res.json({
-      success: true,
-      count: services.length,
-      services
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+  const { Service } = require('./models');
+  const services = await Service.findAll();
+  res.json({ success: true, services });
 });
 
-// List all counters
 app.get('/api/counters', async (req, res) => {
+  const { Counter } = require('./models');
+  const counters = await Counter.findAll();
+  res.json({ success: true, counters });
+});
+
+app.get('/api/tickets', async (req, res) => {
+  const { Ticket } = require('./models');
+  const tickets = await Ticket.findAll();
+  res.json({ success: true, tickets });
+});
+
+app.post('/api/tickets', async (req, res) => {
   try {
-    const counters = await Counter.findAll({
-      attributes: ['id', 'number', 'name', 'status', 'services', 'location']
+    const { Ticket } = require('./models');
+    const ticket = await Ticket.create({
+      ticket_number: 'T' + Date.now(),
+      client_id: '1566a768-15c9-49a7-8054-fa7c36ac078c',
+      service_id: 'bc5333c8-e4be-4792-ba6b-f54d975c0c8d', 
+      counter_id: '1d6b6efe-bc18-4590-9f93-ddc4936d9d35',
+      status: 'pending'
     });
-    
-    res.json({
-      success: true,
-      count: counters.length,
-      counters
-    });
+    res.json({ success: true, ticket });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.json({ success: false, error: error.message });
   }
 });
 
-// ==================== AUTH ROUTES ====================
-
-// Register endpoint
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { email, password, first_name, last_name, phone, role } = req.body;
-    
-    // Check if user exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        error: 'User already exists with this email'
-      });
-    }
-    
-    // Create user
-    const user = await User.create({
-      email,
-      password, // Note: In production, use bcrypt to hash!
-      first_name,
-      last_name,
-      phone,
-      role: role || 'client'
-    });
-    
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      user: {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+app.get('/api/queues', async (req, res) => {
+  const { Ticket } = require('./models');
+  const waiting = await Ticket.count({ where: { status: 'pending' } });
+  const serving = await Ticket.count({ where: { status: 'serving' } });
+  res.json({ success: true, waiting, serving });
 });
 
-// Login endpoint
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    // Find user
-    const user = await User.findOne({ where: { email } });
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email or password'
-      });
-    }
-    
-    // Check password (simple comparison for now)
-    if (user.password !== password) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email or password'
-      });
-    }
-    
-    // Update last login
-    await user.update({ last_login: new Date() });
-    
-    res.json({
-      success: true,
-      message: 'Login successful',
-      user: {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role
-      },
-      token: 'jwt-token-placeholder' // We'll add JWT later
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+app.get('/api/stats', async (req, res) => {
+  const { Ticket } = require('./models');
+  const total = await Ticket.count();
+  const waiting = await Ticket.count({ where: { status: 'pending' } });
+  const serving = await Ticket.count({ where: { status: 'serving' } });
+  res.json({ success: true, total, waiting, serving });
 });
 
-// Profile endpoint (protected - simple version)
-app.get('/api/auth/profile', async (req, res) => {
-  try {
-    // For now, get first user as example
-    const user = await User.findOne({
-      attributes: ['id', 'email', 'first_name', 'last_name', 'role', 'phone']
-    });
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ==================== START SERVER ====================
-
-// Sync database and start server
-sequelize.sync({ force: false })
-  .then(() => {
-    console.log('✅ Database tables synchronized');
-    
-    app.listen(PORT, () => {
-      console.log('='.repeat(60));
-      console.log('🏦 BANK QUEUE MANAGEMENT SYSTEM');
-      console.log('='.repeat(60));
-      console.log(`✅ Server: http://localhost:${PORT}`);
-      console.log(`✅ Health: http://localhost:${PORT}/health`);
-      console.log(`✅ Register: POST http://localhost:${PORT}/api/auth/register`);
-      console.log(`✅ Login: POST http://localhost:${PORT}/api/auth/login`);
-      console.log(`✅ Profile: GET http://localhost:${PORT}/api/auth/profile`);
-      console.log(`✅ Services: GET http://localhost:${PORT}/api/services`);
-      console.log(`✅ Counters: GET http://localhost:${PORT}/api/counters`);
-      console.log(`💾 Database: ./database/bank_queue.db`);
-      console.log(`⚡ Environment: ${process.env.NODE_ENV}`);
-      console.log('='.repeat(60));
-      console.log('🚀 Ready for development!');
-      console.log('='.repeat(60));
-    });
-  })
-  .catch(err => {
-    console.error('❌ Failed to sync database:', err);
-    process.exit(1);
+// Démarrer
+sequelize.sync().then(() => {
+  app.listen(PORT, () => {
+    console.log(`✅ Server: http://localhost:${PORT}`);
+    console.log('✅ All endpoints ready!');
   });
+});
