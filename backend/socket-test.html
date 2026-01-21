@@ -1,0 +1,8 @@
+<html><body>
+<script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+<script>
+const socket = io('http://localhost:5000');
+socket.on('connect', () => console.log('Connected'));
+socket.on('ticket_created', (data) => console.log('New ticket:', data));
+</script>
+</body></html>
