@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ticketController = require('../controllers/ticketController');
-const { authMiddleware, roleMiddleware } = require('../middlewares/authMiddleware');
+const { authMiddleware, roleMiddleware } = require('../middlewares/auth');
 
 // PUBLIC ROUTES - No auth needed
 router.post('/generate', ticketController.generateTicket);

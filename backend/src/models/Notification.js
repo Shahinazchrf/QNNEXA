@@ -22,6 +22,15 @@ const Notification = sequelize.define('Notification', {
   is_read: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  // FOREIGN KEY for user
+  user_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   tableName: 'notifications',

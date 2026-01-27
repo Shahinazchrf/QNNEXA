@@ -1,0 +1,64 @@
+// seed.js - Fixed version
+const { User, Service, Counter } = require('./src/models');
+
+async function seed() {
+    console.log('🌱 Seeding database...');
+    
+    try {
+        // 1. Services
+        await Service.bulkCreate([
+            { code: 'W', name: 'Withdrawal', estimated_time: 5 },
+            { code: 'D', name: 'Deposit', estimated_time: 10 },
+            { code: 'A', name: 'Account Opening', estimated_time: 30 },
+            { code: 'L', name: 'Loan', estimated_time: 45 },
+            { code: 'C', name: 'Complaint', estimated_time: 20 }
+        ]);
+        console.log('✅ Services created');
+        
+        // 2. Users (not Employee)
+        await User.bulkCreate([
+            { 
+                email: 'admin@bank.com', 
+                password: 'admin123',
+                first_name: 'Admin', 
+                last_name: 'System', 
+                role: 'admin'
+            },
+            { 
+                email: 'employee@bank.com', 
+                password: 'employee123',
+                first_name: 'Karim', 
+                last_name: 'Employee', 
+                role: 'employee'
+            },
+            { 
+                email: 'client@bank.com', 
+                password: 'client123',
+                first_name: 'Ahmed', 
+                last_name: 'Client', 
+                role: 'client'
+            }
+        ]);
+        console.log('✅ Users created');
+        
+        // 3. Counters
+        await Counter.bulkCreate([
+            { number: 1, name: 'Counter 1', status: 'active' },
+            { number: 2, name: 'Counter 2', status: 'active' },
+            { number: 3, name: 'VIP Counter', status: 'inactive' }
+        ]);
+        console.log('✅ Counters created');
+        
+        console.log('🎉 Database seeded successfully!');
+        console.log('\n🔑 Test credentials:');
+        console.log('   Admin: admin@bank.com / admin123');
+        console.log('   Employee: employee@bank.com / employee123');
+        console.log('   Client: client@bank.com / client123');
+        
+    } catch (error) {
+        console.error('❌ Error:', error.message);
+    }
+}
+
+// Execute
+seed();

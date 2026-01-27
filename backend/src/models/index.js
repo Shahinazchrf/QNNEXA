@@ -1,228 +1,97 @@
-// Import sequelize from database config
-const database = require('../config/database');
-const sequelize = database.sequelize;
-const { DataTypes } = require('sequelize');
+// This file should import all models and define relationships
+// If it doesn't exist, create it
 
-// Define User model
-const User = sequelize.define('User', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  email: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: true,
-    validate: {
-      isEmail: true
-    }
-  },
-  password: {
-    type: DataTypes.STRING(255),
-    allowNull: false
-  },
-  first_name: {
-    type: DataTypes.STRING(50),
-    allowNull: false
-  },
-  last_name: {
-    type: DataTypes.STRING(50),
-    allowNull: false
-  },
-  phone: {
-    type: DataTypes.STRING(20),
-    allowNull: true
-  },
-  role: {
-    type: DataTypes.ENUM('super_admin', 'admin', 'employee', 'client'),
-    defaultValue: 'client'
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  last_login: {
-    type: DataTypes.DATE,
-    allowNull: true
-  }
-}, {
-  tableName: 'users',
-  timestamps: true
-});
+const { sequelize } = require('../config/database');
 
-// Define Service model
-const Service = sequelize.define('Service', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  code: {
-    type: DataTypes.STRING(10),
-    allowNull: false,
-    unique: true
-  },
-  name: {
-    type: DataTypes.STRING(100),
-    allowNull: false
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  estimated_time: {
-    type: DataTypes.INTEGER,
-    defaultValue: 15
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  max_daily_tickets: {
-    type: DataTypes.INTEGER,
-    defaultValue: 50
-  }
-}, {
-  tableName: 'services',
-  timestamps: true
-});
+// Import models
+const User = require('./User');
+const Ticket = require('./Ticket');
+const Service = require('./Service');
+const Counter = require('./Counter');
+const Notification = require('./Notification');
+const Survey = require('./Survey');
 
-// Define Ticket model
-const Ticket = sequelize.define('Ticket', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  ticket_number: {
-    type: DataTypes.STRING(20),
-    allowNull: false,
-    unique: true
-  },
-  status: {
-    type: DataTypes.ENUM('pending', 'waiting', 'called', 'serving', 'completed', 'cancelled', 'no_show'),
-    defaultValue: 'pending'
-  },
-  priority: {
-    type: DataTypes.ENUM('normal', 'vip', 'urgent', 'disabled', 'elderly', 'pregnant'),
-    defaultValue: 'normal'
-  },
-  estimated_wait_time: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  actual_wait_time: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  is_vip: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
-  called_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  served_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  completed_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  cancellation_reason: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  }
-}, {
-  tableName: 'tickets',
-  timestamps: true
-});
+// DEFINE RELATIONSHIPS
 
-// Define Counter model
-const Counter = sequelize.define('Counter', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  number: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    unique: true
-  },
-  name: {
-    type: DataTypes.STRING(50),
-    allowNull: true
-  },
-  status: {
-    type: DataTypes.ENUM('active', 'inactive', 'busy', 'break', 'closed'),
-    defaultValue: 'inactive'
-  },
-  current_ticket_id: {
-    type: DataTypes.UUID,
-    allowNull: true
-  },
-  services: {
-    type: DataTypes.JSON,
-    defaultValue: []
-  },
-  location: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  }
-}, {
-  tableName: 'counters',
-  timestamps: true
-});
-
-// Define relationships
+// User has many Tickets (as client)
 User.hasMany(Ticket, {
   foreignKey: 'client_id',
-  as: 'tickets'
+  as: 'client_tickets'
 });
+
+// Ticket belongs to User (as client)
 Ticket.belongsTo(User, {
   foreignKey: 'client_id',
   as: 'client'
 });
 
+// Service has many Tickets
 Service.hasMany(Ticket, {
   foreignKey: 'service_id',
-  as: 'tickets'
+  as: 'service_tickets'
 });
+
+// Ticket belongs to Service
 Ticket.belongsTo(Service, {
   foreignKey: 'service_id',
   as: 'service'
 });
 
+// Counter has many Tickets
 Counter.hasMany(Ticket, {
   foreignKey: 'counter_id',
-  as: 'tickets'
+  as: 'counter_tickets'
 });
+
+// Ticket belongs to Counter
 Ticket.belongsTo(Counter, {
   foreignKey: 'counter_id',
   as: 'counter'
 });
 
+// Employee (User) is assigned to a Counter
 User.hasOne(Counter, {
   foreignKey: 'employee_id',
-  as: 'counter'
+  as: 'assigned_counter'
 });
+
+// Counter belongs to an Employee (User)
 Counter.belongsTo(User, {
   foreignKey: 'employee_id',
   as: 'employee'
 });
 
-// Export models
+// User has many Notifications
+User.hasMany(Notification, {
+  foreignKey: 'user_id',
+  as: 'notifications'
+});
+
+// Notification belongs to User
+Notification.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user'
+});
+
+// Ticket has one Survey
+Ticket.hasOne(Survey, {
+  foreignKey: 'ticket_id',
+  as: 'survey'
+});
+
+// Survey belongs to Ticket
+Survey.belongsTo(Ticket, {
+  foreignKey: 'ticket_id',
+  as: 'ticket'
+});
+
+// Export all models
 module.exports = {
   User,
-  Service,
   Ticket,
-  Counter
+  Service,
+  Counter,
+  Notification,
+  Survey,
+  sequelize
 };

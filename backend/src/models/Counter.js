@@ -24,9 +24,26 @@ const Counter = sequelize.define('Counter', {
     type: DataTypes.UUID,
     allowNull: true
   },
+  services: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
+  location: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  // FOREIGN KEY for employee
   employee_id: {
     type: DataTypes.UUID,
-    allowNull: true
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   tableName: 'counters',

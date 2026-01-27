@@ -4,47 +4,259 @@ const { sequelize } = require('./config/database');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
+// ==================== MIDDLEWARE ====================
 app.use(cors());
 app.use(express.json());
 
-// Routes de base
+// ==================== BASIC ROUTES ====================
 app.get('/', (req, res) => {
-  res.json({ message: 'Bank Queue API', status: 'OK' });
+  res.json({ 
+    message: '🏦 Bank Queue Management System API',
+    status: '✅ Online',
+    version: '2.0.0'
+  });
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date() });
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date(),
+    database: 'connected',
+    uptime: process.uptime()
+  });
 });
 
-// Routes API
+// ==================== IMPORT MODELS ====================
+const { User, Service, Ticket, Counter } = require('./models');
+
+// ==================== IMPORT ROUTES ====================
+// Note: Crée ces fichiers si tu ne les as pas encore
+const employeeRoutes = require('./routes/employeeRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const queueRoutes = require('./routes/queueRoutes');
+const statsRoutes = require('./routes/statsRoutes');
+const authRoutes = require('./routes/authRoutes');
+
+// ==================== USE ROUTES ====================
+app.use('/api/auth', authRoutes);
+app.use('/api/employee', employeeRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/queue', queueRoutes);
+app.use('/api/stats', statsRoutes);
+
+// ==================== PUBLIC API ROUTES ====================
+
+// Get all services
 app.get('/api/services', async (req, res) => {
-  const { Service } = require('./models');
-  const services = await Service.findAll();
-  res.json({ success: true, services });
+  try {
+    const services = await Service.findAll({
+      where: { is_active: true },
+      order: [['code', 'ASC']]
+    });
+    
+    res.json({ 
+      success: true, 
+      count: services.length,
+      services 
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
+// Get all counters
 app.get('/api/counters', async (req, res) => {
-  const { Counter } = require('./models');
-  const counters = await Counter.findAll();
-  res.json({ success: true, counters });
+  try {
+    const counters = await Counter.findAll({
+      where: { is_active: true },
+      include: [{
+        model: User,
+        as: 'employee',
+        attributes: ['first_name', 'last_name', 'email']
+      }],
+      order: [['number', 'ASC']]
+    });
+    
+    res.json({ 
+      success: true, 
+      count: counters.length,
+      counters 
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
-// ==================== TICKET ROUTES ====================
+// ==================== TICKET ROUTES (PUBLIC) ====================
 
-// Get all tickets
+// Generate new ticket (Public - no auth needed)
+app.post('/api/tickets/generate', async (req, res) => {
+  try {
+    const { serviceCode, customerName, vipCode } = req.body;
+
+    // Validate service
+    const service = await Service.findOne({ 
+      where: { 
+        code: serviceCode, 
+        is_active: true 
+      } 
+    });
+    
+    if (!service) {
+      return res.status(400).json({
+        success: false,
+        error: 'Service not available'
+      });
+    }
+
+    // Check VIP code
+    const isVip = vipCode ? await validateVipCode(vipCode) : false;
+    const priority = isVip ? 'vip' : 'normal';
+
+    // Generate ticket number
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const lastTicket = await Ticket.findOne({
+      where: {
+        service_id: service.id,
+        createdAt: { 
+          [Op.gte]: today 
+        }
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    let seqNumber = 1;
+    if (lastTicket && lastTicket.ticket_number) {
+      const match = lastTicket.ticket_number.match(/\d+$/);
+      if (match) seqNumber = parseInt(match[0]) + 1;
+    }
+
+    const ticketNumber = `${serviceCode}${seqNumber.toString().padStart(3, '0')}`;
+
+    // Create ticket
+    const ticket = await Ticket.create({
+      ticket_number: ticketNumber,
+      service_id: service.id,
+      priority,
+      status: 'waiting',
+      customer_name: customerName || 'Customer',
+      is_vip: isVip,
+      estimated_wait_time: await calculateWaitTime(service.id, priority)
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Ticket generated successfully',
+      ticket: {
+        number: ticketNumber,
+        service: service.name,
+        priority,
+        estimated_wait: ticket.estimated_wait_time,
+        created_at: ticket.createdAt,
+        message: `Please proceed to waiting area. Your ticket is ${ticketNumber}`
+      }
+    });
+
+  } catch (error) {
+    console.error('Ticket generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get queue status (Public)
+app.get('/api/tickets/queue', async (req, res) => {
+  try {
+    const waitingTickets = await Ticket.findAll({
+      where: { status: 'waiting' },
+      include: [Service],
+      order: [
+        ['priority', 'DESC'], // VIP first
+        ['createdAt', 'ASC']  // Oldest first
+      ]
+    });
+
+    // Get active counters
+    const activeCounters = await Counter.findAll({
+      where: { 
+        status: ['active', 'busy'],
+        is_active: true 
+      },
+      include: [{
+        model: Ticket,
+        as: 'current_ticket',
+        include: [Service]
+      }]
+    });
+
+    res.json({
+      success: true,
+      data: {
+        total_waiting: waitingTickets.length,
+        by_priority: {
+          vip: waitingTickets.filter(t => t.priority === 'vip').length,
+          normal: waitingTickets.filter(t => t.priority === 'normal').length
+        },
+        next_tickets: waitingTickets.slice(0, 10).map(t => ({
+          number: t.ticket_number,
+          service: t.Service.name,
+          priority: t.priority,
+          waiting_since: t.createdAt,
+          estimated_wait: t.estimated_wait_time
+        })),
+        active_counters: activeCounters.map(c => ({
+          number: c.number,
+          status: c.status,
+          current_ticket: c.current_ticket ? {
+            number: c.current_ticket.ticket_number,
+            service: c.current_ticket.Service?.name
+          } : null
+        }))
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get all tickets (for testing)
 app.get('/api/tickets', async (req, res) => {
   try {
-    const { Ticket } = require('./models');
     const tickets = await Ticket.findAll({
-      order: [['createdAt', 'DESC']]
+      include: [Service, Counter],
+      order: [['createdAt', 'DESC']],
+      limit: 50
     });
     
     res.json({
       success: true,
       count: tickets.length,
-      tickets
+      tickets: tickets.map(t => ({
+        id: t.id,
+        number: t.ticket_number,
+        service: t.Service?.name,
+        status: t.status,
+        priority: t.priority,
+        counter: t.Counter?.number,
+        created_at: t.createdAt,
+        completed_at: t.completed_at
+      }))
     });
   } catch (error) {
     res.status(500).json({
@@ -54,38 +266,30 @@ app.get('/api/tickets', async (req, res) => {
   }
 });
 
-// Create a new ticket
-app.post('/api/tickets', async (req, res) => {
-  try {
-    const { Ticket } = require('./models');
-    const ticket = await Ticket.create({
-      ticket_number: 'T' + Date.now(),
-      status: 'waiting'
-    });
-    
-    res.status(201).json({
-      success: true,
-      message: 'Ticket created successfully',
-      ticket
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+// ==================== SIMPLE TICKET OPERATIONS (for testing) ====================
 
-// Call the next waiting ticket (FIFO system)
+// Call next ticket (simple version)
 app.post('/api/tickets/call-next', async (req, res) => {
   try {
-    const { Ticket } = require('./models');
+    const { Ticket, Op } = require('sequelize');
     
-    // Find the oldest waiting ticket
-    const nextTicket = await Ticket.findOne({
-      where: { status: 'waiting' },
-      order: [['createdAt', 'ASC']] // First In, First Out
+    // Find the oldest waiting ticket (VIP priority)
+    let nextTicket = await Ticket.findOne({
+      where: { 
+        status: 'waiting',
+        priority: 'vip'
+      },
+      include: [Service],
+      order: [['createdAt', 'ASC']]
     });
+
+    if (!nextTicket) {
+      nextTicket = await Ticket.findOne({
+        where: { status: 'waiting' },
+        include: [Service],
+        order: [['createdAt', 'ASC']]
+      });
+    }
     
     if (!nextTicket) {
       return res.json({
@@ -94,13 +298,23 @@ app.post('/api/tickets/call-next', async (req, res) => {
       });
     }
     
-    // Update ticket status to 'serving'
-    await nextTicket.update({ status: 'serving' });
+    // Update ticket status to 'called'
+    await nextTicket.update({ 
+      status: 'called',
+      called_at: new Date()
+    });
     
     res.json({
       success: true,
       message: `Ticket ${nextTicket.ticket_number} called to counter`,
-      ticket: nextTicket
+      ticket: {
+        id: nextTicket.id,
+        number: nextTicket.ticket_number,
+        service: nextTicket.Service.name,
+        priority: nextTicket.priority,
+        customer_name: nextTicket.customer_name,
+        waiting_time: Math.floor((new Date() - nextTicket.createdAt) / 60000) + ' min'
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -110,13 +324,11 @@ app.post('/api/tickets/call-next', async (req, res) => {
   }
 });
 
-// Complete a ticket service
+// Complete ticket (simple version)
 app.post('/api/tickets/:id/complete', async (req, res) => {
   try {
-    const { Ticket } = require('./models');
     const ticketId = req.params.id;
     
-    // Find the ticket by ID
     const ticket = await Ticket.findByPk(ticketId);
     
     if (!ticket) {
@@ -126,49 +338,29 @@ app.post('/api/tickets/:id/complete', async (req, res) => {
       });
     }
     
-    if (ticket.status !== 'serving') {
+    if (ticket.status === 'completed') {
       return res.status(400).json({
         success: false,
-        message: 'Ticket is not currently being served'
+        message: 'Ticket already completed'
       });
     }
     
-    // Update ticket status to 'completed' and add completion time
+    // Update ticket
     await ticket.update({
       status: 'completed',
-      completed_at: new Date()
+      completed_at: new Date(),
+      actual_service_time: Math.floor((new Date() - (ticket.called_at || ticket.createdAt)) / 60000)
     });
     
     res.json({
       success: true,
-      message: `Ticket ${ticket.ticket_number} service completed`,
-      ticket
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ==================== QUEUE ROUTES ====================
-
-// Get current queue status
-app.get('/api/queues', async (req, res) => {
-  try {
-    const { Ticket } = require('./models');
-    const waiting = await Ticket.count({ where: { status: 'waiting' } });
-    const serving = await Ticket.count({ where: { status: 'serving' } });
-    const completed = await Ticket.count({ where: { status: 'completed' } });
-    
-    res.json({
-      success: true,
-      queue_status: {
-        waiting,
-        serving,
-        completed,
-        total: waiting + serving + completed
+      message: `Ticket ${ticket.ticket_number} completed`,
+      ticket: {
+        id: ticket.id,
+        number: ticket.ticket_number,
+        service_time: Math.floor((new Date() - (ticket.called_at || ticket.createdAt)) / 60000) + ' min',
+        total_time: Math.floor((new Date() - ticket.createdAt) / 60000) + ' min',
+        completed_at: new Date()
       }
     });
   } catch (error) {
@@ -179,320 +371,117 @@ app.get('/api/queues', async (req, res) => {
   }
 });
 
-// Get pending tickets only
-app.get('/api/queues/pending', async (req, res) => {
-  try {
-    const { Ticket } = require('./models');
-    const tickets = await Ticket.findAll({
-      where: { status: 'waiting' },
-      order: [['createdAt', 'ASC']]
-    });
-    
-    res.json({
-      success: true,
-      count: tickets.length,
-      tickets
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+// ==================== HELPER FUNCTIONS ====================
+const { Op } = require('sequelize');
 
-// ==================== STATS ROUTES ====================
+async function validateVipCode(code) {
+  // Simple validation - in real app, check database
+  const validCodes = ['VIP001', 'VIP002', 'VIPGOLD', 'VIPPLATINUM'];
+  return validCodes.includes(code?.toUpperCase());
+}
 
-// Get statistics
-app.get('/api/stats', async (req, res) => {
-  try {
-    const { Ticket } = require('./models');
-    const total = await Ticket.count();
-    const waiting = await Ticket.count({ where: { status: 'waiting' } });
-    const serving = await Ticket.count({ where: { status: 'serving' } });
-    const completed = await Ticket.count({ where: { status: 'completed' } });
-    
-    res.json({
-      success: true,
-      stats: {
-        total_tickets: total,
-        waiting_now: waiting,
-        serving_now: serving,
-        completed_today: completed
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ==================== ADMIN ROUTES ====================
-const isAdmin = require('./middlewares/isAdmin');
-
-// Admin statistics dashboard (alias: /api/admin/stats)
-app.get('/api/admin/stats', isAdmin, async (req, res) => {
-  try {
-    const { Ticket, User, Service, Counter } = require('./models');
-    
-    const [
-      totalUsers,
-      totalTickets,
-      activeServices,
-      activeCounters,
-      waitingTickets,
-      servingTickets,
-      completedTickets
-    ] = await Promise.all([
-      User.count(),
-      Ticket.count(),
-      Service.count({ where: { is_active: true } }),
-      Counter.count({ where: { status: 'active' } }),
-      Ticket.count({ where: { status: 'waiting' } }),
-      Ticket.count({ where: { status: 'serving' } }),
-      Ticket.count({ where: { status: 'completed' } })
-    ]);
-    
-    res.json({
-      success: true,
-      dashboard: {
-        overview: {
-          total_users: totalUsers,
-          total_tickets: totalTickets,
-          active_services: activeServices,
-          active_counters: activeCounters
-        },
-        current_queue: {
-          waiting: waitingTickets,
-          serving: servingTickets,
-          completed: completedTickets,
-          total_active: waitingTickets + servingTickets
-        },
-        timestamp: new Date().toISOString()
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Admin dashboard (same as stats)
-app.get('/api/admin/dashboard', isAdmin, async (req, res) => {
-  try {
-    const { Ticket, User, Service, Counter } = require('./models');
-    
-    const [
-      totalUsers,
-      totalTickets,
-      activeServices,
-      activeCounters,
-      waitingTickets,
-      servingTickets
-    ] = await Promise.all([
-      User.count(),
-      Ticket.count(),
-      Service.count({ where: { is_active: true } }),
-      Counter.count({ where: { status: 'active' } }),
-      Ticket.count({ where: { status: 'waiting' } }),
-      Ticket.count({ where: { status: 'serving' } })
-    ]);
-    
-    res.json({
-      success: true,
-      dashboard: {
-        users: { total: totalUsers },
-        tickets: { 
-          total: totalTickets,
-          waiting: waitingTickets,
-          serving: servingTickets 
-        },
-        services: { active: activeServices },
-        counters: { active: activeCounters },
-        timestamp: new Date().toISOString()
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// List all users (admin view)
-app.get('/api/admin/users', isAdmin, async (req, res) => {
-  try {
-    const { User } = require('./models');
-    const users = await User.findAll({
-      attributes: ['id', 'email', 'first_name', 'last_name', 'role', 'createdAt'],
-      order: [['createdAt', 'DESC']],
-      limit: 50
-    });
-    
-    res.json({
-      success: true,
-      count: users.length,
-      users
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ==================== AUTH ROUTES ====================
-
-// Register endpoint
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { email, password, first_name, last_name, phone, role } = req.body;
-    const { User } = require('./models');
-    
-    // Check if user exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        error: 'User already exists with this email'
-      });
+async function calculateWaitTime(serviceId, priority) {
+  const waitingCount = await Ticket.count({
+    where: { 
+      service_id: serviceId,
+      status: 'waiting'
     }
-    
-    // Create user
-    const user = await User.create({
-      email,
-      password, // Note: In production, use bcrypt to hash!
-      first_name,
-      last_name,
-      phone,
-      role: role || 'client'
-    });
-    
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      user: {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+  });
+
+  const service = await Service.findByPk(serviceId);
+  const baseTime = service?.estimated_time || 15;
+
+  let waitTime = waitingCount * baseTime;
+  
+  // Priority adjustments
+  if (priority === 'vip') waitTime = Math.max(5, waitTime * 0.5);
+  if (priority === 'urgent') waitTime = Math.max(2, waitTime * 0.3);
+  
+  return Math.ceil(waitTime);
+}
+
+// ==================== ERROR HANDLING ====================
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    success: false,
+    error: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
 });
 
-// Login endpoint
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const { User } = require('./models');
-    
-    // Find user
-    const user = await User.findOne({ where: { email } });
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email or password'
-      });
-    }
-    
-    // Check password (simple comparison for now)
-    if (user.password !== password) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid email or password'
-      });
-    }
-    
-    // Update last login
-    await user.update({ last_login: new Date() });
-    
-    res.json({
-      success: true,
-      message: 'Login successful',
-      user: {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role
-      },
-      token: 'jwt-token-placeholder' // We'll add JWT later
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Profile endpoint
-app.get('/api/auth/profile', async (req, res) => {
-  try {
-    const { User } = require('./models');
-    // For now, get first user as example
-    const user = await User.findOne({
-      attributes: ['id', 'email', 'first_name', 'last_name', 'role', 'phone']
-    });
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('🚨 Server error:', err.stack);
+  
+  res.status(err.status || 500).json({
+    success: false,
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
 });
 
 // ==================== START SERVER ====================
 
-// Sync database and start server
-sequelize.sync({ force: false })
-  .then(() => {
-    console.log('✅ Database tables synchronized');
-    
+async function startServer() {
+  try {
+    // Test database connection
+    await sequelize.authenticate();
+    console.log('✅ Database connection established');
+
+    // Sync database (safe mode)
+    await sequelize.sync({ alter: false });
+    console.log('✅ Database synchronized');
+
+    // Start server
     app.listen(PORT, () => {
       console.log('='.repeat(60));
       console.log('🏦 BANK QUEUE MANAGEMENT SYSTEM');
       console.log('='.repeat(60));
       console.log(`✅ Server: http://localhost:${PORT}`);
       console.log(`✅ Health: http://localhost:${PORT}/health`);
-      console.log(`✅ Register: POST http://localhost:${PORT}/api/auth/register`);
-      console.log(`✅ Login: POST http://localhost:${PORT}/api/auth/login`);
-      console.log(`✅ Profile: GET http://localhost:${PORT}/api/auth/profile`);
-      console.log(`✅ Services: GET http://localhost:${PORT}/api/services`);
-      console.log(`✅ Counters: GET http://localhost:${PORT}/api/counters`);
-      console.log(`✅ Tickets: GET http://localhost:${PORT}/api/tickets`);
-      console.log(`✅ Create Ticket: POST http://localhost:${PORT}/api/tickets`);
-      console.log(`✅ Call Next: POST http://localhost:${PORT}/api/tickets/call-next`);
-      console.log(`✅ Complete: POST http://localhost:${PORT}/api/tickets/:id/complete`);
-      console.log(`✅ Queue: GET http://localhost:${PORT}/api/queues`);
-      console.log(`✅ Stats: GET http://localhost:${PORT}/api/stats`);
-      console.log(`✅ Admin Stats: GET http://localhost:${PORT}/api/admin/stats (with x-admin-token header)`);
-      console.log(`✅ Admin Users: GET http://localhost:${PORT}/api/admin/users (with x-admin-token header)`);
-      console.log(`💾 Database: ./database/bank_queue.db`);
+      console.log('\n📋 AVAILABLE ENDPOINTS:');
+      console.log('\n📝 PUBLIC:');
+      console.log('  GET  /api/services           - List all services');
+      console.log('  GET  /api/counters          - List all counters');
+      console.log('  POST /api/tickets/generate  - Generate new ticket');
+      console.log('  GET  /api/tickets/queue     - View queue status');
+      console.log('  GET  /api/tickets           - List all tickets (test)');
+      console.log('  POST /api/tickets/call-next - Call next ticket (test)');
+      console.log('  POST /api/tickets/:id/complete - Complete ticket (test)');
+      
+      console.log('\n🔐 AUTH:');
+      console.log('  POST /api/auth/register     - Register user');
+      console.log('  POST /api/auth/login        - Login user');
+      console.log('  GET  /api/auth/profile      - Get user profile');
+      
+      console.log('\n👨‍💼 EMPLOYEE:');
+      console.log('  GET  /api/employee/dashboard - Employee dashboard');
+      console.log('  POST /api/employee/call-next - Call next ticket');
+      
+      console.log('\n👑 ADMIN:');
+      console.log('  GET  /api/admin/dashboard    - Admin dashboard');
+      console.log('  GET  /api/admin/users        - List users');
+      
+      console.log('\n📊 STATS:');
+      console.log('  GET  /api/stats/daily       - Daily statistics');
+      console.log('  GET  /api/stats/realtime    - Real-time stats');
+      
+      console.log('\n📈 QUEUE:');
+      console.log('  GET  /api/queue/status      - Detailed queue status');
+      console.log('\n💾 Database: ./database/bank_queue.db');
       console.log(`⚡ Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log('='.repeat(60));
-      console.log('🚀 Ready for development!');
+      console.log('🚀 Server is ready!');
       console.log('='.repeat(60));
     });
-  })
-  .catch(err => {
-    console.error('❌ Failed to sync database:', err);
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
     process.exit(1);
-  });
+  }
+}
+
+startServer();

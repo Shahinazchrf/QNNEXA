@@ -1,1 +1,12 @@
-{"scripts":{"start":"node src/server.js"}}
+{
+  "scripts": {
+    "start": "node src/server-final.js",
+    "dev": "nodemon src/server-final.js",
+    "server": "node src/server-final.js",
+    "kiosk": "node src/client/kiosk-client.js",
+    "seed": "node src/scripts/seed-now.js",
+    "init-db": "node src/scripts/init-db.js",
+    "diagnose": "node src/scripts/diagnose.js",
+    "test-api": "node src/scripts/test.js"
+  }
+}
