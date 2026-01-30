@@ -23,5 +23,11 @@ router.post('/services', adminController.createService);
 // Counter management
 router.get('/counters', adminController.getCounters);
 router.post('/counters/assign', adminController.assignEmployeeToCounter);
-
+// Counter management
+router.post('/counters', adminController.createCounter);
+router.put('/counters/:id', adminController.updateCounter);
+router.delete('/counters/:id', adminController.deleteCounter);
+router.post('/counters/unassign', adminController.unassignEmployeeFromCounter);
+router.post('/counters/status', adminController.changeCounterStatus);
+router.get('/counters/:id/stats', adminController.getCounterStats);
 module.exports = router;

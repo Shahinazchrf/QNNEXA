@@ -373,6 +373,132 @@ const adminController = {
     }
   },
 
+  async createCounter(req, res) {
+    try {
+      const { number, name, services, location, status } = req.body;
+
+      // Check if counter number exists
+      const existingCounter = await Counter.findOne({ where: { number } });
+      if (existingCounter) {
+        return res.status(400).json({
+          success: false,
+          error: 'Counter number already exists'
+        });
+      }
+
+      const counter = await Counter.create({
+        number,
+        name: name || `Counter ${number}`,
+        services: services || [],
+        location: location || 'Main Hall',
+        status: status || 'inactive',
+        is_active: true
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Counter created successfully',
+        counter
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+
+  async updateCounter(req, res) {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      const counter = await Counter.findByPk(id);
+      if (!counter) {
+        return res.status(404).json({
+          success: false,
+          error: 'Counter not found'
+        });
+      }
+
+      // Prevent updating counter number if it would cause duplicate
+      if (updates.number && updates.number !== counter.number) {
+        const existingCounter = await Counter.findOne({ 
+          where: { number: updates.number } 
+        });
+        if (existingCounter) {
+          return res.status(400).json({
+            success: false,
+            error: 'Counter number already exists'
+          });
+        }
+      }
+
+      await counter.update(updates);
+
+      res.json({
+        success: true,
+        message: 'Counter updated successfully',
+        counter
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+
+  async deleteCounter(req, res) {
+    try {
+      const { id } = req.params;
+
+      const counter = await Counter.findByPk(id);
+      if (!counter) {
+        return res.status(404).json({
+          success: false,
+          error: 'Counter not found'
+        });
+      }
+
+      // Check if counter has active tickets
+      const activeTickets = await Ticket.count({
+        where: { 
+          counter_id: id,
+          status: { [Op.in]: ['serving', 'called'] }
+        }
+      });
+
+      if (activeTickets > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Cannot delete counter with active tickets'
+        });
+      }
+
+      // Soft delete (deactivate)
+      await counter.update({ is_active: false });
+
+      res.json({
+        success: true,
+        message: 'Counter deactivated successfully',
+        counter: {
+          id: counter.id,
+          number: counter.number,
+          is_active: false
+        }
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+
   async assignEmployeeToCounter(req, res) {
     try {
       const { counterId, employeeId } = req.body;
@@ -408,6 +534,176 @@ const adminController = {
             id: employee.id,
             name: `${employee.first_name} ${employee.last_name}`
           }
+        }
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+
+  async unassignEmployeeFromCounter(req, res) {
+    try {
+      const { counterId } = req.body;
+
+      const counter = await Counter.findByPk(counterId);
+      if (!counter) {
+        return res.status(404).json({
+          success: false,
+          error: 'Counter not found'
+        });
+      }
+
+      // Check if counter has active ticket
+      if (counter.current_ticket_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'Cannot unassign employee while serving a ticket'
+        });
+      }
+
+      await counter.update({
+        employee_id: null,
+        status: 'inactive'
+      });
+
+      res.json({
+        success: true,
+        message: `Employee unassigned from counter ${counter.number}`,
+        counter
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+
+  async changeCounterStatus(req, res) {
+    try {
+      const { counterId, status } = req.body;
+
+      const allowedStatuses = ['active', 'inactive', 'busy', 'break', 'closed'];
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid status'
+        });
+      }
+
+      const counter = await Counter.findByPk(counterId);
+      if (!counter) {
+        return res.status(404).json({
+          success: false,
+          error: 'Counter not found'
+        });
+      }
+
+      // Validate status transitions
+      if (status === 'inactive' && counter.current_ticket_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'Cannot set to inactive while serving a ticket'
+        });
+      }
+
+      await counter.update({ status });
+
+      res.json({
+        success: true,
+        message: `Counter ${counter.number} status changed to ${status}`,
+        counter
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+
+  async getCounterStats(req, res) {
+    try {
+      const { counterId } = req.params;
+      const { startDate, endDate } = req.query;
+
+      const counter = await Counter.findByPk(counterId, {
+        include: [{
+          model: User,
+          as: 'employee',
+          attributes: ['first_name', 'last_name']
+        }]
+      });
+      
+      if (!counter) {
+        return res.status(404).json({
+          success: false,
+          error: 'Counter not found'
+        });
+      }
+
+      const filterDate = {};
+      if (startDate && endDate) {
+        filterDate.createdAt = { 
+          [Op.between]: [new Date(startDate), new Date(endDate)] 
+        };
+      }
+
+      const stats = await Ticket.findAll({
+        where: {
+          counter_id: counterId,
+          ...filterDate,
+          status: 'completed'
+        },
+        attributes: [
+          [sequelize.fn('COUNT', 'id'), 'total_tickets'],
+          [sequelize.fn('AVG', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'avg_service_time'],
+          [sequelize.fn('MIN', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'min_service_time'],
+          [sequelize.fn('MAX', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'max_service_time']
+        ]
+      });
+
+      const dailyStats = await Ticket.findAll({
+        where: {
+          counter_id: counterId,
+          status: 'completed'
+        },
+        attributes: [
+          [sequelize.fn('DATE', sequelize.col('completed_at')), 'date'],
+          [sequelize.fn('COUNT', 'id'), 'tickets_served'],
+          [sequelize.fn('AVG', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'avg_time']
+        ],
+        group: [sequelize.fn('DATE', sequelize.col('completed_at'))],
+        order: [[sequelize.fn('DATE', sequelize.col('completed_at')), 'DESC']],
+        limit: 7
+      });
+
+      res.json({
+        success: true,
+        data: {
+          counter_info: {
+            id: counter.id,
+            number: counter.number,
+            name: counter.name,
+            status: counter.status,
+            employee: counter.employee ? 
+              `${counter.employee.first_name} ${counter.employee.last_name}` : 
+              'Unassigned',
+            services: counter.services,
+            location: counter.location
+          },
+          performance: stats[0]?.dataValues || {},
+          daily_performance: dailyStats.map(d => ({
+            date: d.dataValues.date,
+            tickets_served: d.dataValues.tickets_served,
+            avg_service_time: d.dataValues.avg_time?.toFixed(1) || '0'
+          }))
         }
       });
 
