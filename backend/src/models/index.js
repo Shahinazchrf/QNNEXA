@@ -1,5 +1,5 @@
-// This file should import all models and define relationships
-// If it doesn't exist, create it
+// models/index.js
+// Ce fichier importe tous les modèles et définit les relations
 
 const { sequelize } = require('../config/database');
 
@@ -11,7 +11,9 @@ const Counter = require('./Counter');
 const Notification = require('./Notification');
 const Survey = require('./Survey');
 
-// DEFINE RELATIONSHIPS
+// ==================== DÉFINITION DES RELATIONS ====================
+
+// 1. USER RELATIONS
 
 // User has many Tickets (as client)
 User.hasMany(Ticket, {
@@ -23,42 +25,6 @@ User.hasMany(Ticket, {
 Ticket.belongsTo(User, {
   foreignKey: 'client_id',
   as: 'client'
-});
-
-// Service has many Tickets
-Service.hasMany(Ticket, {
-  foreignKey: 'service_id',
-  as: 'service_tickets'
-});
-
-// Ticket belongs to Service
-Ticket.belongsTo(Service, {
-  foreignKey: 'service_id',
-  as: 'service'
-});
-
-// Counter has many Tickets
-Counter.hasMany(Ticket, {
-  foreignKey: 'counter_id',
-  as: 'counter_tickets'
-});
-
-// Ticket belongs to Counter
-Ticket.belongsTo(Counter, {
-  foreignKey: 'counter_id',
-  as: 'counter'
-});
-
-// Employee (User) is assigned to a Counter
-User.hasOne(Counter, {
-  foreignKey: 'employee_id',
-  as: 'assigned_counter'
-});
-
-// Counter belongs to an Employee (User)
-Counter.belongsTo(User, {
-  foreignKey: 'employee_id',
-  as: 'employee'
 });
 
 // User has many Notifications
@@ -73,6 +39,59 @@ Notification.belongsTo(User, {
   as: 'user'
 });
 
+// Employee (User) is assigned to a Counter (one-to-one)
+User.hasOne(Counter, {
+  foreignKey: 'employee_id',
+  as: 'assigned_counter'
+});
+
+// Counter belongs to an Employee (User)
+Counter.belongsTo(User, {
+  foreignKey: 'employee_id',
+  as: 'employee'
+});
+
+// 2. TICKET RELATIONS
+
+// Service has many Tickets
+Service.hasMany(Ticket, {
+  foreignKey: 'service_id',
+  as: 'service_tickets'
+});
+
+// Ticket belongs to Service
+Ticket.belongsTo(Service, {
+  foreignKey: 'service_id',
+  as: 'service'
+});
+
+// Counter has many Tickets (historical - tickets served at this counter)
+Counter.hasMany(Ticket, {
+  foreignKey: 'counter_id',
+  as: 'counter_tickets'
+});
+
+// Ticket belongs to Counter (historical)
+Ticket.belongsTo(Counter, {
+  foreignKey: 'counter_id',
+  as: 'counter'
+});
+
+// Counter has one current Ticket (active ticket being served)
+Counter.hasOne(Ticket, {
+  sourceKey: 'current_ticket_id',
+  foreignKey: 'id',
+  as: 'current_ticket',
+  constraints: false // This is optional relationship
+});
+
+// Ticket can be assigned as current ticket of a Counter
+Ticket.belongsTo(Counter, {
+  foreignKey: 'current_ticket_id',
+  as: 'assigned_as_current',
+  constraints: false // Optional relationship
+});
+
 // Ticket has one Survey
 Ticket.hasOne(Survey, {
   foreignKey: 'ticket_id',
@@ -85,13 +104,56 @@ Survey.belongsTo(Ticket, {
   as: 'ticket'
 });
 
-// Export all models
+// Ticket can be served by an Employee (User)
+Ticket.belongsTo(User, {
+  foreignKey: 'employee_id',
+  as: 'serving_employee'
+});
+
+// Employee (User) can serve many Tickets
+User.hasMany(Ticket, {
+  foreignKey: 'employee_id',
+  as: 'served_tickets'
+});
+
+// 3. COUNTER RELATIONS (already defined above with User)
+
+// 4. SERVICE RELATIONS (already defined above with Ticket)
+
+// 5. NOTIFICATION RELATIONS (already defined above with User)
+
+// 6. SURVEY RELATIONS (already defined above with Ticket)
+
+// ==================== ADDITIONAL RELATIONS FOR QUERY OPTIMIZATION ====================
+
+// Counter can have multiple services (through JSON field, not a real relation)
+// This is for query purposes only
+Counter.prototype.getServicesList = async function() {
+  if (!this.services || this.services.length === 0) {
+    return [];
+  }
+  
+  return await Service.findAll({
+    where: {
+      code: { $in: this.services }
+    }
+  });
+};
+
+// Ticket can get estimated service time from its service
+Ticket.prototype.getEstimatedServiceTime = async function() {
+  const service = await this.getService();
+  return service ? service.estimated_time : 15;
+};
+
+// ==================== EXPORT MODELS ====================
+
 module.exports = {
+  sequelize,
   User,
   Ticket,
   Service,
   Counter,
   Notification,
-  Survey,
-  sequelize
+  Survey
 };
