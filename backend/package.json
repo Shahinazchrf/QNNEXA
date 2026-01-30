@@ -5,8 +5,13 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+<<<<<<< HEAD
     "dev": "nodemon src/server-final.js",
     "server": "node src/server-final.js",
+=======
+    "dev": "nodemon src/server.js",
+    "server": "node src/server.js",
+>>>>>>> 8c24123 (Updated backend routes and stats service)
     "kiosk": "node src/client/kiosk-client.js",
     "seed": "node src/scripts/seed-now.js",
     "init-db": "node src/scripts/init-db.js",
