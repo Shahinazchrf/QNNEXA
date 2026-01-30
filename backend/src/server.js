@@ -1,5 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const employeeRoutes = require('./routes/employeeRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const queueRoutes = require('./routes/queueRoutes');
+const statsRoutes = require('./routes/statsRoutes');
+const authRoutes = require('./routes/authRoutes');
 const { sequelize } = require('./config/database');
 require('dotenv').config();
 
@@ -33,17 +38,14 @@ const { User, Service, Ticket, Counter } = require('./models');
 
 // ==================== IMPORT ROUTES ====================
 // Note: Crée ces fichiers si tu ne les as pas encore
-const employeeRoutes = require('./routes/employeeRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const queueRoutes = require('./routes/queueRoutes');
-const statsRoutes = require('./routes/statsRoutes');
-const authRoutes = require('./routes/authRoutes');
+
 
 // ==================== USE ROUTES ====================
 app.use("/api/auth", authRoutes); // ACTIVÉ
 //// app.use("/api/employee", employeeRoutes); // DÉSACTIVÉ TEMPORAIREMENT
 // app.use("/api/admin", adminRoutes); // DÉSACTIVÉ TEMPORAIREMENT
 app.use('/api/queue', queueRoutes);
+console.log(statsRoutes);
 app.use('/api/stats', statsRoutes);
 
 // ==================== PUBLIC API ROUTES ====================

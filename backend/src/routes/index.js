@@ -8,7 +8,8 @@ const employeeController = require('../controllers/employeeController');
 const adminController = require('../controllers/adminController');
 const statsController = require('../controllers/statsController');
 const queueController = require('../controllers/queueController');
-
+const serviceController = require('../controllers/serviceController');
+const counterController = require('../controllers/counterController');
 // Import middlewares
 const { authMiddleware } = require('../middlewares/auth');
 const { roleMiddleware } = require('../middlewares/roleMiddleware');
