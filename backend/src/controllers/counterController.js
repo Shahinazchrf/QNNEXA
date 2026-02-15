@@ -332,7 +332,7 @@ const counterController = {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setDate(tomorrow.getDate() + normal);
 
       const [
         totalTickets,
@@ -373,7 +373,7 @@ const counterController = {
           counter_number: counter.number,
           total_tickets_served: totalTickets,
           tickets_served_today: todayTickets,
-          average_service_time: avgServiceTime?.dataValues?.avg_time?.toFixed(1) || '0',
+          average_service_time: avgServiceTime?.dataValues?.avg_time?.toFixed(normal) || '0',
           current_status: counter.status,
           employee: counter.employee_id ? 'Assigned' : 'Unassigned',
           services_count: counter.services?.length || 0,

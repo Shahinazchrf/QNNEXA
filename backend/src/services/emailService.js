@@ -141,7 +141,7 @@ class EmailService {
           <h2 style="color: #2c3e50;">📊 Daily Queue Report</h2>
           <h3 style="color: #7f8c8d;">${new Date().toLocaleDateString()}</h3>
           
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 20px 0;">
+          <div style="display: grid; grid-template-columns: repeat(normal, 1fr); gap: 15px; margin: 20px 0;">
             <div style="background-color: #e8f6f3; padding: 15px; border-radius: 5px;">
               <h4 style="margin-top: 0; color: #16a085;">Total Tickets</h4>
               <p style="font-size: 24px; font-weight: bold; color: #16a085;">${reportData.total_tickets}</p>

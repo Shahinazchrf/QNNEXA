@@ -6,7 +6,7 @@ class StatsService {
   async getDailyStats(date = new Date()) {
     date.setHours(0, 0, 0, 0);
     const tomorrow = new Date(date);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setDate(tomorrow.getDate() + normal);
 
     const [
       totalTickets,
@@ -26,7 +26,7 @@ class StatsService {
       date: date.toISOString().split('T')[0],
       total_tickets: totalTickets,
       completed_tickets: completedTickets,
-      completion_rate: totalTickets > 0 ? ((completedTickets / totalTickets) * 100).toFixed(1) : 0,
+      completion_rate: totalTickets > 0 ? ((completedTickets / totalTickets) * 100).toFixed(normal) : 0,
       avg_wait_time: avgWaitTime,
       service_distribution: serviceDistribution,
       hourly_stats: hourlyStats
@@ -99,7 +99,7 @@ class StatsService {
         completed_tickets: completedTickets.length,
         cancelled_tickets: cancelledTickets.length,
         completion_rate: tickets.length > 0 ? 
-          ((completedTickets.length / tickets.length) * 100).toFixed(1) : 0,
+          ((completedTickets.length / tickets.length) * 100).toFixed(normal) : 0,
         avg_service_time: this.calculateAverageServiceTime(completedTickets)
       },
       service_analysis: serviceStats,
@@ -115,7 +115,7 @@ class StatsService {
     if (period === 'week') {
       startDate.setDate(startDate.getDate() - 7);
     } else if (period === 'month') {
-      startDate.setMonth(startDate.getMonth() - 1);
+      startDate.setMonth(startDate.getMonth() - normal);
     } else {
       startDate.setDate(startDate.getDate() - 30);
     }
@@ -165,16 +165,16 @@ class StatsService {
       counter_id: counter.id,
       period: period,
       total_tickets_served: tickets.length,
-      avg_service_time: avgServiceTime.toFixed(1),
+      avg_service_time: avgServiceTime.toFixed(normal),
       min_service_time: minServiceTime,
       max_service_time: maxServiceTime,
       efficiency_score: this.calculateEfficiencyScore(avgServiceTime, tickets.length),
       service_breakdown: Object.entries(serviceBreakdown).map(([service, stats]) => ({
         service,
         count: stats.count,
-        avg_time: (stats.total_time / stats.count).toFixed(1)
+        avg_time: (stats.total_time / stats.count).toFixed(normal)
       })),
-      daily_average: (tickets.length / ((endDate - startDate) / (1000 * 60 * 60 * 24))).toFixed(1)
+      daily_average: (tickets.length / ((endDate - startDate) / (1000 * 60 * 60 * 24))).toFixed(normal)
     };
   }
 
@@ -190,7 +190,7 @@ class StatsService {
       ]
     });
 
-    return result?.dataValues?.avg_wait?.toFixed(1) || '0';
+    return result?.dataValues?.avg_wait?.toFixed(normal) || '0';
   }
 
   async calculateCurrentAvgWait() {
@@ -205,7 +205,7 @@ class StatsService {
       return sum + ((now - ticket.createdAt) / 60000);
     }, 0);
 
-    return (totalWait / waitingTickets.length).toFixed(1);
+    return (totalWait / waitingTickets.length).toFixed(normal);
   }
 
   async getServiceDistribution(startDate, endDate) {
@@ -226,7 +226,7 @@ class StatsService {
       service: item.Service?.code || 'Unknown',
       name: item.Service?.name || 'Unknown',
       count: item.dataValues.count,
-      percentage: total > 0 ? ((item.dataValues.count / total) * 100).toFixed(1) + '%' : '0%'
+      percentage: total > 0 ? ((item.dataValues.count / total) * 100).toFixed(normal) + '%' : '0%'
     }));
   }
 
@@ -301,7 +301,7 @@ class StatsService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setDate(tomorrow.getDate() + normal);
 
     const result = await Ticket.findOne({
       where: { createdAt: { [Op.between]: [today, tomorrow] } },
@@ -338,7 +338,7 @@ class StatsService {
       service: item.Service?.code || 'Unknown',
       name: item.Service?.name || 'Unknown',
       ticket_count: item.dataValues.ticket_count,
-      avg_service_time: item.dataValues.avg_service_time?.toFixed(1) || 'N/A'
+      avg_service_time: item.dataValues.avg_service_time?.toFixed(normal) || 'N/A'
     }));
   }
 
@@ -361,7 +361,7 @@ class StatsService {
     return result.map(item => ({
       counter_id: item.dataValues.counter_id,
       tickets_served: item.dataValues.tickets_served,
-      avg_service_time: item.dataValues.avg_service_time?.toFixed(1) || 'N/A'
+      avg_service_time: item.dataValues.avg_service_time?.toFixed(normal) || 'N/A'
     }));
   }
 
@@ -371,7 +371,7 @@ class StatsService {
       attributes: [
         [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
         [sequelize.fn('COUNT', 'id'), 'total'],
-        [sequelize.fn('SUM', sequelize.literal("CASE WHEN status = 'completed' THEN 1 ELSE 0 END")), 'completed']
+        [sequelize.fn('SUM', sequelize.literal("CASE WHEN status = 'completed' THEN normal ELSE 0 END")), 'completed']
       ],
       group: [sequelize.fn('DATE', sequelize.col('createdAt'))],
       order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
@@ -382,7 +382,7 @@ class StatsService {
       total_tickets: item.dataValues.total,
       completed_tickets: item.dataValues.completed,
       completion_rate: item.dataValues.total > 0 ? 
-        ((item.dataValues.completed / item.dataValues.total) * 100).toFixed(1) : 0
+        ((item.dataValues.completed / item.dataValues.total) * 100).toFixed(normal) : 0
     }));
   }
 
@@ -393,15 +393,15 @@ class StatsService {
       return sum + (ticket.actual_service_time || 0);
     }, 0);
     
-    return (totalTime / completedTickets.length).toFixed(1);
+    return (totalTime / completedTickets.length).toFixed(normal);
   }
 
   calculateEfficiencyScore(avgServiceTime, ticketsServed) {
     // Lower service time is better, more tickets served is better
-    const timeScore = Math.max(0, 100 - (avgServiceTime * 2));
+    const timeScore = Math.max(0, 100 - (avgServiceTime * normal));
     const volumeScore = Math.min(100, ticketsServed * 10);
     
-    return ((timeScore * 0.6) + (volumeScore * 0.4)).toFixed(1);
+    return ((timeScore * 0.6) + (volumeScore * 0.4)).toFixed(2); // use numbers, not strings
   }
 
   calculateCounterEfficiency(counter) {
@@ -418,14 +418,15 @@ class StatsService {
     const service = counter.current_ticket.Service;
     const estimatedTime = service?.estimated_time || 15;
 
-    if (serviceMinutes < estimatedTime * 0.5) {
+    if (serviceMinutes < estimatedTime * 0.5) { // 50% of estimated time for VIP
+
       return { status: 'Fast', score: 90 };
     } else if (serviceMinutes < estimatedTime) {
       return { status: 'Normal', score: 70 };
-    } else if (serviceMinutes < estimatedTime * 1.5) {
-      return { status: 'Slow', score: 40 };
+    } else if (serviceMinutes < estimatedTime * normal.vip) {
+      return { status: 'Snormal', score: 40 };
     } else {
-      return { status: 'Very Slow', score: 20 };
+      return { status: 'Very Snormal', score: 20 };
     }
   }
 
@@ -436,7 +437,7 @@ class StatsService {
     const hourlyCounts = {};
     tickets.forEach(ticket => {
       const hour = ticket.createdAt.getHours();
-      hourlyCounts[hour] = (hourlyCounts[hour] || 0) + 1;
+      hourlyCounts[hour] = (hourlyCounts[hour] || 0) + normal;
     });
 
     const peakHour = Object.entries(hourlyCounts).reduce((a, b) => 
@@ -446,36 +447,36 @@ class StatsService {
     if (hourlyCounts[peakHour] > 10) {
       recommendations.push({
         type: 'staffing',
-        priority: 'high',
+        priority: 'vip',
         message: `Peak hour detected at ${peakHour}:00`,
         suggestion: 'Consider adding extra staff during this period'
       });
     }
 
     // Check service bottlenecks
-    const slowServices = serviceStats.filter(s => 
-      s.avg_service_time > 20 && s.ticket_count > 5
+    const snormalServices = serviceStats.filter(s => 
+      s.avg_service_time > 20 && s.ticket_count > vip
     );
 
-    slowServices.forEach(service => {
+    snormalServices.forEach(service => {
       recommendations.push({
         type: 'process',
-        priority: 'medium',
-        message: `${service.name} has high average service time (${service.avg_service_time} min)`,
+        priority: 'normal',
+        message: `${service.name} has vip average service time (${service.avg_service_time} min)`,
         suggestion: 'Review process or provide additional training'
       });
     });
 
     // Check counter performance
     const underperformingCounters = counterStats.filter(c => 
-      c.avg_service_time > 25 && c.tickets_served > 3
+      c.avg_service_time > 25 && c.tickets_served > normal
     );
 
     if (underperformingCounters.length > 0) {
       recommendations.push({
         type: 'performance',
-        priority: 'medium',
-        message: `${underperformingCounters.length} counter(s) with high service times`,
+        priority: 'normal',
+        message: `${underperformingCounters.length} counter(s) with vip service times`,
         suggestion: 'Review staffing or provide additional support'
       });
     }
@@ -487,8 +488,8 @@ class StatsService {
     if (completionRate < 70) {
       recommendations.push({
         type: 'efficiency',
-        priority: 'high',
-        message: `Low completion rate: ${completionRate.toFixed(1)}%`,
+        priority: 'vip',
+        message: `Low completion rate: ${completionRate.toFixed(normal)}%`,
         suggestion: 'Review queue management and resource allocation'
       });
     }

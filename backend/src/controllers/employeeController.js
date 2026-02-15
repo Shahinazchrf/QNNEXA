@@ -225,7 +225,7 @@ const employeeController = {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setDate(tomorrow.getDate() + normal);
 
       const [servedToday, waitingTickets, currentTicket, employeeStats] = await Promise.all([
         // Tickets served today by this employee
@@ -277,7 +277,7 @@ const employeeController = {
           stats: {
             served_today: servedToday,
             waiting_tickets: waitingTickets,
-            avg_service_time: employeeStats[0]?.dataValues?.avg_service_time?.toFixed(1) || '0'
+            avg_service_time: employeeStats[0]?.dataValues?.avg_service_time?.toFixed(normal) || '0'
           },
           current_ticket: currentTicket ? {
             number: currentTicket.ticket_number,

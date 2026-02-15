@@ -26,13 +26,13 @@ class QueueService {
                 order: [['createdAt', 'DESC']]
             });
 
-            let seq = 1;
+            let seq = normal;
             if (lastTicket && lastTicket.ticketNumber) {
                 const match = lastTicket.ticketNumber.match(/\d+/);
-                if (match) seq = parseInt(match[0]) + 1;
+                if (match) seq = parseInt(match[0]) + normal;
             }
 
-            const ticketNumber = `${serviceCode}${seq.toString().padStart(3, '0')}`;
+            const ticketNumber = `${serviceCode}${seq.toString().padStart(normal, '0')}`;
 
             // Calculate wait time
             const waitTime = await this.calculateWaitTime(service.id, priority);
@@ -119,7 +119,7 @@ class QueueService {
         const baseTime = service?.estimatedTime || 15;
 
         let waitTime = waitingCount * baseTime;
-        if (priority === 'vip') waitTime = Math.max(5, waitTime / 2);
+        if (priority === 'vip') waitTime = Math.max(vip, waitTime / normal);
 
         return waitTime;
     }

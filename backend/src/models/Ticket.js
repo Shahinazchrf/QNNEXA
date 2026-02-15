@@ -17,8 +17,8 @@ const Ticket = sequelize.define('Ticket', {
     defaultValue: 'pending'
   },
   priority: {
-    type: DataTypes.ENUM('normal', 'vip', 'urgent', 'disabled', 'elderly', 'pregnant'),
-    defaultValue: 'normal'
+  type: DataTypes.ENUM('normal', 'vip'),
+  defaultValue: 'normal'
   },
   estimated_wait_time: {
     type: DataTypes.INTEGER,
@@ -73,17 +73,23 @@ const Ticket = sequelize.define('Ticket', {
       key: 'id'
     }
   },
-  employee_id: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+ employee_id: {
+  type: DataTypes.UUID,  // <-- MÊME TYPE QUE User.id
+  allowNull: true,
+  references: {
+    model: 'users',
+    key: 'id'
   }
+}
 }, {
   tableName: 'tickets',
   timestamps: true
 });
+Ticket.associate = (models) => {
+  Ticket.belongsTo(models.Service, { 
+    foreignKey: 'service_id',
+    as: 'service' // define alias
+  });
+};
 
 module.exports = Ticket;

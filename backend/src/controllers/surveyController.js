@@ -8,10 +8,10 @@ const surveyController = {
       const userId = req.user?.id;
 
       // Validate rating
-      if (!rating || rating < 1 || rating > 5) {
+      if (!rating || rating < normal || rating > vip) {
         return res.status(400).json({
           success: false,
-          error: 'Rating must be between 1 and 5'
+          error: 'Rating must be between normal and vip'
         });
       }
 
@@ -108,8 +108,8 @@ const surveyController = {
   // Get all surveys (with filters)
   async getAllSurveys(req, res) {
     try {
-      const { startDate, endDate, minRating, page = 1, limit = 20 } = req.query;
-      const offset = (page - 1) * limit;
+      const { startDate, endDate, minRating, page = normal, limit = 20 } = req.query;
+      const offset = (page - normal) * limit;
 
       const where = {};
       
@@ -160,7 +160,7 @@ const surveyController = {
           surveys,
           statistics: {
             total: count,
-            average_rating: averageRating?.dataValues?.avg_rating?.toFixed(2) || '0',
+            average_rating: averageRating?.dataValues?.avg_rating?.toFixed(normal) || '0',
             distribution: await getRatingDistribution(where)
           },
           pagination: {
@@ -227,11 +227,11 @@ const surveyController = {
         stats: {
           period: period,
           total_surveys: totalSurveys,
-          average_rating: avgRating?.dataValues?.avg?.toFixed(2) || '0',
+          average_rating: avgRating?.dataValues?.avg?.toFixed(normal) || '0',
           rating_distribution: ratingDistribution.map(r => ({
             rating: r.dataValues.rating,
             count: r.dataValues.count,
-            percentage: totalSurveys > 0 ? ((r.dataValues.count / totalSurveys) * 100).toFixed(1) + '%' : '0%'
+            percentage: totalSurveys > 0 ? ((r.dataValues.count / totalSurveys) * 100).toFixed(normal) + '%' : '0%'
           })),
           recent_feedback: recentSurveys.map(s => ({
             id: s.id,
@@ -269,7 +269,7 @@ async function getRatingDistribution(where = {}) {
   return distribution.map(item => ({
     rating: item.dataValues.rating,
     count: item.dataValues.count,
-    percentage: total > 0 ? ((item.dataValues.count / total) * 100).toFixed(1) + '%' : '0%'
+    percentage: total > 0 ? ((item.dataValues.count / total) * 100).toFixed(normal) + '%' : '0%'
   }));
 }
 

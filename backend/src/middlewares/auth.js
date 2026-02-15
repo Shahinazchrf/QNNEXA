@@ -211,5 +211,6 @@ module.exports = {
   requireEmployee,
   requireAdmin,
   requireRole,
-  requireOwnerOrAdmin
+  requireOwnerOrAdmin,
+  auth: authMiddleware  // AJOUTE CETTE LIGNE
 };

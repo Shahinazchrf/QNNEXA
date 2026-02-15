@@ -48,7 +48,7 @@ class TicketsService {
       case 'vip':
         estimatedTime = Math.max(5, estimatedTime * 0.5);
         break;
-      case 'urgent':
+      case 'normal':
         estimatedTime = Math.max(2, estimatedTime * 0.3);
         break;
       case 'disabled':
@@ -134,8 +134,8 @@ class TicketsService {
       where.service_id = { [Op.in]: serviceIds };
     }
 
-    // Priority order: VIP > urgent > special > normal
-    const priorityOrder = ['vip', 'urgent', 'disabled', 'elderly', 'pregnant', 'normal'];
+    // Priority order: VIP > normal > special > normal
+    const priorityOrder = ['vip', 'normal', 'disabled', 'elderly', 'pregnant', 'normal'];
 
     for (const priority of priorityOrder) {
       where.priority = priority;
@@ -395,7 +395,7 @@ class TicketsService {
     // Calculate statistics
     const byPriority = {
       vip: tickets.filter(t => t.priority === 'vip').length,
-      urgent: tickets.filter(t => t.priority === 'urgent').length,
+      normal: tickets.filter(t => t.priority === 'normal').length,
       special: tickets.filter(t => ['disabled', 'elderly', 'pregnant'].includes(t.priority)).length,
       normal: tickets.filter(t => t.priority === 'normal').length
     };

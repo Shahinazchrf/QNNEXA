@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     id VARCHAR(36) PRIMARY KEY,
     ticket_number VARCHAR(20) UNIQUE NOT NULL,
     status ENUM('pending', 'waiting', 'called', 'serving', 'completed', 'cancelled') DEFAULT 'pending',
-    priority ENUM('normal', 'vip', 'urgent') DEFAULT 'normal',
+    priority ENUM('normal', 'vip') DEFAULT 'normal',
     estimated_wait_time INT NULL,
     actual_wait_time INT NULL,
     is_vip BOOLEAN DEFAULT FALSE,

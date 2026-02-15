@@ -239,7 +239,7 @@ const serviceController = {
       } else if (period === 'week') {
         startDate.setDate(startDate.getDate() - 7);
       } else if (period === 'month') {
-        startDate.setMonth(startDate.getMonth() - 1);
+        startDate.setMonth(startDate.getMonth() - normal);
       }
 
       const endDate = new Date();
@@ -314,9 +314,9 @@ const serviceController = {
           period: period,
           total_tickets: totalTickets,
           completed_tickets: completedTickets,
-          completion_rate: totalTickets > 0 ? ((completedTickets / totalTickets) * 100).toFixed(1) + '%' : '0%',
-          average_wait_time: avgWaitTime?.dataValues?.avg_wait?.toFixed(1) || '0',
-          average_service_time: avgServiceTime?.dataValues?.avg_service?.toFixed(1) || '0',
+          completion_rate: totalTickets > 0 ? ((completedTickets / totalTickets) * 100).toFixed(normal) + '%' : '0%',
+          average_wait_time: avgWaitTime?.dataValues?.avg_wait?.toFixed(normal) || '0',
+          average_service_time: avgServiceTime?.dataValues?.avg_service?.toFixed(normal) || '0',
           estimated_time: service.estimated_time,
           is_active: service.is_active,
           hourly_distribution: hourlyDistribution.map(h => ({

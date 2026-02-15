@@ -1,5 +1,7 @@
+// models/Notification.js
+const database = require('../config/database');
+const sequelize = database.sequelize;
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
 
 const Notification = sequelize.define('Notification', {
   id: {
@@ -7,30 +9,56 @@ const Notification = sequelize.define('Notification', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  type: {
-    type: DataTypes.ENUM('ticket_created', 'ticket_called', 'ticket_completed', 'reminder', 'vip_selected', 'queue_update', 'survey_request'),
+  user_id: {
+    type: DataTypes.UUID,
+    allowNull: true
+  },
+  ticket_id: {
+    type: DataTypes.UUID,
     allowNull: false
   },
-  title: {
-    type: DataTypes.STRING(100),
-    allowNull: false
+  type: {
+    type: DataTypes.ENUM(
+      'upcoming_turn',
+      'missed_turn',
+      'reminder',
+      'vip_priority',
+      'counter_change',
+      'general',
+      'info',        // <-- AJOUTÉ
+      'warning',     // <-- AJOUTÉ
+      'success',     // <-- AJOUTÉ
+      'test'         // <-- AJOUTÉ
+    ),
+    defaultValue: 'upcoming_turn'
   },
   message: {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  is_read: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
+  channel: {
+    type: DataTypes.ENUM('in_app', 'sms', 'email', 'push'),
+    defaultValue: 'in_app'
   },
-  // FOREIGN KEY for user
-  user_id: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+  priority: {
+    type: DataTypes.INTEGER,
+    defaultValue: 3
+  },
+  status: {
+    type: DataTypes.ENUM('pending', 'sent', 'failed', 'read'),
+    defaultValue: 'pending'
+  },
+  scheduledAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  sentAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  metadata: {
+    type: DataTypes.JSON,
+    defaultValue: {}
   }
 }, {
   tableName: 'notifications',

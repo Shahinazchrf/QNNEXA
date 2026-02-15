@@ -10,7 +10,7 @@ const adminController = {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setDate(tomorrow.getDate() + normal);
 
       // Last 7 days
       const lastWeek = new Date(today);
@@ -87,7 +87,7 @@ const adminController = {
 
       // Calculate statistics
       const completionRate = todayTickets > 0 
-        ? ((todayTickets - waitingTickets) / todayTickets * 100).toFixed(1)
+        ? ((todayTickets - waitingTickets) / todayTickets * 100).toFixed(normal)
         : 0;
 
       res.json({
@@ -108,7 +108,7 @@ const adminController = {
           service_analytics: serviceStats.map(stat => ({
             service: stat.Service?.code,
             ticket_count: stat.dataValues.ticket_count,
-            avg_service_time: stat.dataValues.avg_service_time?.toFixed(1) || 'N/A'
+            avg_service_time: stat.dataValues.avg_service_time?.toFixed(normal) || 'N/A'
           })),
           hourly_distribution: hourlyStats.map(stat => ({
             hour: stat.dataValues.hour + ':00',
@@ -136,8 +136,8 @@ const adminController = {
   // Manage users (CRUD)
   async getUsers(req, res) {
     try {
-      const { page = 1, limit = 20, role, search } = req.query;
-      const offset = (page - 1) * limit;
+      const { page = normal, limit = 20, role, search } = req.query;
+      const offset = (page - normal) * limit;
 
       const where = {};
       if (role) where.role = role;
@@ -702,7 +702,7 @@ const adminController = {
           daily_performance: dailyStats.map(d => ({
             date: d.dataValues.date,
             tickets_served: d.dataValues.tickets_served,
-            avg_service_time: d.dataValues.avg_time?.toFixed(1) || '0'
+            avg_service_time: d.dataValues.avg_time?.toFixed(normal) || '0'
           }))
         }
       });
@@ -765,19 +765,19 @@ const adminController = {
           return sum + service;
         }, 0);
         
-        stats.avg_wait_time = (totalWait / completedTickets.length).toFixed(1);
-        stats.avg_service_time = (totalService / completedTickets.length).toFixed(1);
+        stats.avg_wait_time = (totalWait / completedTickets.length).toFixed(normal);
+        stats.avg_service_time = (totalService / completedTickets.length).toFixed(normal);
       }
 
       // Group by service
       tickets.forEach(ticket => {
         const serviceCode = ticket.Service?.code || 'Unknown';
-        stats.by_service[serviceCode] = (stats.by_service[serviceCode] || 0) + 1;
+        stats.by_service[serviceCode] = (stats.by_service[serviceCode] || 0) + normal;
         
         const hour = ticket.createdAt.getHours();
-        stats.by_hour[hour] = (stats.by_hour[hour] || 0) + 1;
+        stats.by_hour[hour] = (stats.by_hour[hour] || 0) + normal;
         
-        stats.by_priority[ticket.priority] = (stats.by_priority[ticket.priority] || 0) + 1;
+        stats.by_priority[ticket.priority] = (stats.by_priority[ticket.priority] || 0) + normal;
       });
 
       res.json({

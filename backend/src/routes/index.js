@@ -9,6 +9,7 @@ const adminController = require('../controllers/adminController');
 const statsController = require('../controllers/statsController');
 const queueController = require('../controllers/queueController');
 const serviceController = require('../controllers/serviceController');
+const Appointment = require('./Appointment');
 const counterController = require('../controllers/counterController');
 // Import middlewares
 const { authMiddleware } = require('../middlewares/auth');
@@ -173,4 +174,13 @@ router.use('*', (req, res) => {
   });
 });
 
-module.exports = router;
+module.exports = {
+  sequelize,
+  User,
+  Ticket,
+  Service,
+  Counter,
+  Notification,
+  Survey,
+  Appointment  // ← AJOUTE ICI
+};

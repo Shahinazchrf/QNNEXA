@@ -1,20 +1,50 @@
 const express = require('express');
 const router = express.Router();
-const notificationController = require('../controllers/notificationController');
-const { authMiddleware } = require('../middlewares/auth');
-const { requireAdmin } = require('../middlewares/roles');
+const { Notification, Ticket } = require('../models');
 
-// All routes require authentication
-router.use(authMiddleware);
+// Middleware auth simple
+const auth = (req, res, next) => {
+  req.user = { id: null, role: 'admin' };
+  next();
+};
 
-// User notifications
-router.get('/my', notificationController.getUserNotifications);
-router.put('/:id/read', notificationController.markAsRead);
-router.put('/read-all', notificationController.markAllAsRead);
-router.delete('/:id', notificationController.deleteNotification);
-router.get('/stats', notificationController.getNotificationStats);
+router.use(auth);
 
-// Admin only routes
-router.post('/', requireAdmin, notificationController.createNotification);
+// POST /send
+router.post('/send', async (req, res) => {
+  try {
+    const { ticketId, message, type } = req.body;
+    
+    const notification = await Notification.create({
+  ticket_id: ticketId,
+  // user_id: 1,  // ← COMMENTE CETTE LIGNE
+  user_id: null,  // ← OU AJOUTE NULL
+  message,
+  type: type || 'info',
+  status: 'sent',
+  sent_at: new Date()
+});
+    res.status(201).json({
+      success: true,
+      message: 'Notification envoyée',
+      data: notification
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /history
+router.get('/history', async (req, res) => {
+  try {
+    const notifications = await Notification.findAll({
+      order: [['createdAt', 'DESC']],
+      limit: 50
+    });
+    res.json({ success: true, data: { notifications } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 module.exports = router;

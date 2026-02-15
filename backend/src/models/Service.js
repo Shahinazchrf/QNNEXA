@@ -32,5 +32,7 @@ const Service = sequelize.define('Service', {
   tableName: 'services',
   timestamps: true
 });
-
+Service.associate = (models) => {
+  Service.hasMany(models.Ticket, { foreignKey: 'service_id' });
+};
 module.exports = Service;
