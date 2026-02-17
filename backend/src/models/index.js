@@ -15,119 +15,103 @@ const Survey = require('./Survey');
 
 // 1. USER RELATIONS
 
-// User has many Tickets (as client)
+// User has many Tickets (as client) - use unique alias
 User.hasMany(Ticket, {
   foreignKey: 'client_id',
-  as: 'client_tickets'
+  as: 'ticketClient'
 });
 
-// Ticket belongs to User (as client)
-Ticket.belongsTo(User, {
-  foreignKey: 'client_id',
-  as: 'client'
+// User has many Tickets (as employee who served) - use unique alias
+User.hasMany(Ticket, {
+  foreignKey: 'employee_id',
+  as: 'servingEmployee'
 });
 
 // User has many Notifications
 User.hasMany(Notification, {
   foreignKey: 'user_id',
-  as: 'notifications'
+  as: 'userNotifications'
 });
 
-// Notification belongs to User
-Notification.belongsTo(User, {
-  foreignKey: 'user_id',
-  as: 'user'
-});
-
-// Employee (User) is assigned to a Counter (one-to-one)
+// User has one Counter as assigned employee
 User.hasOne(Counter, {
   foreignKey: 'employee_id',
-  as: 'assigned_counter'
-});
-
-// Counter belongs to an Employee (User)
-Counter.belongsTo(User, {
-  foreignKey: 'employee_id',
-  as: 'employee'
+  as: 'assignedCounter'
 });
 
 // 2. TICKET RELATIONS
 
+// Ticket belongs to User (as client) - use unique alias
+Ticket.belongsTo(User, {
+  foreignKey: 'client_id',
+  as: 'ticketClient'
+});
+
+// Ticket belongs to User (as employee who served it) - use unique alias
+Ticket.belongsTo(User, {
+  foreignKey: 'employee_id',
+  as: 'servingEmployee'
+});
+
 // Service has many Tickets
 Service.hasMany(Ticket, {
   foreignKey: 'service_id',
-  as: 'service_tickets'
+  as: 'serviceTickets'
 });
 
 // Ticket belongs to Service
 Ticket.belongsTo(Service, {
   foreignKey: 'service_id',
-  as: 'service'
+  as: 'ticketService'
 });
 
-// Counter has many Tickets (historical - tickets served at this counter)
+// Counter has many Tickets (historical)
 Counter.hasMany(Ticket, {
   foreignKey: 'counter_id',
-  as: 'counter_tickets'
+  as: 'counterTickets'
 });
 
-// Ticket belongs to Counter (historical)
+// Ticket belongs to Counter
 Ticket.belongsTo(Counter, {
   foreignKey: 'counter_id',
-  as: 'counter'
+  as: 'ticketCounter'
 });
 
-// Counter has one current Ticket (active ticket being served)
-Counter.hasOne(Ticket, {
-  sourceKey: 'current_ticket_id',
-  foreignKey: 'id',
-  as: 'current_ticket',
-  constraints: false // This is optional relationship
+// Counter belongs to User as assigned employee
+Counter.belongsTo(User, {
+  foreignKey: 'employee_id',
+  as: 'counterEmployee'
 });
 
-// Ticket can be assigned as current ticket of a Counter
-Ticket.belongsTo(Counter, {
+// Counter has one current Ticket (optional relationship)
+Counter.belongsTo(Ticket, {
   foreignKey: 'current_ticket_id',
-  as: 'assigned_as_current',
-  constraints: false // Optional relationship
+  as: 'currentTicket',
+  constraints: false
 });
 
-// Ticket has one Survey
+// 3. NOTIFICATION RELATIONS
+
+// Notification belongs to User
+Notification.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'notificationUser'
+});
+
+// 4. SURVEY RELATIONS (will be updated when we fix Survey model)
 Ticket.hasOne(Survey, {
   foreignKey: 'ticket_id',
-  as: 'survey'
+  as: 'ticketSurvey'
 });
 
-// Survey belongs to Ticket
 Survey.belongsTo(Ticket, {
   foreignKey: 'ticket_id',
-  as: 'ticket'
+  as: 'surveyTicket'
 });
 
-// Ticket can be served by an Employee (User)
-Ticket.belongsTo(User, {
-  foreignKey: 'employee_id',
-  as: 'serving_employee'
-});
+// 5. ADDITIONAL RELATIONS FOR QUERY OPTIMIZATION
 
-// Employee (User) can serve many Tickets
-User.hasMany(Ticket, {
-  foreignKey: 'employee_id',
-  as: 'served_tickets'
-});
-
-// 3. COUNTER RELATIONS (already defined above with User)
-
-// 4. SERVICE RELATIONS (already defined above with Ticket)
-
-// 5. NOTIFICATION RELATIONS (already defined above with User)
-
-// 6. SURVEY RELATIONS (already defined above with Ticket)
-
-// ==================== ADDITIONAL RELATIONS FOR QUERY OPTIMIZATION ====================
-
-// Counter can have multiple services (through JSON field, not a real relation)
-// This is for query purposes only
+// Counter can have multiple services (through JSON field)
 Counter.prototype.getServicesList = async function() {
   if (!this.services || this.services.length === 0) {
     return [];
@@ -135,16 +119,31 @@ Counter.prototype.getServicesList = async function() {
   
   return await Service.findAll({
     where: {
-      code: { $in: this.services }
+      name: { $in: this.services }
     }
   });
 };
 
 // Ticket can get estimated service time from its service
 Ticket.prototype.getEstimatedServiceTime = async function() {
-  const service = await this.getService();
+  const service = await this.getTicketService();
   return service ? service.estimated_time : 15;
 };
+
+// ==================== AGENCY RELATIONS ====================
+const Agency = require('./Agency');
+
+// Agency has many Counters
+Agency.hasMany(Counter, {
+  foreignKey: 'agency_id',
+  as: 'agencyCounters'
+});
+
+// Counter belongs to Agency
+Counter.belongsTo(Agency, {
+  foreignKey: 'agency_id',
+  as: 'counterAgency'
+});
 
 // ==================== EXPORT MODELS ====================
 
@@ -155,5 +154,6 @@ module.exports = {
   Service,
   Counter,
   Notification,
-  Survey
+  Survey,
+  Agency  // ← ADD THIS LINE
 };

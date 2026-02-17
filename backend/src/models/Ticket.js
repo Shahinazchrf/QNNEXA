@@ -13,8 +13,8 @@ const Ticket = sequelize.define('Ticket', {
     unique: true
   },
   status: {
-    type: DataTypes.ENUM('pending', 'waiting', 'called', 'serving', 'completed', 'cancelled', 'no_show'),
-    defaultValue: 'pending'
+    type: DataTypes.ENUM('waiting', 'called', 'serving', 'completed', 'cancelled', 'missed', 'no_show'),
+    defaultValue: 'waiting'
   },
   priority: {
     type: DataTypes.ENUM('normal', 'vip', 'urgent', 'disabled', 'elderly', 'pregnant'),
@@ -28,27 +28,47 @@ const Ticket = sequelize.define('Ticket', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
+  actual_service_time: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'Actual service time in minutes'
+  },
   is_vip: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  is_appointment: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'Whether this is a scheduled appointment'
+  },
+  appointment_time: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Scheduled appointment time for VIP clients'
   },
   called_at: {
     type: DataTypes.DATE,
     allowNull: true
   },
-  served_at: {
+  serving_started_at: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    comment: 'When service actually started'
   },
   completed_at: {
     type: DataTypes.DATE,
     allowNull: true
   },
+  missed_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'When ticket was marked as missed'
+  },
   cancellation_reason: {
     type: DataTypes.STRING(255),
     allowNull: true
   },
-  // FOREIGN KEYS (Add these)
   client_id: {
     type: DataTypes.UUID,
     allowNull: true,
@@ -80,10 +100,57 @@ const Ticket = sequelize.define('Ticket', {
       model: 'users',
       key: 'id'
     }
+  },
+  has_survey: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  vip_code_used: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'VIP code used for priority'
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  transferred_from: {
+    type: DataTypes.STRING(20),
+    allowNull: true
   }
 }, {
   tableName: 'tickets',
-  timestamps: true
+  timestamps: true,
+  paranoid: false,
+  indexes: [
+    {
+      fields: ['ticket_number']
+    },
+    {
+      fields: ['status']
+    },
+    {
+      fields: ['priority']
+    },
+    {
+      fields: ['client_id']
+    },
+    {
+      fields: ['service_id']
+    },
+    {
+      fields: ['counter_id']
+    },
+    {
+      fields: ['is_vip']
+    },
+    {
+      fields: ['is_appointment']
+    },
+    {
+      fields: ['appointment_time']
+    }
+  ]
 });
 
 module.exports = Ticket;

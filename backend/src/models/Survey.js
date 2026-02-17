@@ -7,9 +7,22 @@ const Survey = sequelize.define('Survey', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
+  ticket_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    unique: true,
+    references: {
+      model: 'tickets',
+      key: 'id'
+    }
+  },
   rating: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true,
+    validate: {
+      min: 1,
+      max: 5
+    }
   },
   comments: {
     type: DataTypes.TEXT,
@@ -17,7 +30,9 @@ const Survey = sequelize.define('Survey', {
   }
 }, {
   tableName: 'surveys',
-  timestamps: true
+  timestamps: true,
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 });
 
 module.exports = Survey;

@@ -1,7 +1,7 @@
-// Get sequelize from database config
+// models/User.js
+const { DataTypes } = require('sequelize');
 const database = require('../config/database');
 const sequelize = database.sequelize;
-const { DataTypes } = require('sequelize');
 
 const User = sequelize.define('User', {
   id: {
@@ -34,12 +34,37 @@ const User = sequelize.define('User', {
     allowNull: true
   },
   role: {
-    type: DataTypes.ENUM('super_admin', 'admin', 'employee', 'client'),
+    type: DataTypes.ENUM('super_admin', 'admin', 'employee', 'client', 'vip_client'), // ADDED 'vip_client'
     defaultValue: 'client'
   },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  is_vip: {  // ADD THIS
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  vip_tier: {  // ADD THIS
+    type: DataTypes.ENUM('bronze', 'silver', 'gold', 'platinum'),
+    allowNull: true
+  },
+  vip_since: {  // ADD THIS
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  vip_code: {  // ADD THIS
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    unique: true
+  },
+  max_appointments_per_week: {  // ADD THIS
+    type: DataTypes.INTEGER,
+    defaultValue: 3,
+    validate: {
+      min: 1,
+      max: 10
+    }
   },
   last_login: {
     type: DataTypes.DATE,

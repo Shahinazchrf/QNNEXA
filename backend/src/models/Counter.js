@@ -85,6 +85,15 @@ const Counter = sequelize.define('Counter', {
     allowNull: true,
     comment: 'When the counter was closed'
   },
+agency_id: {
+  type: DataTypes.UUID,
+  allowNull: true,
+  references: {
+    model: 'agencies',
+    key: 'id'
+  },
+  comment: 'Agency this counter belongs to'
+},
   notes: {
     type: DataTypes.TEXT,
     allowNull: true,

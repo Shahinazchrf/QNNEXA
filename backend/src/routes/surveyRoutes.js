@@ -1,17 +1,35 @@
 const express = require('express');
 const router = express.Router();
 const surveyController = require('../controllers/surveyController');
-const { authMiddleware } = require('../middlewares/auth');
-const { requireAdmin } = require('../middlewares/roles');
+const { authMiddleware, requireEmployee, requireAdmin } = require('../middlewares/auth');
 
-// Submit survey (public for clients, protected for others)
-router.post('/submit', authMiddleware, surveyController.submitSurvey);
+// ==================== PUBLIC ROUTES ====================
 
-// View surveys (authenticated)
+// Submit satisfaction survey (Public - no auth required)
+// POST /api/survey/submit
+router.post('/submit', surveyController.submitSurvey);
+
+// ==================== AUTHENTICATED ROUTES ====================
 router.use(authMiddleware);
 
-router.get('/', surveyController.getAllSurveys);
-router.get('/stats', surveyController.getSurveyStats);
-router.get('/:id', surveyController.getSurveyById);
+// Get survey by ticket ID
+// GET /api/survey/ticket/:ticketId
+router.get('/ticket/:ticketId', surveyController.getSurveyByTicket);
+
+// ==================== EMPLOYEE ROUTES ====================
+
+// Get survey statistics for counter admin
+// GET /api/survey/stats
+router.get('/stats', requireEmployee, surveyController.getSurveyStats);
+
+// ==================== ADMIN ROUTES ====================
+
+// Get surveys for admin dashboard
+// GET /api/survey/dashboard
+router.get('/dashboard', requireAdmin, surveyController.getSurveysForDashboard);
+
+// Get all surveys with pagination (admin only)
+// GET /api/survey/all
+router.get('/all', requireAdmin, surveyController.getAllSurveys);
 
 module.exports = router;

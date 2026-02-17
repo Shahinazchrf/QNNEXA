@@ -36,7 +36,7 @@ app.get('/health', (req, res) => {
 });
 
 // Generate ticket
-app.post('/api/tickets/generate', async (req, res) => {
+app.post('/api/ticketgenerates/', async (req, res) => {
     try {
         const { serviceCode, customerName, vipCode } = req.body;
         
