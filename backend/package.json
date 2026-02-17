@@ -1,5 +1,5 @@
 {
-  "name": "bank-queue-system",
+  "name": "backend",
   "version": "1.0.0",
   "description": "Système de gestion de file d'attente bancaire",
   "main": "src/server.js",
@@ -11,7 +11,12 @@
     "test:step3": "jest tests/step3-vip.test.js",
     "test:step4": "jest tests/step4-counter-admin.test.js",
     "test:step5": "jest tests/step5-security.test.js",
-    "dev": "nodemon server.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "server": "node src/server.js",
+    "update-schema": "node scripts/update-all-schemas.js",
+    "seed": "node src/scripts/seed-now.js",
+    "init-db": "node src/scripts/init-db.js"
   },
   "dependencies": {
     "axios": "^1.6.0",

@@ -1,3 +1,4 @@
+// models/Service.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
@@ -7,14 +8,10 @@ const Service = sequelize.define('Service', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  code: {
+  name: {  // CHANGE FROM 'code' TO 'name'
     type: DataTypes.STRING(10),
     allowNull: false,
     unique: true
-  },
-  name: {
-    type: DataTypes.STRING(100),
-    allowNull: false
   },
   description: {
     type: DataTypes.TEXT,
@@ -27,12 +24,21 @@ const Service = sequelize.define('Service', {
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  max_daily_tickets: {  // ADD THIS - from your database
+    type: DataTypes.INTEGER,
+    defaultValue: 50
   }
 }, {
   tableName: 'services',
   timestamps: true
 });
+
 Service.associate = (models) => {
-  Service.hasMany(models.Ticket, { foreignKey: 'service_id' });
+  Service.hasMany(models.Ticket, { 
+    foreignKey: 'service_id',
+    as: 'serviceTickets' 
+  });
 };
+
 module.exports = Service;

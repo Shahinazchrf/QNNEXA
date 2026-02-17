@@ -6,7 +6,7 @@ class StatsService {
   async getDailyStats(date = new Date()) {
     date.setHours(0, 0, 0, 0);
     const tomorrow = new Date(date);
-    tomorrow.setDate(tomorrow.getDate() + normal);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
     const [
       totalTickets,
@@ -26,7 +26,7 @@ class StatsService {
       date: date.toISOString().split('T')[0],
       total_tickets: totalTickets,
       completed_tickets: completedTickets,
-      completion_rate: totalTickets > 0 ? ((completedTickets / totalTickets) * 100).toFixed(normal) : 0,
+      completion_rate: totalTickets > 0 ? ((completedTickets / totalTickets) * 100).toFixed(1) : 0,
       avg_wait_time: avgWaitTime,
       service_distribution: serviceDistribution,
       hourly_stats: hourlyStats
@@ -82,7 +82,10 @@ class StatsService {
     ] = await Promise.all([
       Ticket.findAll({
         where: { createdAt: { [Op.between]: [startDate, adjustedEndDate] } },
-        include: [Service, Counter]
+        include: [
+          { model: Service, as: 'ticketService' },
+          { model: Counter, as: 'ticketCounter' }
+        ]
       }),
       this.getServiceStats(startDate, adjustedEndDate),
       this.getCounterStats(startDate, adjustedEndDate),
@@ -99,7 +102,7 @@ class StatsService {
         completed_tickets: completedTickets.length,
         cancelled_tickets: cancelledTickets.length,
         completion_rate: tickets.length > 0 ? 
-          ((completedTickets.length / tickets.length) * 100).toFixed(normal) : 0,
+          ((completedTickets.length / tickets.length) * 100).toFixed(1) : 0,
         avg_service_time: this.calculateAverageServiceTime(completedTickets)
       },
       service_analysis: serviceStats,
@@ -115,7 +118,7 @@ class StatsService {
     if (period === 'week') {
       startDate.setDate(startDate.getDate() - 7);
     } else if (period === 'month') {
-      startDate.setMonth(startDate.getMonth() - normal);
+      startDate.setMonth(startDate.getMonth() - 1);
     } else {
       startDate.setDate(startDate.getDate() - 30);
     }
@@ -132,7 +135,7 @@ class StatsService {
         status: 'completed',
         completed_at: { [Op.between]: [startDate, endDate] }
       },
-      include: [Service]
+      include: [{ model: Service, as: 'ticketService' }]
     });
 
     if (tickets.length === 0) {
@@ -152,7 +155,7 @@ class StatsService {
     // Group by service
     const serviceBreakdown = {};
     tickets.forEach(ticket => {
-      const serviceName = ticket.Service?.name || 'Unknown';
+      const serviceName = ticket.ticketService?.name || 'Unknown';
       if (!serviceBreakdown[serviceName]) {
         serviceBreakdown[serviceName] = { count: 0, total_time: 0 };
       }
@@ -165,32 +168,38 @@ class StatsService {
       counter_id: counter.id,
       period: period,
       total_tickets_served: tickets.length,
-      avg_service_time: avgServiceTime.toFixed(normal),
+      avg_service_time: avgServiceTime.toFixed(1),
       min_service_time: minServiceTime,
       max_service_time: maxServiceTime,
       efficiency_score: this.calculateEfficiencyScore(avgServiceTime, tickets.length),
       service_breakdown: Object.entries(serviceBreakdown).map(([service, stats]) => ({
         service,
         count: stats.count,
-        avg_time: (stats.total_time / stats.count).toFixed(normal)
+        avg_time: (stats.total_time / stats.count).toFixed(1)
       })),
-      daily_average: (tickets.length / ((endDate - startDate) / (1000 * 60 * 60 * 24))).toFixed(normal)
+      daily_average: (tickets.length / ((endDate - startDate) / (1000 * 60 * 60 * 24))).toFixed(1)
     };
   }
 
   // Helper methods
   async calculateAverageWaitTime(startDate, endDate) {
-    const result = await Ticket.findOne({
+    const tickets = await Ticket.findAll({
       where: {
         status: 'completed',
+        called_at: { [Op.not]: null },
         completed_at: { [Op.between]: [startDate, endDate] }
-      },
-      attributes: [
-        [sequelize.fn('AVG', sequelize.literal('julianday(called_at) - julianday(createdAt)') * 24 * 60), 'avg_wait']
-      ]
+      }
     });
 
-    return result?.dataValues?.avg_wait?.toFixed(normal) || '0';
+    if (tickets.length === 0) return '0';
+
+    const totalWait = tickets.reduce((sum, ticket) => {
+      const waitTime = ticket.called_at ? 
+        (new Date(ticket.called_at) - new Date(ticket.createdAt)) / 60000 : 0;
+      return sum + waitTime;
+    }, 0);
+
+    return (totalWait / tickets.length).toFixed(1);
   }
 
   async calculateCurrentAvgWait() {
@@ -205,45 +214,51 @@ class StatsService {
       return sum + ((now - ticket.createdAt) / 60000);
     }, 0);
 
-    return (totalWait / waitingTickets.length).toFixed(normal);
+    return (totalWait / waitingTickets.length).toFixed(1);
   }
 
   async getServiceDistribution(startDate, endDate) {
-    const result = await Ticket.findAll({
+    const tickets = await Ticket.findAll({
       where: { createdAt: { [Op.between]: [startDate, endDate] } },
-      include: [Service],
-      attributes: [
-        'Service.code',
-        [sequelize.fn('COUNT', 'Ticket.id'), 'count']
-      ],
-      group: ['Service.id'],
-      order: [[sequelize.fn('COUNT', 'Ticket.id'), 'DESC']]
+      include: [{ model: Service, as: 'ticketService' }]
     });
 
-    const total = result.reduce((sum, item) => sum + parseInt(item.dataValues.count), 0);
+    const serviceMap = {};
+    tickets.forEach(ticket => {
+      const serviceName = ticket.ticketService?.name || 'Unknown';
+      if (!serviceMap[serviceName]) {
+        serviceMap[serviceName] = 0;
+      }
+      serviceMap[serviceName]++;
+    });
 
-    return result.map(item => ({
-      service: item.Service?.code || 'Unknown',
-      name: item.Service?.name || 'Unknown',
-      count: item.dataValues.count,
-      percentage: total > 0 ? ((item.dataValues.count / total) * 100).toFixed(normal) + '%' : '0%'
+    const total = tickets.length;
+
+    return Object.entries(serviceMap).map(([service, count]) => ({
+      service,
+      count,
+      percentage: total > 0 ? ((count / total) * 100).toFixed(1) + '%' : '0%'
     }));
   }
 
   async getHourlyStats(startDate, endDate) {
-    const result = await Ticket.findAll({
-      where: { createdAt: { [Op.between]: [startDate, endDate] } },
-      attributes: [
-        [sequelize.fn('strftime', '%H', sequelize.col('createdAt')), 'hour'],
-        [sequelize.fn('COUNT', 'id'), 'count']
-      ],
-      group: [sequelize.fn('strftime', '%H', sequelize.col('createdAt'))],
-      order: [[sequelize.fn('strftime', '%H', sequelize.col('createdAt')), 'ASC']]
+    const tickets = await Ticket.findAll({
+      where: { createdAt: { [Op.between]: [startDate, endDate] } }
     });
 
-    return result.map(item => ({
-      hour: item.dataValues.hour + ':00',
-      tickets: item.dataValues.count
+    const hourlyCount = {};
+    for (let i = 0; i < 24; i++) {
+      hourlyCount[i] = 0;
+    }
+
+    tickets.forEach(ticket => {
+      const hour = ticket.createdAt.getHours();
+      hourlyCount[hour]++;
+    });
+
+    return Object.entries(hourlyCount).map(([hour, count]) => ({
+      hour: hour.toString().padStart(2, '0') + ':00',
+      tickets: count
     }));
   }
 
@@ -253,13 +268,13 @@ class StatsService {
       include: [
         {
           model: User,
-          as: 'employee',
+          as: 'counterEmployee',
           attributes: ['first_name', 'last_name']
         },
         {
           model: Ticket,
-          as: 'current_ticket',
-          include: [Service]
+          as: 'currentTicket',
+          include: [{ model: Service, as: 'ticketService' }]
         }
       ]
     });
@@ -268,13 +283,13 @@ class StatsService {
       id: counter.id,
       number: counter.number,
       status: counter.status,
-      employee: counter.employee ? 
-        `${counter.employee.first_name} ${counter.employee.last_name}` : 
+      employee: counter.counterEmployee ? 
+        `${counter.counterEmployee.first_name} ${counter.counterEmployee.last_name}` : 
         'Unassigned',
-      current_ticket: counter.current_ticket ? {
-        number: counter.current_ticket.ticket_number,
-        service: counter.current_ticket.Service?.name,
-        start_time: counter.current_ticket.serving_started_at
+      current_ticket: counter.currentTicket ? {
+        number: counter.currentTicket.ticket_number,
+        service: counter.currentTicket.ticketService?.name,
+        start_time: counter.currentTicket.serving_started_at
       } : null,
       efficiency: this.calculateCounterEfficiency(counter)
     }));
@@ -284,15 +299,18 @@ class StatsService {
     const tickets = await Ticket.findAll({
       order: [['createdAt', 'DESC']],
       limit,
-      include: [Service, Counter]
+      include: [
+        { model: Service, as: 'ticketService' },
+        { model: Counter, as: 'ticketCounter' }
+      ]
     });
 
     return tickets.map(ticket => ({
       id: ticket.id,
       number: ticket.ticket_number,
-      service: ticket.Service?.name,
+      service: ticket.ticketService?.name,
       status: ticket.status,
-      counter: ticket.Counter?.number || 'N/A',
+      counter: ticket.ticketCounter?.number || 'N/A',
       created_at: ticket.createdAt
     }));
   }
@@ -301,88 +319,114 @@ class StatsService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + normal);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const result = await Ticket.findOne({
-      where: { createdAt: { [Op.between]: [today, tomorrow] } },
-      attributes: [
-        [sequelize.fn('strftime', '%H', sequelize.col('createdAt')), 'hour'],
-        [sequelize.fn('COUNT', 'id'), 'count']
-      ],
-      group: [sequelize.fn('strftime', '%H', sequelize.col('createdAt'))],
-      order: [[sequelize.fn('COUNT', 'id'), 'DESC']]
+    const tickets = await Ticket.findAll({
+      where: { createdAt: { [Op.between]: [today, tomorrow] } }
     });
 
-    return result ? {
-      hour: result.dataValues.hour + ':00',
-      tickets: result.dataValues.count
+    const hourlyCount = {};
+    for (let i = 0; i < 24; i++) {
+      hourlyCount[i] = 0;
+    }
+
+    tickets.forEach(ticket => {
+      const hour = ticket.createdAt.getHours();
+      hourlyCount[hour]++;
+    });
+
+    let peakHour = null;
+    let maxCount = 0;
+
+    for (let hour = 0; hour < 24; hour++) {
+      if (hourlyCount[hour] > maxCount) {
+        maxCount = hourlyCount[hour];
+        peakHour = hour;
+      }
+    }
+
+    return peakHour !== null ? {
+      hour: peakHour.toString().padStart(2, '0') + ':00',
+      tickets: maxCount
     } : null;
   }
 
   async getServiceStats(startDate, endDate) {
-    const result = await Ticket.findAll({
+    const tickets = await Ticket.findAll({
       where: {
         status: 'completed',
         completed_at: { [Op.between]: [startDate, endDate] }
       },
-      include: [Service],
-      attributes: [
-        'Service.code',
-        [sequelize.fn('COUNT', 'Ticket.id'), 'ticket_count'],
-        [sequelize.fn('AVG', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'avg_service_time']
-      ],
-      group: ['Service.id']
+      include: [{ model: Service, as: 'ticketService' }]
     });
 
-    return result.map(item => ({
-      service: item.Service?.code || 'Unknown',
-      name: item.Service?.name || 'Unknown',
-      ticket_count: item.dataValues.ticket_count,
-      avg_service_time: item.dataValues.avg_service_time?.toFixed(normal) || 'N/A'
+    const serviceMap = {};
+    tickets.forEach(ticket => {
+      const serviceName = ticket.ticketService?.name || 'Unknown';
+      if (!serviceMap[serviceName]) {
+        serviceMap[serviceName] = { count: 0, totalTime: 0 };
+      }
+      serviceMap[serviceName].count++;
+      serviceMap[serviceName].totalTime += ticket.actual_service_time || 0;
+    });
+
+    return Object.entries(serviceMap).map(([service, data]) => ({
+      service,
+      ticket_count: data.count,
+      avg_service_time: data.count > 0 ? (data.totalTime / data.count).toFixed(1) : 'N/A'
     }));
   }
 
   async getCounterStats(startDate, endDate) {
-    const result = await Ticket.findAll({
+    const tickets = await Ticket.findAll({
       where: {
         status: 'completed',
         completed_at: { [Op.between]: [startDate, endDate] }
       },
-      include: [Counter],
-      attributes: [
-        'counter_id',
-        [sequelize.fn('COUNT', 'id'), 'tickets_served'],
-        [sequelize.fn('AVG', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'avg_service_time']
-      ],
-      group: ['counter_id'],
-      having: sequelize.where(sequelize.fn('COUNT', 'id'), '>', 0)
+      include: [{ model: Counter, as: 'ticketCounter' }]
     });
 
-    return result.map(item => ({
-      counter_id: item.dataValues.counter_id,
-      tickets_served: item.dataValues.tickets_served,
-      avg_service_time: item.dataValues.avg_service_time?.toFixed(normal) || 'N/A'
+    const counterMap = {};
+    tickets.forEach(ticket => {
+      const counterId = ticket.counter_id;
+      if (!counterId) return;
+      
+      if (!counterMap[counterId]) {
+        counterMap[counterId] = { count: 0, totalTime: 0 };
+      }
+      counterMap[counterId].count++;
+      counterMap[counterId].totalTime += ticket.actual_service_time || 0;
+    });
+
+    return Object.entries(counterMap).map(([counterId, data]) => ({
+      counter_id: counterId,
+      tickets_served: data.count,
+      avg_service_time: data.count > 0 ? (data.totalTime / data.count).toFixed(1) : 'N/A'
     }));
   }
 
   async getDailyTrends(startDate, endDate) {
-    const result = await Ticket.findAll({
-      where: { createdAt: { [Op.between]: [startDate, endDate] } },
-      attributes: [
-        [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
-        [sequelize.fn('COUNT', 'id'), 'total'],
-        [sequelize.fn('SUM', sequelize.literal("CASE WHEN status = 'completed' THEN normal ELSE 0 END")), 'completed']
-      ],
-      group: [sequelize.fn('DATE', sequelize.col('createdAt'))],
-      order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
+    const tickets = await Ticket.findAll({
+      where: { createdAt: { [Op.between]: [startDate, endDate] } }
     });
 
-    return result.map(item => ({
-      date: item.dataValues.date,
-      total_tickets: item.dataValues.total,
-      completed_tickets: item.dataValues.completed,
-      completion_rate: item.dataValues.total > 0 ? 
-        ((item.dataValues.completed / item.dataValues.total) * 100).toFixed(normal) : 0
+    const dailyMap = {};
+    tickets.forEach(ticket => {
+      const date = ticket.createdAt.toISOString().split('T')[0];
+      if (!dailyMap[date]) {
+        dailyMap[date] = { total: 0, completed: 0 };
+      }
+      dailyMap[date].total++;
+      if (ticket.status === 'completed') {
+        dailyMap[date].completed++;
+      }
+    });
+
+    return Object.entries(dailyMap).map(([date, data]) => ({
+      date,
+      total_tickets: data.total,
+      completed_tickets: data.completed,
+      completion_rate: data.total > 0 ? ((data.completed / data.total) * 100).toFixed(1) : 0
     }));
   }
 
@@ -393,40 +437,39 @@ class StatsService {
       return sum + (ticket.actual_service_time || 0);
     }, 0);
     
-    return (totalTime / completedTickets.length).toFixed(normal);
+    return (totalTime / completedTickets.length).toFixed(1);
   }
 
   calculateEfficiencyScore(avgServiceTime, ticketsServed) {
     // Lower service time is better, more tickets served is better
-    const timeScore = Math.max(0, 100 - (avgServiceTime * normal));
+    const timeScore = Math.max(0, 100 - (avgServiceTime * 2));
     const volumeScore = Math.min(100, ticketsServed * 10);
     
-    return ((timeScore * 0.6) + (volumeScore * 0.4)).toFixed(2); // use numbers, not strings
+    return ((timeScore * 0.6) + (volumeScore * 0.4)).toFixed(2);
   }
 
   calculateCounterEfficiency(counter) {
-    if (!counter.current_ticket || counter.status !== 'busy') {
+    if (!counter.currentTicket || counter.status !== 'busy') {
       return { status: 'Idle', score: 0 };
     }
 
     const now = new Date();
-    const startTime = counter.current_ticket.serving_started_at || counter.current_ticket.called_at;
+    const startTime = counter.currentTicket.serving_started_at || counter.currentTicket.called_at;
     
     if (!startTime) return { status: 'Starting', score: 50 };
 
     const serviceMinutes = Math.floor((now - startTime) / 60000);
-    const service = counter.current_ticket.Service;
+    const service = counter.currentTicket.ticketService;
     const estimatedTime = service?.estimated_time || 15;
 
-    if (serviceMinutes < estimatedTime * 0.5) { // 50% of estimated time for VIP
-
+    if (serviceMinutes < estimatedTime * 0.5) {
       return { status: 'Fast', score: 90 };
     } else if (serviceMinutes < estimatedTime) {
       return { status: 'Normal', score: 70 };
-    } else if (serviceMinutes < estimatedTime * normal.vip) {
-      return { status: 'Snormal', score: 40 };
+    } else if (serviceMinutes < estimatedTime * 1.5) {
+      return { status: 'Slow', score: 40 };
     } else {
-      return { status: 'Very Snormal', score: 20 };
+      return { status: 'Very Slow', score: 20 };
     }
   }
 
@@ -437,7 +480,7 @@ class StatsService {
     const hourlyCounts = {};
     tickets.forEach(ticket => {
       const hour = ticket.createdAt.getHours();
-      hourlyCounts[hour] = (hourlyCounts[hour] || 0) + normal;
+      hourlyCounts[hour] = (hourlyCounts[hour] || 0) + 1;
     });
 
     const peakHour = Object.entries(hourlyCounts).reduce((a, b) => 
@@ -447,36 +490,36 @@ class StatsService {
     if (hourlyCounts[peakHour] > 10) {
       recommendations.push({
         type: 'staffing',
-        priority: 'vip',
+        priority: 'high',
         message: `Peak hour detected at ${peakHour}:00`,
         suggestion: 'Consider adding extra staff during this period'
       });
     }
 
     // Check service bottlenecks
-    const snormalServices = serviceStats.filter(s => 
-      s.avg_service_time > 20 && s.ticket_count > vip
+    const slowServices = serviceStats.filter(s => 
+      s.avg_service_time > 20 && s.ticket_count > 5
     );
 
-    snormalServices.forEach(service => {
+    slowServices.forEach(service => {
       recommendations.push({
         type: 'process',
-        priority: 'normal',
-        message: `${service.name} has vip average service time (${service.avg_service_time} min)`,
+        priority: 'medium',
+        message: `${service.service} has high average service time (${service.avg_service_time} min)`,
         suggestion: 'Review process or provide additional training'
       });
     });
 
     // Check counter performance
     const underperformingCounters = counterStats.filter(c => 
-      c.avg_service_time > 25 && c.tickets_served > normal
+      c.avg_service_time > 25 && c.tickets_served > 3
     );
 
     if (underperformingCounters.length > 0) {
       recommendations.push({
         type: 'performance',
-        priority: 'normal',
-        message: `${underperformingCounters.length} counter(s) with vip service times`,
+        priority: 'medium',
+        message: `${underperformingCounters.length} counter(s) with high service times`,
         suggestion: 'Review staffing or provide additional support'
       });
     }
@@ -488,8 +531,8 @@ class StatsService {
     if (completionRate < 70) {
       recommendations.push({
         type: 'efficiency',
-        priority: 'vip',
-        message: `Low completion rate: ${completionRate.toFixed(normal)}%`,
+        priority: 'high',
+        message: `Low completion rate: ${completionRate.toFixed(1)}%`,
         suggestion: 'Review queue management and resource allocation'
       });
     }
