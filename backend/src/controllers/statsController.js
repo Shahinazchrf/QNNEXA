@@ -30,17 +30,17 @@ const statsController = {
           order: [[sequelize.fn('strftime', '%H', sequelize.col('createdAt')), 'ASC']]
         }),
 
-        // Service distribution
+        // Service distribution - FIXED: Changed from 'Service.code' to 'Service.name'
         Ticket.findAll({
           where: {
             createdAt: { [Op.between]: [today, tomorrow] }
           },
-          include: [Service],
+          include: [{ model: Service, as: 'ticketService' }], // FIXED: Added alias
           attributes: [
-            'Service.code',
+            'ticketService.name', // FIXED: Changed from 'Service.code' to 'ticketService.name'
             [sequelize.fn('COUNT', 'Ticket.id'), 'count']
           ],
-          group: ['Service.id'],
+          group: ['ticketService.id'], // FIXED: Changed group by alias
           order: [[sequelize.fn('COUNT', 'Ticket.id'), 'DESC']]
         }),
 
@@ -70,13 +70,13 @@ const statsController = {
             status: 'completed',
             completed_at: { [Op.between]: [today, tomorrow] }
           },
-          include: [Counter],
+          include: [{ model: Counter, as: 'ticketCounter' }], // FIXED: Added alias
           attributes: [
             'counter_id',
             [sequelize.fn('AVG', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'avg_time'],
             [sequelize.fn('COUNT', 'id'), 'ticket_count']
           ],
-          group: ['counter_id'],
+          group: ['ticketCounter.id'], // FIXED: Changed group by alias
           having: sequelize.where(sequelize.fn('COUNT', 'id'), '>', 0)
         })
       ]);
@@ -103,8 +103,9 @@ const statsController = {
             hour: h.dataValues.hour + ':00',
             tickets: h.dataValues.count
           })),
+          // FIXED: Changed from 'Service?.code' to 'ticketService?.name'
           service_breakdown: serviceDistribution.map(s => ({
-            service: s.Service?.code || 'Unknown',
+            service: s.ticketService?.name || 'Unknown', // FIXED: Changed from s.Service?.code
             count: s.dataValues.count,
             percentage: totalTickets > 0 ? ((s.dataValues.count / totalTickets) * 100).toFixed(1) + '%' : '0%'
           })),
@@ -167,18 +168,18 @@ const statsController = {
           order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
         }),
 
-        // Service trends
+        // Service trends - FIXED: Changed from 'Service.code' to 'ticketService.name'
         Ticket.findAll({
           where: {
             createdAt: { [Op.between]: [startDate, endDate] }
           },
-          include: [Service],
+          include: [{ model: Service, as: 'ticketService' }], // FIXED: Added alias
           attributes: [
-            'Service.code',
+            'ticketService.name', // FIXED: Changed from 'Service.code'
             [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
             [sequelize.fn('COUNT', 'Ticket.id'), 'count']
           ],
-          group: ['Service.id', sequelize.fn('DATE', sequelize.col('createdAt'))],
+          group: ['ticketService.id', sequelize.fn('DATE', sequelize.col('createdAt'))], // FIXED: Changed group by alias
           order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']]
         }),
 
@@ -190,9 +191,10 @@ const statsController = {
           },
           include: [{
             model: Counter,
+            as: 'ticketCounter', // FIXED: Added alias
             include: [{
               model: User,
-              as: 'employee',
+              as: 'counterEmployee', // FIXED: Added alias
               attributes: ['first_name', 'last_name']
             }]
           }],
@@ -203,7 +205,7 @@ const statsController = {
             [sequelize.fn('MIN', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'min_service_time'],
             [sequelize.fn('MAX', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'max_service_time']
           ],
-          group: ['counter_id'],
+          group: ['ticketCounter.id'], // FIXED: Changed group by alias
           having: sequelize.where(sequelize.fn('COUNT', 'id'), '>', 0),
           order: [[sequelize.fn('AVG', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'ASC']]
         }),
@@ -269,19 +271,21 @@ const statsController = {
             completed: d.dataValues.completed,
             avg_service_time: d.dataValues.avg_service_time?.toFixed(1) || 'N/A'
           })),
+          // FIXED: Changed from 'Service?.code' to 'ticketService?.name'
           service_analysis: serviceTrends.reduce((acc, curr) => {
-            const serviceCode = curr.Service?.code || 'Unknown';
-            if (!acc[serviceCode]) acc[serviceCode] = [];
-            acc[serviceCode].push({
+            const serviceName = curr.ticketService?.name || 'Unknown'; // FIXED: Changed from curr.Service?.code
+            if (!acc[serviceName]) acc[serviceName] = [];
+            acc[serviceName].push({
               date: curr.dataValues.date,
               count: curr.dataValues.count
             });
             return acc;
           }, {}),
+          // FIXED: Changed Counter references to use aliases
           employee_performance: employeePerformance.map(e => ({
-            counter: e.Counter?.number || 'N/A',
-            employee: e.Counter?.employee ? 
-              `${e.Counter.employee.first_name} ${e.Counter.employee.last_name}` : 
+            counter: e.ticketCounter?.number || 'N/A', // FIXED: Changed from e.Counter?.number
+            employee: e.ticketCounter?.counterEmployee ? 
+              `${e.ticketCounter.counterEmployee.first_name} ${e.ticketCounter.counterEmployee.last_name}` : 
               'Unassigned',
             tickets_served: e.dataValues.tickets_served,
             avg_service_time: e.dataValues.avg_service_time?.toFixed(1) + ' min' || 'N/A',
@@ -324,7 +328,7 @@ const statsController = {
         // Current queue
         Ticket.findAll({
           where: { status: 'waiting' },
-          include: [Service],
+          include: [{ model: Service, as: 'ticketService' }], // FIXED: Added alias
           order: [['createdAt', 'ASC']],
           limit: 20
         }),
@@ -341,7 +345,7 @@ const statsController = {
           where: { is_active: true },
           include: [{
             model: Ticket,
-            as: 'tickets',
+            as: 'serviceTickets', // FIXED: Added alias
             where: { status: 'waiting' },
             required: false
           }]
@@ -352,11 +356,11 @@ const statsController = {
           where: { is_active: true },
           include: [{
             model: Ticket,
-            as: 'current_ticket',
-            include: [Service]
+            as: 'currentTicket', // FIXED: Changed from 'current_ticket' to 'currentTicket'
+            include: [{ model: Service, as: 'ticketService' }] // FIXED: Added alias
           }, {
             model: User,
-            as: 'employee',
+            as: 'counterEmployee', // FIXED: Changed from 'employee' to 'counterEmployee'
             attributes: ['first_name', 'last_name']
           }],
           order: [['number', 'ASC']]
@@ -366,7 +370,10 @@ const statsController = {
         Ticket.findAll({
           order: [['createdAt', 'DESC']],
           limit: 10,
-          include: [Service, Counter]
+          include: [
+            { model: Service, as: 'ticketService' }, // FIXED: Added alias
+            { model: Counter, as: 'ticketCounter' } // FIXED: Added alias
+          ]
         })
       ]);
 
@@ -397,41 +404,43 @@ const statsController = {
           },
           hourly_rate: {
             tickets_last_hour: hourlyRate,
-            estimated_daily: hourlyRate * 8, // Assuming 8-hour day
+            estimated_daily: hourlyRate * 8,
             trend: hourlyRate > 20 ? 'High' : hourlyRate > 10 ? 'Medium' : 'Low'
           },
+          // FIXED: Changed from 'service.code' to 'service.name'
           service_wait_times: serviceWaitTimes.map(service => {
-            const waitingCount = service.tickets?.length || 0;
+            const waitingCount = service.serviceTickets?.length || 0;
             const estimatedWait = waitingCount * service.estimated_time;
             
             return {
-              service: service.code,
+              service: service.name, // FIXED: Changed from service.code
               name: service.name,
               waiting: waitingCount,
               estimated_wait: estimatedWait + ' min',
               status: estimatedWait > 30 ? 'Busy' : estimatedWait > 15 ? 'Moderate' : 'Light'
             };
           }),
+          // FIXED: Updated counter references to use aliases
           counters: counterStatus.map(counter => ({
             number: counter.number,
             status: counter.status,
-            employee: counter.employee ? 
-              `${counter.employee.first_name} ${counter.employee.last_name}` : 
+            employee: counter.counterEmployee ? 
+              `${counter.counterEmployee.first_name} ${counter.counterEmployee.last_name}` : 
               'Unassigned',
-            current_ticket: counter.current_ticket ? {
-              number: counter.current_ticket.ticket_number,
-              service: counter.current_ticket.Service?.name,
-              serving_for: counter.current_ticket.serving_started_at ? 
-                Math.floor((now - counter.current_ticket.serving_started_at) / 60000) + ' min' : 
+            current_ticket: counter.currentTicket ? {
+              number: counter.currentTicket.ticket_number,
+              service: counter.currentTicket.ticketService?.name,
+              serving_for: counter.currentTicket.serving_started_at ? 
+                Math.floor((now - counter.currentTicket.serving_started_at) / 60000) + ' min' : 
                 'N/A'
             } : null,
             efficiency: calculateCounterEfficiency(counter)
           })),
           recent_activity: recentActivity.map(activity => ({
             ticket: activity.ticket_number,
-            service: activity.Service?.name,
+            service: activity.ticketService?.name, // FIXED: Changed from activity.Service?.name
             action: activity.status,
-            counter: activity.Counter?.number || 'N/A',
+            counter: activity.ticketCounter?.number || 'N/A', // FIXED: Changed from activity.Counter?.number
             time: activity.createdAt
           })),
           alerts: generateAlerts(currentQueue, counterStatus, avgWaitTime)
@@ -449,19 +458,19 @@ const statsController = {
 
 // Helper functions
 function calculateCounterEfficiency(counter) {
-  if (!counter.current_ticket || counter.status !== 'busy') {
+  if (!counter.currentTicket || counter.status !== 'busy') { // FIXED: Changed from current_ticket to currentTicket
     return { status: 'Idle', score: 0 };
   }
 
   const now = new Date();
-  const startTime = counter.current_ticket.serving_started_at || counter.current_ticket.called_at;
+  const startTime = counter.currentTicket.serving_started_at || counter.currentTicket.called_at; // FIXED: Changed from current_ticket
   
   if (!startTime) {
     return { status: 'Starting', score: 50 };
   }
 
   const serviceMinutes = Math.floor((now - startTime) / 60000);
-  const service = counter.current_ticket.Service;
+  const service = counter.currentTicket.ticketService; // FIXED: Changed from Service
   const estimatedTime = service?.estimated_time || 15;
 
   if (serviceMinutes < estimatedTime * 0.5) {

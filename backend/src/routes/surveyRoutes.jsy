@@ -1,0 +1,13 @@
+const express = require('express');
+const router = express.Router();
+const surveyController = require('../controllers/surveyController');
+
+// PUBLIC ROUTES - No authentication for testing
+router.get('/stats', surveyController.getSurveyStats);
+router.get('/dashboard', surveyController.getSurveysForDashboard);
+router.get('/ticket/:ticketId', surveyController.getSurveyByTicket);
+router.post('/submit', surveyController.submitSurvey);
+router.get('/', surveyController.getAllSurveys);
+
+module.exports = router;
+

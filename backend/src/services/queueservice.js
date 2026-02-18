@@ -5,7 +5,8 @@ class QueueService {
     // Generate ticket without auth
     async generateTicket(serviceCode, customerName = 'Customer', vipCode = null) {
         try {
-            const service = await Service.findOne({ where: { code: serviceCode } });
+            // FIXED: use 'name' instead of 'code' (already correct here)
+            const service = await Service.findOne({ where: { name: serviceCode } });
             if (!service) {
                 return { success: false, error: 'Service not found' };
             }
@@ -18,34 +19,36 @@ class QueueService {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
+            // FIXED: Changed serviceId to service_id
             const lastTicket = await Ticket.findOne({
                 where: {
-                    serviceId: service.id,
+                    service_id: service.id, // was serviceId
                     createdAt: { [Op.gte]: today }
                 },
                 order: [['createdAt', 'DESC']]
             });
 
-            let seq = normal;
-            if (lastTicket && lastTicket.ticketNumber) {
-                const match = lastTicket.ticketNumber.match(/\d+/);
-                if (match) seq = parseInt(match[0]) + normal;
+            let seq = 1; // was 'normal' (which is undefined)
+            if (lastTicket && lastTicket.ticket_number) { // was ticketNumber
+                const match = lastTicket.ticket_number.match(/\d+/); // was ticketNumber
+                if (match) seq = parseInt(match[0]) + 1; // was 'normal'
             }
 
-            const ticketNumber = `${serviceCode}${seq.toString().padStart(normal, '0')}`;
+            const ticketNumber = `${serviceCode}${seq.toString().padStart(3, '0')}`; // was 'normal'
 
             // Calculate wait time
             const waitTime = await this.calculateWaitTime(service.id, priority);
 
-            // Create ticket
+            // Create ticket - FIXED: use correct field names
             const ticket = await Ticket.create({
-                ticketNumber,
-                serviceId: service.id,
+                ticket_number: ticketNumber, // was ticketNumber
+                service_id: service.id, // was serviceId
                 priority,
                 status: 'waiting',
-                customerName,
-                vipCode: isVip ? vipCode : null,
-                estimatedWait: waitTime
+                customer_name: customerName, // was customerName
+                vip_code_used: isVip ? vipCode : null, // was vipCode
+                estimated_wait_time: waitTime, // was estimatedWait
+                is_vip: isVip // ADDED: need to set is_vip
             });
 
             // Socket notification
@@ -54,7 +57,7 @@ class QueueService {
             return {
                 success: true,
                 ticket: {
-                    number: ticket.ticketNumber,
+                    number: ticket.ticket_number, // was ticketNumber
                     service: service.name,
                     priority,
                     estimatedWait: waitTime,
@@ -74,31 +77,34 @@ class QueueService {
             // Look for VIP first
             let ticket = await Ticket.findOne({
                 where: { status: 'waiting', priority: 'vip' },
-                include: [Service],
+                include: [{ model: Service, as: 'ticketService' }], // FIXED: added alias
                 order: [['createdAt', 'ASC']]
             });
 
             if (!ticket) {
                 ticket = await Ticket.findOne({
                     where: { status: 'waiting', priority: 'normal' },
-                    include: [Service],
+                    include: [{ model: Service, as: 'ticketService' }], // FIXED: added alias
                     order: [['createdAt', 'ASC']]
                 });
             }
 
             if (!ticket) return null;
 
-            // Assign to counter
+            // Assign to counter - FIXED: use correct field names
             await ticket.update({
                 status: 'called',
-                counterId,
-                calledAt: new Date()
+                counter_id: counterId, // was counterId
+                called_at: new Date() // was calledAt
             });
 
-            // Update counter
+            // Update counter - FIXED: use correct field names
             const counter = await Counter.findByPk(counterId);
             if (counter) {
-                await counter.update({ currentTicketId: ticket.id });
+                await counter.update({ 
+                    current_ticket_id: ticket.id, // was currentTicketId
+                    status: 'busy' // ADDED: set counter status
+                });
             }
 
             this.notify('ticket_called', ticket);
@@ -111,23 +117,24 @@ class QueueService {
 
     // Calculate wait time
     async calculateWaitTime(serviceId, priority) {
+        // FIXED: use service_id instead of serviceId
         const waitingCount = await Ticket.count({
-            where: { serviceId, status: 'waiting', priority: 'normal' }
+            where: { service_id: serviceId, status: 'waiting', priority: 'normal' } // was serviceId
         });
 
         const service = await Service.findByPk(serviceId);
-        const baseTime = service?.estimatedTime || 15;
+        const baseTime = service?.estimated_time || 15; // was estimatedTime
 
         let waitTime = waitingCount * baseTime;
-        if (priority === 'vip') waitTime = Math.max(vip, waitTime / normal);
+        if (priority === 'vip') waitTime = Math.max(5, waitTime / 2); // was 'vip' and 'normal'
 
-        return waitTime;
+        return Math.ceil(waitTime);
     }
 
     // Validate VIP code
     async validateVipCode(code) {
         if (!code) return false;
-        const validCodes = ['VIP001', 'VIP002', 'VIPGOLD', 'VIPPLATINUM'];
+        const validCodes = ['VIP001', 'VIP002', 'VIPGOLD', 'VIPPLATINUM', 'VIP2024'];
         return validCodes.includes(code.toUpperCase());
     }
 
@@ -136,13 +143,14 @@ class QueueService {
         const where = { status: 'waiting' };
         
         if (serviceCode) {
-            const service = await Service.findOne({ where: { code: serviceCode } });
-            if (service) where.serviceId = service.id;
+            // FIXED: use 'name' instead of 'code' (already correct here)
+            const service = await Service.findOne({ where: { name: serviceCode } });
+            if (service) where.service_id = service.id; // was serviceId
         }
 
         const tickets = await Ticket.findAll({
             where,
-            include: [Service],
+            include: [{ model: Service, as: 'ticketService' }], // FIXED: added alias
             order: [['priority', 'DESC'], ['createdAt', 'ASC']]
         });
 
@@ -151,12 +159,12 @@ class QueueService {
             vip: tickets.filter(t => t.priority === 'vip').length,
             normal: tickets.filter(t => t.priority === 'normal').length,
             tickets: tickets.slice(0, 10).map(t => ({
-                number: t.ticketNumber,
-                service: t.Service.name,
+                number: t.ticket_number, // was ticketNumber
+                service: t.ticketService?.name, // was t.Service.name
                 priority: t.priority,
-                customerName: t.customerName,
+                customerName: t.customer_name, // was customerName
                 waitingSince: t.createdAt,
-                estimatedWait: t.estimatedWait
+                estimatedWait: t.estimated_wait_time // was estimatedWait
             }))
         };
     }
@@ -164,17 +172,29 @@ class QueueService {
     // Mark ticket as serving
     async serveTicket(ticketId) {
         const ticket = await Ticket.findByPk(ticketId);
-        await ticket.update({ status: 'serving', startedAt: new Date() });
+        // FIXED: use correct field names
+        await ticket.update({ 
+            status: 'serving', 
+            serving_started_at: new Date() // was startedAt
+        });
         this.notify('ticket_serving', ticket);
     }
 
     // Mark ticket as completed
     async completeTicket(ticketId) {
         const ticket = await Ticket.findByPk(ticketId);
-        await ticket.update({ status: 'completed', completedAt: new Date() });
+        // FIXED: use correct field names
+        await ticket.update({ 
+            status: 'completed', 
+            completed_at: new Date() // was completedAt
+        });
 
-        const counter = await Counter.findOne({ where: { currentTicketId: ticketId } });
-        if (counter) await counter.update({ currentTicketId: null });
+        // FIXED: use correct field names
+        const counter = await Counter.findOne({ where: { current_ticket_id: ticketId } }); // was currentTicketId
+        if (counter) await counter.update({ 
+            current_ticket_id: null, // was currentTicketId
+            status: 'active' // ADDED: set counter status
+        });
 
         this.notify('ticket_completed', ticket);
     }

@@ -10,7 +10,6 @@ const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const responseTime = require('response-time');
 require('dotenv').config();
 
-const { sequelize } = require('./config/database');
 const { User, Service, Ticket, Counter } = require('./models');
 
 // Import des routes
@@ -19,6 +18,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const notificationScheduler = require('./services/notificationScheduler');
 const vipRoutes = require('./routes/vipRoutes');
 const queueRoutes = require('./routes/queueRoutes');
+const surveyRoutes = require('./routes/surveyRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const authRoutes = require('./routes/authRoutes');
 const counterAdminRoutes = require('./routes/counterAdminRoutes');
@@ -27,8 +27,7 @@ const faqRoutes = require('./routes/faqRoutes');
 const priorityRoutes = require('./routes/priorityRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const { sequelize } = require('./config/database');
-require('dotenv').config();
-
+const surveyRoutes = require('./routes/surveyRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -78,23 +77,16 @@ app.use(cors(corsOptions));
 const createLimiter = (windowMs, max) => rateLimit({
   windowMs,
   max,
-  keyGenerator: ipKeyGenerator,  // <-- UTILISE ipKeyGenerator
+  keyGenerator: ipKeyGenerator,
   message: 'Too many requests'
 });
 
 // Limiteurs différents pour différents types de requêtes
 const limiters = {
-  // API publique - plus permissive
-  publicApi: createLimiter(60 * 1000, 60, 'Too many requests, please try again later'),
-  
-  // API authentifiée - limite standard
-  api: createLimiter(15 * 60 * 1000, 100, 'Too many requests from this IP'),
-  
-  // Création de tickets - très restrictive
-  ticketCreation: createLimiter(60 * 1000, 5, 'Too many ticket creations, please wait'),
-  
-  // Authentification - pour prévenir les attaques par force brute
-  auth: createLimiter(15 * 60 * 1000, 10, 'Too many authentication attempts')
+  publicApi: createLimiter(60 * 1000, 60),
+  api: createLimiter(15 * 60 * 1000, 100),
+  ticketCreation: createLimiter(60 * 1000, 5),
+  auth: createLimiter(15 * 60 * 1000, 10)
 };
 
 // Appliquer les rate limiters
@@ -108,7 +100,7 @@ app.use('/api/', limiters.api);
 // 1. Compression GZIP
 app.use(compression({
   level: 6,
-  threshold: 1024, // Compresser seulement si > 1KB
+  threshold: 1024,
   filter: (req, res) => {
     if (req.headers['x-no-compression']) {
       return false;
@@ -122,14 +114,12 @@ app.use(responseTime((req, res, time) => {
   if (time > 1000) {
     console.warn(`⚠️ Slow request: ${req.method} ${req.path} - ${time}ms`);
   }
-  
-  // Ajouter le temps de réponse dans les headers
   res.setHeader('X-Response-Time', `${time.toFixed(2)}ms`);
 }));
 
 // 3. Body parser avec limites
 app.use(express.json({ 
-  limit: '50kb', // Augmenté pour les formulaires complexes
+  limit: '50kb',
   verify: (req, res, buf) => {
     req.rawBody = buf.toString();
   }
@@ -190,30 +180,13 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/api/tickets', async (req, res) => {
-  try {
-    const tickets = await Ticket.findAll({
-      order: [['createdAt', 'DESC']],
-      limit: 20,
-      include: [{
-        model: Service,
-        as: 'service'  // AJOUTE CETTE LIGNE
-      }]
-    });
-    res.json({ success: true, count: tickets.length, tickets });
-  } catch (error) {
-    console.error('Tickets error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // 🟢 FIX: Allow employee endpoints without token (TESTING ONLY)
 app.use('/api/employee', (req, res, next) => {
   req.user = { id: 'test-employee', role: 'employee' };
   next();
 });
 
-// ==================== ROUTES DE BASE / BASIC ROUTES ====================
+// ==================== ROUTES DE BASE ====================
 app.get('/', (req, res) => {
   res.json({ 
     message: '🏦 Bank Queue Management System API',
@@ -233,7 +206,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check (sans cache)
+// Health check
 app.get('/health', (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.json({ 
@@ -254,7 +227,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Ready check pour load balancers
+// Ready check
 app.get('/ready', async (req, res) => {
   try {
     await sequelize.authenticate();
@@ -293,46 +266,31 @@ app.get('/api/docs', (req, res) => {
 });
 
 // ==================== IMPORT MODELS ====================
-const { User, Service, Ticket, Counter, Survey, Agency } = require('./models');
+const { Survey, Agency } = require('./models');
 const { Op } = require('sequelize');
 
 // ==================== ROUTES D'API ====================
 
-// Routes publiques (sans authentification)
+// Routes publiques
 app.use('/api/public', publicRoutes);
 app.use('/api/faq', faqRoutes);
-app.use('/api/vip', vipRoutes);
-// Routes notifications
 app.use('/api/notifications', require('./routes/notificationRoutes'));
-// Routes avec authentification
 app.use('/api/auth', authRoutes);
 app.use('/api/vip', vipRoutes);
 app.use('/api/employee', employeeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/counter-admin', counterAdminRoutes);
-
-// ==================== USE ROUTES ====================
-app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/priority', priorityRoutes);
 app.use('/api/tickets', ticketRoutes);
-
+app.use('/api/survey', surveyRoutes);
 console.log('✅ Routes loaded:', [
-  '/api/auth',
-  '/api/employee', 
-  '/api/admin',
-  '/api/queue',
-  '/api/stats',
-  '/api/priority',
-  '/api/tickets'
+  '/api/auth', '/api/employee', '/api/admin', '/api/queue',
+  '/api/stats', '/api/priority', '/api/tickets'
 ]);
 
-// ==================== ROUTES DE COMPATIBILITÉ (à migrer progressivement) ====================
-
-// Compatibilité avec l'ancienne API
-const { Op } = require('sequelize');
+// ==================== ROUTES DE COMPATIBILITÉ ====================
 
 // Services (public)
 app.get('/api/services', async (req, res) => {
@@ -342,11 +300,7 @@ app.get('/api/services', async (req, res) => {
       attributes: ['id', 'name', 'description', 'estimated_time'],
       order: [['name', 'ASC']]
     });
-    res.json({ 
-      success: true, 
-      count: services.length,
-      services 
-    });
+    res.json({ success: true, count: services.length, services });
   } catch (error) {
     console.error('Services error:', error);
     res.status(500).json({
@@ -356,7 +310,7 @@ app.get('/api/services', async (req, res) => {
   }
 });
 
-// Counters (public) - Get all counters
+// Counters (public)
 app.get('/api/counters', async (req, res) => {
   try {
     const counters = await Counter.findAll({
@@ -393,7 +347,6 @@ app.get('/api/counters', async (req, res) => {
 app.post('/api/tickets/generate', async (req, res) => {
   try {
     const { serviceCode, customerName } = req.body;
-
     console.log('📝 Creating NORMAL ticket for service:', serviceCode);
 
     const service = await Service.findOne({ 
@@ -559,7 +512,7 @@ app.post('/api/tickets/vip-appointment', async (req, res) => {
         error: 'Service not available'
       });
     }
-    // VIP validation simplifiée
+    
     const isVip = vipCode ? await validateVipCode(vipCode) : false;
     const priority = isVip ? 'vip' : 'normal';
 
@@ -1428,395 +1381,6 @@ app.get('/api/public/faq', (req, res) => {
   });
 });
 
-// ==================== 404 HANDLER ====================
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    success: false,
-    error: 'Route not found',
-    path: req.path,
-    method: req.method,
-    available_endpoints: {
-      root: '/',
-      health: '/health',
-      ready: '/ready',
-      docs: '/api/docs'
-    }
-  });
-});
-
-// ==================== GLOBAL ERROR HANDLER ====================
-app.use((err, req, res, next) => {
-  console.error('🚨 Global error:', {
-    message: err.message,
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
-
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-  // Standardized error response
-  const errorResponse = {
-    success: false,
-    error: isProduction ? 'Internal server error' : err.message,
-    timestamp: new Date().toISOString()
-  };
-
-  // Add details in development
-  if (!isProduction) {
-    errorResponse.stack = err.stack;
-    if (err.details) errorResponse.details = err.details;
-  }
-
-  // Specific error handling
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      error: 'Validation error',
-      details: err.details
-    });
-  }
-
-  if (err.name === 'SequelizeUniqueConstraintError') {
-    return res.status(409).json({
-      success: false,
-      error: 'Duplicate entry',
-      field: err.errors[0]?.path
-    });
-  }
-
-  if (err.name === 'SequelizeDatabaseError') {
-    return res.status(500).json({
-      success: false,
-      error: 'Database error'
-    });
-  }
-
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
-      error: 'Invalid token'
-    });
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      error: 'Token expired'
-    });
-  }
-
-  // Rate limiter error
-  if (err.status === 429) {
-    return res.status(429).json({
-      success: false,
-      error: 'Too many requests'
-    });
-  }
-
-  // Default error
-  const statusCode = err.status || 500;
-  res.status(statusCode).json(errorResponse);
-});
-
-// Get ticket position
-app.get('/api/tickets/:id/position', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const ticket = await Ticket.findOne({
-      where: {
-        [Op.or]: [
-          { id: id },
-          { ticket_number: id }
-        ]
-      }
-    });
-    
-    if (!ticket) {
-      return res.status(404).json({
-        success: false,
-        error: 'Ticket not found'
-      });
-    }
-    
-    if (ticket.status !== 'waiting') {
-      return res.json({
-        success: true,
-        message: `Ticket is ${ticket.status}, not in queue`,
-        position: null,
-        status: ticket.status
-      });
-    }
-    
-    const position = await Ticket.count({
-      where: {
-        service_id: ticket.service_id,
-        status: 'waiting',
-        [Op.or]: [
-          { priority: { [Op.gt]: ticket.priority } },
-          {
-            priority: ticket.priority,
-            createdAt: { [Op.lt]: ticket.createdAt }
-          }
-        ]
-      }
-    }) + 1;
-    
-    const totalInQueue = await Ticket.count({
-      where: {
-        service_id: ticket.service_id,
-        status: 'waiting'
-      }
-    });
-    
-    res.json({
-      success: true,
-      data: {
-        ticket_number: ticket.ticket_number,
-        service_id: ticket.service_id,
-        position: position,
-        total_in_queue: totalInQueue,
-        estimated_wait: position * 10,
-        message: `You are position ${position} in queue`
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Call next ticket
-app.post('/api/tickets/call-next', async (req, res) => {
-  try {
-    const { counterId } = req.body;
-    
-    let nextTicket = await Ticket.findOne({
-      where: { 
-        status: 'waiting'
-      },
-      include: [
-        { model: Service, as: 'ticketService' }
-      ],
-      order: [
-        ['priority', 'DESC'],
-        ['is_appointment', 'DESC'],
-        ['createdAt', 'ASC']
-      ]
-    });
-    
-    if (!nextTicket) {
-      return res.json({
-        success: false,
-        message: 'No tickets waiting in queue'
-      });
-    }
-    
-    await nextTicket.update({ 
-      status: 'called',
-      called_at: new Date(),
-      ...(counterId && { counter_id: counterId })
-    });
-    
-    if (counterId) {
-      const counter = await Counter.findByPk(counterId);
-      if (counter) {
-        await counter.update({
-          status: 'busy',
-          current_ticket_id: nextTicket.id
-        });
-      }
-    }
-    
-    res.json({
-      success: true,
-      message: `Ticket ${nextTicket.ticket_number} called to counter`,
-      ticket: {
-        id: nextTicket.id,
-        number: nextTicket.ticket_number,
-        service: nextTicket.ticketService?.name,
-        priority: nextTicket.priority,
-        is_vip: nextTicket.is_vip === 1 ? true : false,
-        is_appointment: nextTicket.is_appointment === 1 ? true : false,
-        customer_name: nextTicket.customer_name,
-        waiting_time: Math.floor((new Date() - new Date(nextTicket.createdAt)) / 60000) + ' min'
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Complete ticket
-app.post('/api/tickets/:id/complete', async (req, res) => {
-  try {
-    const ticketId = req.params.id;
-    const { notes } = req.body;
-    
-    const ticket = await Ticket.findByPk(ticketId);
-    
-    if (!ticket) {
-      return res.status(404).json({
-        success: false,
-        message: 'Ticket not found'
-      });
-    }
-    
-    if (ticket.status === 'completed') {
-      return res.status(400).json({
-        success: false,
-        message: 'Ticket already completed'
-      });
-    }
-    
-    const now = new Date();
-    const waitTime = ticket.called_at ? 
-      Math.floor((new Date(ticket.called_at) - new Date(ticket.createdAt)) / 60000) : 0;
-    const serviceTime = ticket.serving_started_at ? 
-      Math.floor((now - new Date(ticket.serving_started_at)) / 60000) : 
-      Math.floor((now - (ticket.called_at ? new Date(ticket.called_at) : new Date(ticket.createdAt))) / 60000);
-    const totalTime = Math.floor((now - new Date(ticket.createdAt)) / 60000);
-    
-    await ticket.update({
-      status: 'completed',
-      completed_at: now,
-      actual_wait_time: waitTime,
-      actual_service_time: serviceTime,
-      total_time: totalTime,
-      notes
-    });
-    
-    if (ticket.counter_id) {
-      const counter = await Counter.findByPk(ticket.counter_id);
-      if (counter) {
-        await counter.update({
-          status: 'active',
-          current_ticket_id: null
-        });
-      }
-    }
-    
-    res.json({
-      success: true,
-      message: `Ticket ${ticket.ticket_number} completed`,
-      ticket: {
-        id: ticket.id,
-        number: ticket.ticket_number,
-        service_time: serviceTime + ' min',
-        wait_time: waitTime + ' min',
-        total_time: totalTime + ' min',
-        completed_at: now
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ==================== ERROR HANDLERS ====================
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    success: false,
-    error: 'Route not found',
-    path: req.path,
-    method: req.method,
-    available_endpoints: {
-      root: '/',
-      health: '/health',
-      ready: '/ready',
-      docs: '/api/docs'
-    }
-  });
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('🚨 Global error:', {
-    message: err.message,
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
-
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-  const errorResponse = {
-    success: false,
-    error: isProduction ? 'Internal server error' : err.message,
-    timestamp: new Date().toISOString()
-  };
-
-  if (!isProduction) {
-    errorResponse.stack = err.stack;
-    if (err.details) errorResponse.details = err.details;
-  }
-
-  // Specific error handling
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      error: 'Validation error',
-      details: err.details
-    });
-  }
-
-  if (err.name === 'SequelizeUniqueConstraintError') {
-    return res.status(409).json({
-      success: false,
-      error: 'Duplicate entry',
-      field: err.errors[0]?.path
-    });
-  }
-
-  if (err.name === 'SequelizeDatabaseError') {
-    return res.status(500).json({
-      success: false,
-      error: 'Database error'
-    });
-  }
-
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
-      error: 'Invalid token'
-    });
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      error: 'Token expired'
-    });
-  }
-
-  // Rate limiter error
-  if (err.status === 429) {
-    return res.status(429).json({
-      success: false,
-      error: 'Too many requests'
-    });
-  }
-
-  // Default error
-  const statusCode = err.status || 500;
-  res.status(statusCode).json(errorResponse);
-});
-
 // ==================== TICKET MONITORING CRON JOB ====================
 
 async function checkMissedTickets() {
@@ -1827,16 +1391,23 @@ async function checkMissedTickets() {
     const timeoutMs = timeoutMinutes * 60 * 1000;
     const cutoffTime = new Date(Date.now() - timeoutMs);
     
-    const missedTickets = await Ticket.findAll({
-      where: {
-        status: 'called',
-        called_at: { [Op.lt]: cutoffTime },
-        serving_started_at: null
-      },
-      include: [{ model: Counter, as: 'ticketCounter' }]
-    });
+    // Utiliser une requête SQL brute pour éviter le problème de colonne
+    const missedTickets = await sequelize.query(
+      `SELECT t.*, c.id as "counter.id", c.number as "counter.number", c.name as "counter.name"
+       FROM tickets t
+       LEFT OUTER JOIN counters c ON t.counter_id = c.id
+       WHERE t.status = 'called' 
+         AND t.called_at < :cutoffTime 
+         AND t.serving_started_at IS NULL`,
+      {
+        replacements: { cutoffTime },
+        type: sequelize.QueryTypes.SELECT,
+        model: Ticket,
+        mapToModel: true
+      }
+    );
     
-    if (missedTickets.length === 0) {
+    if (!missedTickets || missedTickets.length === 0) {
       console.log('✅ No missed tickets found');
       return;
     }
@@ -1850,12 +1421,13 @@ async function checkMissedTickets() {
         notes: `Auto-marked as missed after ${timeoutMinutes} minutes`
       });
       
-      if (ticket.ticketCounter) {
-        await ticket.ticketCounter.update({
-          status: 'active',
-          current_ticket_id: null
-        });
-        console.log(`✅ Released counter ${ticket.ticketCounter.number}`);
+      if (ticket.counter_id) {
+        // Mettre à jour le compteur séparément
+        await Counter.update(
+          { status: 'active', current_ticket_id: null },
+          { where: { id: ticket.counter_id } }
+        );
+        console.log(`✅ Released counter`);
       }
       
       console.log(`❌ Ticket ${ticket.ticket_number} marked as missed`);
@@ -1997,210 +1569,8 @@ async function calculateAllWaitTimes() {
   }
 }
 
-// ==================== START SERVER ====================
-
-async function startServer() {
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Database connection established');
-
-    try {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Database synchronized successfully');
-    } catch (syncError) {
-      console.log('⚠️  Database sync error:', syncError.message);
-      console.log('⚠️  Trying without alter...');
-      try {
-        await sequelize.sync();
-        console.log('✅ Database synchronized without alter');
-      } catch (secondSyncError) {
-        console.log('⚠️ Second sync error:', secondSyncError.message);
-        console.log('⚠️ Continuing with existing schema...');
-      }
-    }
-
-    startMissedTicketMonitor();
-
-    app.listen(PORT, () => {
-      console.log('='.repeat(70));
-      console.log('🏦 BANK QUEUE SYSTEM - COMPLETE INTEGRATION');
-      console.log('='.repeat(70));
-      console.log(`✅ Server running: http://localhost:${PORT}`);
-      console.log(`✅ Health check: http://localhost:${PORT}/health`);
-      console.log('\n📋 TICKET MANAGEMENT:');
-      console.log('  POST /api/tickets/generate       - Create NORMAL ticket');
-      console.log('  POST /api/tickets/vip/generate   - Create VIP ticket');
-      console.log('  GET  /api/tickets/queue         - Queue status');
-      console.log('  GET  /api/queue/stats           - Statistics');
-      console.log('\n📋 SATISFACTION SURVEYS:');
-      console.log('  POST /api/survey/submit          - Submit survey');
-      console.log('  GET  /api/survey/stats          - Survey statistics');
-      console.log('  GET  /api/survey/ticket/:id     - Get survey by ticket');
-      console.log('  GET  /api/survey/dashboard      - Dashboard summary');
-      console.log('\n📋 AGENCY MANAGEMENT:');
-      console.log('  POST /api/admin/agencies         - Create agency');
-      console.log('  GET  /api/admin/agencies         - List agencies');
-      console.log('  PUT  /api/admin/agencies/:id     - Update agency');
-      console.log('  DELETE /api/admin/agencies/:id   - Delete agency');
-      console.log('\n📋 NEW ENDPOINTS ADDED:');
-      console.log('  POST /api/admin/services         - Create new service');
-      console.log('  GET  /api/stats/daily            - Daily statistics');
-      console.log('  GET  /api/stats/period           - Period statistics');
-      console.log('  GET  /api/stats/realtime         - Real-time statistics');
-      console.log('  GET  /api/admin/counters/:id     - Get counter by ID');
-      console.log('  GET  /api/test123                - Test endpoint');
-      console.log('='.repeat(70));
-      console.log('🔄 Auto-missed monitor: ACTIVE (runs every 5 minutes)');
-      console.log('='.repeat(70));
-    });
-    
-    // Graceful shutdown
-    const gracefulShutdown = (signal) => {
-      console.log(`\n${signal} received. Starting graceful shutdown...`);
-      
-      server.close(() => {
-        console.log('✅ HTTP server closed');
-        
-        sequelize.close().then(() => {
-          console.log('✅ Database connection closed');
-          console.log('👋 Server shutdown complete');
-          process.exit(0);
-        }).catch(err => {
-          console.error('❌ Error closing database:', err);
-          process.exit(1);
-        });
-      });
-      
-      setTimeout(() => {
-        console.error('⏰ Forced shutdown after timeout');
-        process.exit(1);
-      }, 10000);
-    };
-    
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-    
-  } catch (error) {
-    console.error('❌ Server failed:', error.message);
-    process.exit(1);
-  }
-}
-
-startServer();
-
-async function calculateWaitTime(serviceId, priority) {
-  try {
-    const waitingCount = await Ticket.count({
-      where: { 
-        service_id: serviceId,
-        status: 'waiting'
-      }
-    });
-
-    const service = await Service.findByPk(serviceId);
-    const baseTime = service?.estimated_time || 15;
-
-    let waitTime = waitingCount * baseTime;
-    
-    if (priority === 'vip') waitTime = Math.max(5, waitTime * 0.5);
-    if (priority === 'urgent') waitTime = Math.max(2, waitTime * 0.3);
-    
-    return Math.ceil(waitTime);
-  } catch (error) {
-    console.error('Wait time calculation error:', error);
-    return 15;
-  }
-}
-
-async function getAvailableSlots(serviceId, date) {
-  const slots = [];
-  const baseDate = new Date(date);
-  baseDate.setHours(8, 0, 0, 0);
-  
-  for (let i = 0; i < 18; i++) {
-    const slotTime = new Date(baseDate.getTime() + (i * 30 * 60000));
-    
-    const existing = await Ticket.findOne({
-      where: {
-        service_id: serviceId,
-        is_appointment: true,
-        appointment_time: {
-          [Op.between]: [
-            new Date(slotTime.getTime() - 30 * 60000),
-            new Date(slotTime.getTime() + 30 * 60000)
-          ]
-        },
-        status: { [Op.in]: ['waiting', 'called'] }
-      }
-    });
-    
-    if (!existing && slotTime > new Date()) {
-      slots.push({
-        time: slotTime,
-        formatted: slotTime.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: false 
-        })
-      });
-    }
-  }
-  
-  return slots.slice(0, 5);
-}
-
-async function getQueuePosition(ticketId) {
-  const ticket = await Ticket.findByPk(ticketId);
-  if (!ticket || ticket.status !== 'waiting') return null;
-  
-  const position = await Ticket.count({
-    where: {
-      service_id: ticket.service_id,
-      status: 'waiting',
-      [Op.or]: [
-        { priority: { [Op.gt]: ticket.priority } },
-        {
-          priority: ticket.priority,
-          createdAt: { [Op.lt]: ticket.createdAt }
-        }
-      ]
-    }
-  });
-  
-  return position + 1;
-}
-
-async function calculateAllWaitTimes() {
-  try {
-    const services = await Service.findAll({ where: { is_active: true } });
-    const waitTimes = {};
-    
-    for (const service of services) {
-      const waitingCount = await Ticket.count({
-        where: { 
-          service_id: service.id,
-          status: 'waiting'
-        }
-      });
-      
-      const baseTime = service.estimated_time || 15;
-      
-      waitTimes[service.name] = {
-        normal: Math.ceil(waitingCount * baseTime),
-        vip: Math.max(5, Math.ceil(waitingCount * baseTime * 0.3))
-      };
-    }
-    
-    return waitTimes;
-  } catch (error) {
-    console.error('Error calculating wait times:', error);
-    return {};
-  }
-}
-// ==================== ERROR HANDLING ====================
-
-// 404 handler
-app.use((req, res) => {
+// ==================== 404 HANDLER ====================
+app.use('*', (req, res) => {
   res.status(404).json({ 
     success: false,
     error: 'Route not found',
@@ -2234,7 +1604,7 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
+// ==================== GLOBAL ERROR HANDLER ====================
 app.use((err, req, res, next) => {
   console.error('🚨 Server error:', err.stack);
   
@@ -2269,7 +1639,7 @@ async function startServer() {
 
     startMissedTicketMonitor();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log('='.repeat(70));
       console.log('🏦 BANK QUEUE SYSTEM - COMPLETE INTEGRATION');
       console.log('='.repeat(70));
@@ -2333,4 +1703,5 @@ async function startServer() {
     process.exit(1);
   }
 }
+
 startServer();

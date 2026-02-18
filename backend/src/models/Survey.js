@@ -9,8 +9,7 @@ const Survey = sequelize.define('Survey', {
   },
   ticket_id: {
     type: DataTypes.UUID,
-    allowNull: true,
-    unique: true,
+    allowNull: false,
     references: {
       model: 'tickets',
       key: 'id'
@@ -18,7 +17,7 @@ const Survey = sequelize.define('Survey', {
   },
   rating: {
     type: DataTypes.INTEGER,
-    allowNull: true,
+    allowNull: false,
     validate: {
       min: 1,
       max: 5
@@ -31,8 +30,14 @@ const Survey = sequelize.define('Survey', {
 }, {
   tableName: 'surveys',
   timestamps: true,
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  indexes: [
+    {
+      fields: ['ticket_id']
+    },
+    {
+      fields: ['rating']
+    }
+  ]
 });
 
 module.exports = Survey;

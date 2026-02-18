@@ -26,10 +26,6 @@ router.get('/stats', requireEmployee, surveyController.getSurveyStats);
 
 // Get surveys for admin dashboard
 // GET /api/survey/dashboard
-router.get('/dashboard', requireAdmin, surveyController.getSurveysForDashboard);
-
-// Get all surveys with pagination (admin only)
-// GET /api/survey/all
-router.get('/all', requireAdmin, surveyController.getAllSurveys);
+router.get('/dashboard', requireAdmin, surveyController.getDashboard);
 
 module.exports = router;

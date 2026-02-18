@@ -118,10 +118,11 @@ const Ticket = sequelize.define('Ticket', {
     type: DataTypes.STRING(20),
     allowNull: true
   }
-}, {
+},
+ {
   tableName: 'tickets',
   timestamps: true,
-  underscored: true,
+  underscored: false,
   indexes: [
     {
       fields: ['status']

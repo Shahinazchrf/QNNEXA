@@ -7,9 +7,9 @@ const queueController = {
     try {
       const { serviceCode, customerName, vipCode } = req.body;
 
-      // Validate service
+      // Validate service - FIXED: use 'name' instead of 'code'
       const service = await Service.findOne({ 
-        where: { code: serviceCode, is_active: true } 
+        where: { name: serviceCode, is_active: true } 
       });
       
       if (!service) {
@@ -79,7 +79,7 @@ const queueController = {
         ticket: {
           number: ticketNumber,
           service: service.name,
-          service_code: service.code,
+          service_code: service.name,
           priority,
           estimated_wait: waitTime,
           created_at: ticket.createdAt,
@@ -104,13 +104,14 @@ const queueController = {
       let service = null;
 
       if (serviceCode) {
-        service = await Service.findOne({ where: { code: serviceCode } });
+        // FIXED: use 'name' instead of 'code'
+        service = await Service.findOne({ where: { name: serviceCode } });
         if (service) where.service_id = service.id;
       }
 
       const tickets = await Ticket.findAll({
         where,
-        include: [{ model: Service, as: 'Service' }],
+        include: [{ model: Service, as: 'ticketService' }], // FIXED: use correct alias
         order: [
           ['priority', 'DESC'],
           ['createdAt', 'ASC']
@@ -125,8 +126,8 @@ const queueController = {
         },
         include: [{
           model: Ticket,
-          as: 'current_ticket',
-          include: [{ model: Service, as: 'Service' }]
+          as: 'currentTicket', // FIXED: use correct alias
+          include: [{ model: Service, as: 'ticketService' }] // FIXED: use correct alias
         }]
       });
 
@@ -142,7 +143,7 @@ const queueController = {
           estimated_wait_times: await calculateAllWaitTimes(),
           next_tickets: tickets.slice(0, 10).map(t => ({
             number: t.ticket_number,
-            service: t.Service.name,
+            service: t.ticketService?.name, // FIXED: use name instead of code
             priority: t.priority,
             customer_name: t.customer_name,
             waiting_since: t.createdAt,
@@ -151,9 +152,9 @@ const queueController = {
           active_counters: activeCounters.map(c => ({
             number: c.number,
             status: c.status,
-            current_ticket: c.current_ticket ? {
-              number: c.current_ticket.ticket_number,
-              service: c.current_ticket.Service?.name
+            current_ticket: c.currentTicket ? {
+              number: c.currentTicket.ticket_number,
+              service: c.currentTicket.ticketService?.name // FIXED: use name instead of code
             } : null,
             employee: c.employee_id ? 'Available' : 'Unassigned'
           }))
@@ -174,12 +175,13 @@ const queueController = {
       const { ticketId, newServiceCode } = req.body;
 
       const ticket = await Ticket.findByPk(ticketId, {
-        include: [{ model: Service, as: 'Service' }]
+        include: [{ model: Service, as: 'ticketService' }] // FIXED: use correct alias
       });
 
       if (!ticket) return res.status(404).json({ success: false, error: 'Ticket not found' });
 
-      const newService = await Service.findOne({ where: { code: newServiceCode, is_active: true } });
+      // FIXED: use 'name' instead of 'code'
+      const newService = await Service.findOne({ where: { name: newServiceCode, is_active: true } });
       if (!newService) return res.status(400).json({ success: false, error: 'New service not available' });
 
       // Generate new ticket number
@@ -219,7 +221,7 @@ const queueController = {
         message: `Ticket transferred to ${newService.name}`,
         original_ticket: {
           number: ticket.ticket_number,
-          old_service: ticket.Service.name,
+          old_service: ticket.ticketService?.name, // FIXED: use name instead of code
           status: 'transferred'
         },
         new_ticket: {
@@ -235,7 +237,6 @@ const queueController = {
   }
 };
 
-// -----------------
 // Helper functions
 async function validateVipCode(code) {
   const validCodes = ['VIP001','VIP002','VIPGOLD','VIPPLATINUM','VIP2024'];
@@ -258,7 +259,7 @@ async function calculateAllWaitTimes() {
   const waitTimes = {};
   for (const service of services) {
     const waitingCount = await Ticket.count({ where: { service_id: service.id, status: 'waiting' } });
-    waitTimes[service.code] = {
+    waitTimes[service.name] = { // FIXED: use name instead of code
       min: Math.ceil(waitingCount * service.estimated_time * 0.8),
       max: Math.ceil(waitingCount * service.estimated_time),
       average: waitingCount * service.estimated_time
@@ -270,13 +271,13 @@ async function calculateAllWaitTimes() {
 async function getServiceCounts() {
   const services = await Service.findAll({
     where: { is_active: true },
-    include: [{ model: Ticket, as: 'Tickets', where: { status: 'waiting' }, required: false }]
+    include: [{ model: Ticket, as: 'serviceTickets', where: { status: 'waiting' }, required: false }] // FIXED: use correct alias
   });
 
   return services.map(s => ({
-    service: s.code,
+    service: s.name, // FIXED: use name instead of code
     name: s.name,
-    waiting: s.Tickets?.length || 0,
+    waiting: s.serviceTickets?.length || 0,
     estimated_time: s.estimated_time
   }));
 }
