@@ -18,7 +18,6 @@ const adminRoutes = require('./routes/adminRoutes');
 const notificationScheduler = require('./services/notificationScheduler');
 const vipRoutes = require('./routes/vipRoutes');
 const queueRoutes = require('./routes/queueRoutes');
-const surveyRoutes = require('./routes/surveyRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const authRoutes = require('./routes/authRoutes');
 const counterAdminRoutes = require('./routes/counterAdminRoutes');
