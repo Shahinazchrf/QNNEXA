@@ -1,31 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const surveyController = require('../controllers/surveyController');
-const { authMiddleware, requireEmployee, requireAdmin } = require('../middlewares/auth');
 
-// ==================== PUBLIC ROUTES ====================
+// ==================== PUBLIC ROUTES (No authentication required) ====================
 
-// Submit satisfaction survey (Public - no auth required)
-// POST /api/survey/submit
+// Submit survey - Public
 router.post('/submit', surveyController.submitSurvey);
 
-// ==================== AUTHENTICATED ROUTES ====================
-router.use(authMiddleware);
+// Get survey statistics - Public
+router.get('/stats', surveyController.getSurveyStats);
 
-// Get survey by ticket ID
-// GET /api/survey/ticket/:ticketId
+// Get survey dashboard - Public
+router.get('/dashboard', surveyController.getDashboard);
+
+// Get survey by ticket ID - Public
 router.get('/ticket/:ticketId', surveyController.getSurveyByTicket);
 
-// ==================== EMPLOYEE ROUTES ====================
+// ==================== AUTHENTICATED ROUTES ====================
+// Ces routes nécessitent une authentification (admin only)
 
-// Get survey statistics for counter admin
-// GET /api/survey/stats
-router.get('/stats', requireEmployee, surveyController.getSurveyStats);
-
-// ==================== ADMIN ROUTES ====================
-
-// Get surveys for admin dashboard
-// GET /api/survey/dashboard
-router.get('/dashboard', requireAdmin, surveyController.getDashboard);
+// Get all surveys (admin only) - Commenté car non défini dans le contrôleur
+// router.get('/all', surveyController.getAllSurveys);
 
 module.exports = router;

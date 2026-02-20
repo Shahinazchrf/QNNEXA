@@ -18,7 +18,6 @@ const adminRoutes = require('./routes/adminRoutes');
 const notificationScheduler = require('./services/notificationScheduler');
 const vipRoutes = require('./routes/vipRoutes');
 const queueRoutes = require('./routes/queueRoutes');
-const surveyRoutes = require('./routes/surveyRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const authRoutes = require('./routes/authRoutes');
 const counterAdminRoutes = require('./routes/counterAdminRoutes');
@@ -243,26 +242,122 @@ app.get('/ready', async (req, res) => {
   }
 });
 
-// Documentation API
-app.get('/api/docs', (req, res) => {
-  res.json({
-    endpoints: {
-      auth: '/api/auth',
-      public: '/api/public',
-      vip: '/api/vip',
-      employee: '/api/employee',
-      admin: '/api/admin',
-      'counter-admin': '/api/counter-admin',
-      queue: '/api/queue',
-      stats: '/api/stats',
-      faq: '/api/faq'
-    },
-    examples: {
-      createTicket: 'POST /api/public/ticket',
-      checkQueue: 'GET /api/public/queue/:ticketId',
-      vipAppointment: 'POST /api/vip/appointment/create'
+// ==================== FIXED PUBLIC TICKET CREATION ====================
+// Public ticket creation (QR code)
+// ==================== PUBLIC TICKET CREATION ====================
+app.post('/api/public/ticket', async (req, res) => {
+  try {
+    const { serviceId } = req.body;
+    
+    // Vérifier le service
+    const service = await Service.findByPk(serviceId);
+    if (!service) {
+      return res.status(404).json({ success: false, error: 'Service not found' });
     }
-  });
+    
+    // Générer un numéro unique avec timestamp
+    const timestamp = Date.now().toString().slice(-6);
+    const ticketNumber = `${service.name}${timestamp}`;
+    
+    // Créer le ticket
+    const ticket = await Ticket.create({
+      ticket_number: ticketNumber,
+      service_id: serviceId,
+      status: 'waiting',
+      priority: 'normal',
+      customer_name: 'Walk-in Client',
+      is_vip: false,
+      is_appointment: false,
+      estimated_wait_time: 15
+    });
+    
+    res.json({
+      success: true,
+      ticket: {
+        number: ticket.ticket_number,
+        service: service.name,
+        created_at: ticket.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ Public ticket error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      errors: error.errors ? error.errors.map(e => e.message) : []
+    });
+  }
+});
+
+// ==================== FIXED VIP APPOINTMENT ====================
+// ==================== VIP APPOINTMENT ====================
+app.post('/api/vip/appointment/create', async (req, res) => {
+  try {
+    const { serviceId, scheduledTime } = req.body;
+    
+    // Vérifier le service
+    const service = await Service.findByPk(serviceId);
+    if (!service) {
+      return res.status(404).json({ success: false, error: 'Service not found' });
+    }
+    
+    // Vérifier si le créneau est disponible
+    const appointmentDate = new Date(scheduledTime);
+    const existingAppointment = await Ticket.findOne({
+      where: {
+        service_id: serviceId,
+        is_appointment: true,
+        appointment_time: {
+          [Op.between]: [
+            new Date(appointmentDate.getTime() - 30 * 60000),
+            new Date(appointmentDate.getTime() + 30 * 60000)
+          ]
+        },
+        status: { [Op.in]: ['waiting', 'called'] }
+      }
+    });
+    
+    if (existingAppointment) {
+      return res.status(409).json({
+        success: false,
+        error: 'Time slot already booked'
+      });
+    }
+    
+    // Générer un numéro unique avec timestamp
+    const timestamp = Date.now().toString().slice(-6);
+    const ticketNumber = `VIP${service.name}${timestamp}`;
+    
+    // Créer le ticket VIP
+    const ticket = await Ticket.create({
+      ticket_number: ticketNumber,
+      service_id: serviceId,
+      status: 'waiting',
+      priority: 'vip',
+      customer_name: 'VIP Client',
+      is_vip: true,
+      is_appointment: true,
+      appointment_time: scheduledTime,
+      estimated_wait_time: 5
+    });
+    
+    res.json({
+      success: true,
+      ticket: {
+        number: ticket.ticket_number,
+        service: service.name,
+        appointment_time: ticket.appointment_time,
+        status: ticket.status
+      }
+    });
+  } catch (error) {
+    console.error('❌ VIP appointment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      errors: error.errors ? error.errors.map(e => e.message) : []
+    });
+  }
 });
 
 // ==================== IMPORT MODELS ====================
@@ -851,7 +946,7 @@ app.post('/api/admin/tickets/reassign', async (req, res) => {
   }
 });
 
-// Get Queue Statistics
+// Get Queue Statistics - FIXED
 app.get('/api/queue/stats', async (req, res) => {
   try {
     const { service_code } = req.query;
@@ -870,28 +965,22 @@ app.get('/api/queue/stats', async (req, res) => {
       order: [['createdAt', 'ASC']]
     });
     
+    // FIXED: Version simplifiée qui utilise 'name' au lieu de 'code'
     const stats = {
       total_waiting: tickets.length,
-      by_priority: {
-        vip: tickets.filter(t => t.priority === 'vip').length,
-        urgent: tickets.filter(t => t.priority === 'urgent').length,
-        normal: tickets.filter(t => t.priority === 'normal').length,
-        special: tickets.filter(t => ['disabled', 'elderly', 'pregnant'].includes(t.priority)).length
-      },
-      by_type: {
-        appointments: tickets.filter(t => t.is_appointment === true).length,
-        vip: tickets.filter(t => t.is_vip === true && t.is_appointment !== true).length,
-        normal: tickets.filter(t => t.is_vip !== true && t.is_appointment !== true).length
-      },
+      by_service: {},
       next_tickets: tickets.slice(0, 5).map(t => ({
         number: t.ticket_number,
-        service: t.ticketService?.name,
-        priority: t.priority,
-        is_vip: t.is_vip === true,
-        is_appointment: t.is_appointment === true,
+        service: t.ticketService?.name || 'Unknown',
         waiting_since: t.createdAt
       }))
     };
+    
+    // Group by service
+    tickets.forEach(t => {
+      const serviceName = t.ticketService?.name || 'Unknown';
+      stats.by_service[serviceName] = (stats.by_service[serviceName] || 0) + 1;
+    });
     
     const missedToday = await Ticket.count({
       where: {
@@ -907,8 +996,7 @@ app.get('/api/queue/stats', async (req, res) => {
       data: {
         ...stats,
         missed_tickets_today: missedToday,
-        timestamp: new Date(),
-        estimated_wait_times: await calculateAllWaitTimes()
+        timestamp: new Date()
       }
     });
     
@@ -1569,6 +1657,172 @@ async function calculateAllWaitTimes() {
   }
 }
 
+// ==================== MISSING EMPLOYEE ROUTES ====================
+
+// Get current ticket for counter
+app.get('/api/employee/ticket/current', async (req, res) => {
+  try {
+    const { counterId } = req.query;
+    
+    if (!counterId) {
+      return res.status(400).json({ success: false, error: 'Counter ID required' });
+    }
+    
+    const counter = await Counter.findByPk(counterId);
+    if (!counter) {
+      return res.status(404).json({ success: false, error: 'Counter not found' });
+    }
+    
+    if (!counter.current_ticket_id) {
+      return res.json({ success: true, data: null });
+    }
+    
+    const ticket = await Ticket.findByPk(counter.current_ticket_id, {
+      include: [
+        { model: Service, as: 'ticketService' },
+        { model: User, as: 'ticketClient' }
+      ]
+    });
+    
+    res.json({ success: true, data: { counter, ticket } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get all counters status
+app.get('/api/employee/counters/status', async (req, res) => {
+  try {
+    const counters = await Counter.findAll({
+      include: [
+        { model: Ticket, as: 'currentTicket', include: [{ model: Service, as: 'ticketService' }] },
+        { model: User, as: 'counterEmployee' }
+      ]
+    });
+    
+    res.json({ success: true, data: counters });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== MISSING ADMIN ROUTES ====================
+
+// Get all agencies
+app.get('/api/admin/agencies', async (req, res) => {
+  try {
+    const agencies = await Agency.findAll();
+    res.json({ success: true, data: agencies });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Create agency
+app.post('/api/admin/agencies', async (req, res) => {
+  try {
+    const agency = await Agency.create(req.body);
+    res.status(201).json({ success: true, data: agency });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get agency by ID
+app.get('/api/admin/agencies/:id', async (req, res) => {
+  try {
+    const agency = await Agency.findByPk(req.params.id);
+    if (!agency) {
+      return res.status(404).json({ success: false, error: 'Agency not found' });
+    }
+    res.json({ success: true, data: agency });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update agency
+app.put('/api/admin/agencies/:id', async (req, res) => {
+  try {
+    const agency = await Agency.findByPk(req.params.id);
+    if (!agency) {
+      return res.status(404).json({ success: false, error: 'Agency not found' });
+    }
+    await agency.update(req.body);
+    res.json({ success: true, data: agency });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete agency
+app.delete('/api/admin/agencies/:id', async (req, res) => {
+  try {
+    const agency = await Agency.findByPk(req.params.id);
+    if (!agency) {
+      return res.status(404).json({ success: false, error: 'Agency not found' });
+    }
+    await agency.update({ is_active: false });
+    res.json({ success: true, message: 'Agency deactivated' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add services to agency
+app.post('/api/admin/agencies/:agencyId/services', async (req, res) => {
+  try {
+    const agency = await Agency.findByPk(req.params.agencyId);
+    if (!agency) {
+      return res.status(404).json({ success: false, error: 'Agency not found' });
+    }
+    
+    const currentServices = agency.services || [];
+    const updatedServices = [...new Set([...currentServices, ...req.body.service_codes])];
+    await agency.update({ services: updatedServices });
+    
+    res.json({ success: true, data: updatedServices });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add services to counter
+app.post('/api/admin/counters/:counterId/services', async (req, res) => {
+  try {
+    const counter = await Counter.findByPk(req.params.counterId);
+    if (!counter) {
+      return res.status(404).json({ success: false, error: 'Counter not found' });
+    }
+    
+    const currentServices = counter.services || [];
+    const updatedServices = [...new Set([...currentServices, ...req.body.service_codes])];
+    await counter.update({ services: updatedServices });
+    
+    res.json({ success: true, data: updatedServices });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get counter by ID (admin)
+app.get('/api/admin/counters/:id', async (req, res) => {
+  try {
+    const counter = await Counter.findByPk(req.params.id, {
+      include: [
+        { model: User, as: 'counterEmployee' },
+        { model: Agency, as: 'counterAgency' }
+      ]
+    });
+    if (!counter) {
+      return res.status(404).json({ success: false, error: 'Counter not found' });
+    }
+    res.json({ success: true, data: counter });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ==================== 404 HANDLER ====================
 app.use('*', (req, res) => {
   res.status(404).json({ 
@@ -1703,5 +1957,125 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// ==================== ENDPOINTS MANQUANTS AJOUTÉS ====================
+
+// Get counter by ID
+app.get('/api/admin/counters/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const counter = await Counter.findByPk(id, {
+      include: [
+        { 
+          model: User, 
+          as: 'counterEmployee',
+          attributes: ['id', 'first_name', 'last_name']
+        },
+        {
+          model: Agency,
+          as: 'counterAgency'
+        }
+      ]
+    });
+    
+    if (!counter) {
+      return res.status(404).json({
+        success: false,
+        error: 'Counter not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      counter
+    });
+  } catch (error) {
+    console.error('❌ Get counter error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Add services to counter
+app.post('/api/admin/counters/:counterId/services', async (req, res) => {
+  try {
+    const { counterId } = req.params;
+    const { service_codes } = req.body;
+    
+    if (!service_codes || !Array.isArray(service_codes)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Service codes array is required'
+      });
+    }
+    
+    const counter = await Counter.findByPk(counterId);
+    if (!counter) {
+      return res.status(404).json({
+        success: false,
+        error: 'Counter not found'
+      });
+    }
+    
+    const currentServices = counter.services || [];
+    const updatedServices = [...new Set([...currentServices, ...service_codes])];
+    
+    await counter.update({ services: updatedServices });
+    
+    res.json({
+      success: true,
+      message: 'Services added to counter successfully',
+      counter: {
+        id: counter.id,
+        number: counter.number,
+        services: updatedServices
+      }
+    });
+  } catch (error) {
+    console.error('❌ Add services to counter error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update service
+app.put('/api/admin/services/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const service = await Service.findByPk(id);
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        error: 'Service not found'
+      });
+    }
+    
+    await service.update(updates);
+    
+    res.json({
+      success: true,
+      message: 'Service updated successfully',
+      service
+    });
+  } catch (error) {
+    console.error('❌ Update service error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ==================== EMPLOYEE ROUTES ====================
+// Vérifiez que ces routes sont bien dans votre fichier routes/employeeRoutes.js
+
+console.log('✅ Endpoints manquants ajoutés!');
 
 startServer();
