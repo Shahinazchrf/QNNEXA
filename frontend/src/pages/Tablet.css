@@ -1,0 +1,323 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.tablet-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0b2b5c 0%, #1e3a8a 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  padding: 20px;
+}
+
+/* Header Styles */
+.tablet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 30px;
+}
+
+.logo h1 {
+  font-size: 3.5rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.welcome-text h2 {
+  font-size: 1.6rem;
+  font-weight: 500;
+}
+
+.language-section {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.frenar {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.lang-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.lang-btn {
+  padding: 8px 20px;
+  border: 2px solid white;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.lang-btn.active {
+  background: white;
+  color: #0b2b5c;
+}
+
+.lang-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Main Content */
+.tablet-main {
+  display: flex;
+  gap: 30px;
+  padding: 0 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Left Panel - Services */
+.services-panel {
+  flex: 2;
+  background: white;
+  border-radius: 16px;
+  padding: 35px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.services-title {
+  text-align: center;
+  color: #333;
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.service-card {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 25px 15px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.service-card:hover {
+  border-color: #0b2b5c;
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(11, 43, 92, 0.1);
+}
+
+.service-card.full-width {
+  grid-column: span 2;
+  max-width: 60%;
+  margin: 0 auto;
+}
+
+.service-main {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.service-sub {
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+/* Service wait time */
+.service-wait {
+  font-size: 0.85rem;
+  color: #0b2b5c;
+  font-weight: 600;
+  margin-top: 8px;
+  display: block;
+}
+
+.cancel-button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 16px 50px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: block;
+  margin: 20px auto 0;
+  transition: background 0.3s ease;
+  min-width: 220px;
+  letter-spacing: 0.5px;
+}
+
+.cancel-button:hover {
+  background: #b91c1c;
+}
+
+/* Right Panel - QR Code */
+.qr-panel {
+  flex: 1;
+  background: white;
+  border-radius: 16px;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.scan-text {
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 40px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+  width: 100%;
+}
+
+.qr-code {
+  width: 260px;
+  height: 260px;
+  background: white;
+  border: 3px solid #0b2b5c;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+}
+
+.qr-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.qr-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.qr-brand span:first-child {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #0b2b5c;
+  letter-spacing: 1px;
+}
+
+.qr-brand span:last-child {
+  font-size: 1rem;
+  color: #6b7280;
+  text-transform: lowercase;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .tablet-main {
+    flex-direction: column;
+  }
+  
+  .service-card.full-width {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .tablet-header {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .language-section {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .service-card.full-width {
+    grid-column: span 1;
+  }
+  
+  .qr-code {
+    width: 220px;
+    height: 220px;
+  }
+}
+/* QR Code Button */
+.qr-toggle-btn {
+  background-color: #0b2b5c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: background-color 0.3s ease;
+  width: 100%;
+  max-width: 250px;
+}
+
+.qr-toggle-btn:hover {
+  background-color: #1e3a8a;
+}
+
+/* QR Code Image */
+.qr-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qr-code {
+  width: 260px;
+  height: 260px;
+  background: white;
+  border: 3px solid #0b2b5c;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.qr-code img {
+  width: 100%;
+  height: 100%;
+}

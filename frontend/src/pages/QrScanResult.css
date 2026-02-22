@@ -1,0 +1,109 @@
+.qrscan-container {
+  min-height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.agb-logo {
+  font-size: 64px;
+  font-weight: 800;
+  color: #0B2E59;
+  margin-bottom: 5px;
+  letter-spacing: 2px;
+}
+
+.agency-name {
+  font-size: 18px;
+  color: #1E5AA8;
+  margin-bottom: 40px;
+}
+
+.welcome-title {
+  font-size: 36px;
+  color: #0B2E59;
+  margin-bottom: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.welcome-subtitle {
+  font-size: 24px;
+  color: #666;
+  margin-bottom: 60px;
+  text-align: center;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  max-width: 500px;
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+.action-card {
+  border-radius: 12px;
+  padding: 30px 20px;
+  text-align: center;
+  cursor: pointer;
+  aspect-ratio: 1/1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.action-card:hover {
+  transform: translateY(-5px);
+}
+
+.action-card.primary {
+  background: #0B2E59;
+  color: white;
+}
+
+.action-card.secondary {
+  background: white;
+  color: #0B2E59;
+  border: 2px solid #0B2E59;
+}
+
+.action-card.tertiary {
+  background: #F5F5F5;
+  color: #0B2E59;
+  aspect-ratio: auto;
+  padding: 20px;
+  grid-column: span 2;
+  flex-direction: row;
+  gap: 15px;
+}
+
+.action-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.action-card.tertiary .action-icon {
+  margin-bottom: 0;
+}
+
+.action-label {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.back-btn {
+  background: none;
+  color: #D71920;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 20px;
+}
