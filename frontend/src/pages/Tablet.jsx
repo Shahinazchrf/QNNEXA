@@ -1,132 +1,202 @@
 import React, { useState } from 'react';
-import QrScanResult from './QrScanResult';
+import './Tablet.css';
 
 const Tablet = () => {
-  const [selectedService, setSelectedService] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showQrScan, setShowQrScan] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [showQR, setShowQR] = useState(false);
 
-  const services = [
-    { id: 1, name: 'Cash Operations' },
-    { id: 2, name: 'Cards & Payments' },
-    { id: 3, name: 'Account Management' },
-  ];
-
-  const handleConfirm = () => {
-    if (selectedService) {
-      setShowSuccess(true);
-    } else {
-      alert('Veuillez choisir un service');
+  const content = {
+    en: {
+      welcome: "Welcome to AGB/Bienvenue chez AGB",
+      frenar: "FRENAR",
+      selectService: "Please select your service/Veuillez choisir votre service",
+      
+      // Nouveaux services selon l'image
+      cashOps: "Cash Operations",
+      cashDesc: "Deposits, withdrawals, currency exchange",
+      cashWait: "Wait: 5-7 min",
+      
+      accountMgmt: "Account Management",
+      accountDesc: "Open/close accounts, update information",
+      accountWait: "Wait: 10-12 min",
+      
+      loansCredit: "Loans & Credit",
+      loansDesc: "Loan applications, credit consultations",
+      loansWait: "Wait: 15-20 min",
+      
+      investment: "Investment Services",
+      investmentDesc: "Financial advice, investment products",
+      investmentWait: "Wait: 20-25 min",
+      
+      cardsPayments: "Cards & Payments",
+      cardsDesc: "Issue cards, payment issues, limits",
+      cardsWait: "Wait: 8-10 min",
+      
+      otherServices: "Other Services",
+      otherDesc: "General inquiries, document requests",
+      otherWait: "Wait: 5-8 min",
+      
+      scanCode: "Scan this code to access",
+      qonnexea: "QONNEXEA",
+      trackTurn: "anl atatck your turn",
+      cancel: "Cancel/Return",
+      showQR: "Show QR Code",
+      hideQR: "Hide QR Code"
+    },
+    fr: {
+      welcome: "Bienvenue chez AGB/Welcome to AGB",
+      frenar: "FRENAR",
+      selectService: "Veuillez choisir votre service/Please select your service",
+      
+      cashOps: "Cash Operations",
+      cashDesc: "Dépôts, retraits, change",
+      cashWait: "Attente: 5-7 min",
+      
+      accountMgmt: "Account Management",
+      accountDesc: "Ouvrir/fermer comptes, mise à jour infos",
+      accountWait: "Attente: 10-12 min",
+      
+      loansCredit: "Loans & Credit",
+      loansDesc: "Demandes de prêt, consultations crédit",
+      loansWait: "Attente: 15-20 min",
+      
+      investment: "Investment Services",
+      investmentDesc: "Conseils financiers, produits d'investissement",
+      investmentWait: "Attente: 20-25 min",
+      
+      cardsPayments: "Cards & Payments",
+      cardsDesc: "Émission cartes, problèmes de paiement, limites",
+      cardsWait: "Attente: 8-10 min",
+      
+      otherServices: "Other Services",
+      otherDesc: "Demandes générales, demandes de documents",
+      otherWait: "Attente: 5-8 min",
+      
+      scanCode: "Scan this code to access",
+      qonnexea: "QONNEXEA",
+      trackTurn: "anl atatck your turn",
+      cancel: "Cancel/Return",
+      showQR: "Show QR Code",
+      hideQR: "Hide QR Code"
     }
   };
 
-  const handleQrScan = () => {
-    setShowQrScan(true);
+  const t = content[language];
+
+  // Fonctions pour les services
+  const handleServiceClick = (service) => {
+    console.log(`Service sélectionné: ${service}`);
+    // Ici vous ajouterez la navigation
   };
 
-  const handleBack = () => {
-    setShowQrScan(false);
-  };
-
-  // Afficher l'écran après scan
-  if (showQrScan) {
-    return <QrScanResult onBack={handleBack} />;
-  }
-
-  // Écran de succès ticket physique
-  if (showSuccess) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-        <div style={{ background: 'white', borderRadius: '8px', padding: '40px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: '0 4px 12px rgba(11,46,89,0.15)' }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px', color: '#D71920' }}>✓</div>
-          <h2 style={{ fontSize: '24px', color: '#0B2E59', marginBottom: '16px', fontWeight: '600' }}>Ticket créé avec succès!</h2>
-          <p style={{ color: '#1E5AA8', marginBottom: '8px' }}>Votre numéro de ticket est:</p>
-          <p style={{ fontSize: '48px', fontWeight: 'bold', color: '#D71920', marginBottom: '24px' }}>A045</p>
-          <button onClick={() => setShowSuccess(false)} style={{ background: '#0B2E59', color: 'white', padding: '12px 24px', border: 'none', width: '100%', borderRadius: '5px', cursor: 'pointer' }}>
-            Nouveau ticket
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Écran principal
   return (
-    <div style={{ minHeight: '100vh', background: '#FFFFFF' }}>
-      
-      {/* WELCOME MESSAGE EN HAUT */}
-      <div style={{ textAlign: 'center', padding: '30px 20px 10px 20px' }}>
-        <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: '#0B2E59', marginBottom: '5px' }}>AGB</h1>
-        <p style={{ fontSize: '16px', color: '#1E5AA8' }}>Welcome to AGB / Bienvenue chez AGB</p>
-        <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>Please select your service / Veuillez choisir votre service</p>
+    <div className="tablet-container">
+      {/* Header */}
+      <div className="tablet-header">
+        <div className="logo">
+          <h1>AGB</h1>
+        </div>
+        <div className="welcome-text">
+          <h2>{t.welcome}</h2>
+        </div>
+        <div className="language-section">
+          <span className="frenar">{t.frenar}</span>
+          <div className="lang-buttons">
+            <button 
+              className={`lang-btn ${language === 'en' ? 'active' : ''}`}
+              onClick={() => setLanguage('en')}
+            >
+              EN
+            </button>
+            <button 
+              className={`lang-btn ${language === 'fr' ? 'active' : ''}`}
+              onClick={() => setLanguage('fr')}
+            >
+              FR
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* SPLIT SCREEN */}
-      <div style={{ display: 'flex', padding: '20px' }}>
-        
-        {/* LEFT SIDE - 50% */}
-        <div style={{ width: '50%', padding: '20px', borderRight: '2px solid #1E5AA8' }}>
+      {/* Main Content */}
+      <div className="tablet-main">
+        {/* Left Side - Service Selection */}
+        <div className="services-panel">
+          <h3 className="services-title">{t.selectService}</h3>
           
-          {/* Physical Ticket Title */}
-          <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0B2E59', textAlign: 'center', marginBottom: '25px' }}>
-            PHYSICAL TICKET
-          </h2>
+          <div className="services-grid">
+            {/* Cash Operations */}
+            <button className="service-card" onClick={() => handleServiceClick('cash')}>
+              <span className="service-main">{t.cashOps}</span>
+              <span className="service-sub">{t.cashDesc}</span>
+              <span className="service-wait">{t.cashWait}</span>
+            </button>
+            
+            {/* Account Management */}
+            <button className="service-card" onClick={() => handleServiceClick('account')}>
+              <span className="service-main">{t.accountMgmt}</span>
+              <span className="service-sub">{t.accountDesc}</span>
+              <span className="service-wait">{t.accountWait}</span>
+            </button>
 
-          <p style={{ fontSize: '16px', color: '#1E5AA8', textAlign: 'center', marginBottom: '25px' }}>
-            Select your service
-          </p>
+            {/* Loans & Credit */}
+            <button className="service-card" onClick={() => handleServiceClick('loans')}>
+              <span className="service-main">{t.loansCredit}</span>
+              <span className="service-sub">{t.loansDesc}</span>
+              <span className="service-wait">{t.loansWait}</span>
+            </button>
+            
+            {/* Investment Services */}
+            <button className="service-card" onClick={() => handleServiceClick('investment')}>
+              <span className="service-main">{t.investment}</span>
+              <span className="service-sub">{t.investmentDesc}</span>
+              <span className="service-wait">{t.investmentWait}</span>
+            </button>
 
-          {/* 3 Service Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '30px' }}>
-            {services.map((service) => (
-              <div
-                key={service.id}
-                onClick={() => setSelectedService(service.id)}
-                style={{
-                  background: selectedService === service.id ? '#0B2E59' : 'white',
-                  border: '2px solid #0B2E59',
-                  borderRadius: '8px',
-                  padding: '18px',
-                  cursor: 'pointer',
-                  textAlign: 'center'
-                }}
-              >
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: selectedService === service.id ? 'white' : '#0B2E59' }}>
-                  {service.name}
-                </h3>
-              </div>
-            ))}
+            {/* Cards & Payments */}
+            <button className="service-card" onClick={() => handleServiceClick('cards')}>
+              <span className="service-main">{t.cardsPayments}</span>
+              <span className="service-sub">{t.cardsDesc}</span>
+              <span className="service-wait">{t.cardsWait}</span>
+            </button>
+            
+            {/* Other Services */}
+            <button className="service-card" onClick={() => handleServiceClick('other')}>
+              <span className="service-main">{t.otherServices}</span>
+              <span className="service-sub">{t.otherDesc}</span>
+              <span className="service-wait">{t.otherWait}</span>
+            </button>
           </div>
 
-          {/* Confirm Button */}
-          <button onClick={handleConfirm} style={{ width: '100%', background: '#D71920', color: 'white', padding: '15px', border: 'none', fontSize: '18px', fontWeight: 'bold', borderRadius: '5px', cursor: 'pointer' }}>
-            CONFIRM
+          <button className="cancel-button">{t.cancel}</button>
+        </div>
+
+        {/* Right Side - QR Code */}
+        <div className="qr-panel">
+          <p className="scan-text">{t.scanCode}</p>
+          
+          {/* QR Code Button */}
+          <button className="qr-toggle-btn" onClick={() => setShowQR(!showQR)}>
+            {showQR ? t.hideQR : t.showQR}
           </button>
+
+          {/* QR Code Display */}
+          {showQR && (
+            <div className="qr-container">
+              <div className="qr-code">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/qonnexea`}
+                  alt="QR Code QONNEXEA"
+                  className="qr-image"
+                />
+              </div>
+              <div className="qr-brand">
+                <span>{t.qonnexea}</span>
+                <span>{t.trackTurn}</span>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* RIGHT SIDE - 50% */}
-        <div style={{ width: '50%', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          
-          <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0B2E59', textAlign: 'center', marginBottom: '30px' }}>
-            VIRTUAL TICKET
-          </h2>
-
-          {/* QR Code cliquable */}
-          <div onClick={handleQrScan} style={{ width: '220px', height: '220px', background: 'white', border: '3px solid #0B2E59', borderRadius: '10px', marginBottom: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(11,46,89,0.15)', cursor: 'pointer' }}>
-            <div style={{ width: '180px', height: '180px', background: '#0B2E59', opacity: '0.9' }}></div>
-          </div>
-
-          <p style={{ fontSize: '16px', color: '#1E5AA8', textAlign: 'center', lineHeight: '1.5' }}>
-            Scan to get your<br />virtual ticket
-          </p>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div style={{ textAlign: 'center', padding: '20px', borderTop: '1px solid #1E5AA8', marginTop: '20px' }}>
-        <button style={{ color: '#0B2E59', fontSize: '14px', border: 'none', background: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-          Cancel / Return
-        </button>
       </div>
     </div>
   );
