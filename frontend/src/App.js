@@ -1,42 +1,56 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Tablet from './pages/Tablet';
-import QrScanResult from './pages/QrScanResult';
-import CreateTicket from './pages/CreateTicket';
-import CreateVirtualTicket from './pages/CreateVirtualTicket';
-import TrackQueue from './pages/TrackQueue';
-import SupportChat from './pages/SupportChat';
-import Satisfaction from './pages/Satisfaction';
+import EmployeeLogin from './pages/EmployeeLogin';
+import EmployeeDashboard from './pages/EmployeeDashboard';
+import CounterAdminDashboard from './pages/CounterAdminDashboard';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import './App.css';
+
+// Admin unique (fixe)
+const adminUser = {
+  id: 1,
+  username: 'admin',
+  name: 'Admin Principal'
+};
 
 function App() {
   return (
     <Router>
-      <div className="App">
-        <Routes>
-          {/* Route principale - tablette */}
-          <Route path="/" element={<Tablet />} />
-          
-          {/* Route après scan QR code */}
-          <Route path="/qonnexea" element={<QrScanResult />} />
-          
-          {/* Routes de création de ticket */}
-          <Route path="/create-ticket" element={<CreateTicket />} />
-          <Route path="/create-virtual" element={<CreateVirtualTicket />} />
-          
-          {/* Route de suivi */}
-          <Route path="/track-queue" element={<TrackQueue />} />
-          <Route path="/track-queue/:ticketId" element={<TrackQueue />} />
-          
-          {/* Route d'assistance (chatbot) */}
-          <Route path="/support" element={<SupportChat />} />
-          
-          {/* Route de satisfaction */}
-          <Route path="/satisfaction/:ticketId" element={<Satisfaction />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<Tablet />} />
+        
+        {/* Route employé avec login */}
+        <Route path="/employee" element={<EmployeeLoginWrapper />} />
+        
+        {/* Route admin direct */}
+        <Route path="/admin" element={<CounterAdminDashboard admin={adminUser} onLogout={() => window.location.href = '/'} />} />
+        
+        {/* Route super admin direct */}
+        <Route path="/superadmin" element={<SuperAdminDashboard admin={{ name: 'Super Admin' }} onLogout={() => window.location.href = '/'} />} />
+      </Routes>
     </Router>
   );
+}
+
+// Wrapper pour employé
+function EmployeeLoginWrapper() {
+  const [currentEmployee, setCurrentEmployee] = React.useState(null);
+  const navigate = useNavigate();
+
+  if (currentEmployee) {
+    return (
+      <EmployeeDashboard 
+        employee={currentEmployee} 
+        onLogout={() => {
+          setCurrentEmployee(null);
+          navigate('/employee');
+        }}
+      />
+    );
+  }
+
+  return <EmployeeLogin onLogin={(emp) => setCurrentEmployee(emp)} />;
 }
 
 export default App;

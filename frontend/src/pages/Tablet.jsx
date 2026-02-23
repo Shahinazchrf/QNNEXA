@@ -203,3 +203,15 @@ const Tablet = () => {
 };
 
 export default Tablet;
+{/* MENU DE TEST TEMPORAIRE */}
+<div style={{ position: 'fixed', bottom: '20px', left: '20px', background: '#0B2E59', padding: '15px', borderRadius: '10px', zIndex: 1000 }}>
+  <p style={{ color: 'white', marginBottom: '10px', fontWeight: 'bold' }}>🧪 MENU TEST</p>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+    <button onClick={() => window.location.href = '/qonnexea'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>QR Scan Result</button>
+    <button onClick={() => window.location.href = '/create-ticket'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Create Ticket</button>
+    <button onClick={() => window.location.href = '/create-virtual'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Create Virtual</button>
+    <button onClick={() => window.location.href = '/track-queue'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Track Queue</button>
+    <button onClick={() => window.location.href = '/support'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Support Chat</button>
+    <button onClick={() => window.location.href = '/satisfaction/123'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Satisfaction</button>
+  </div>
+</div>
