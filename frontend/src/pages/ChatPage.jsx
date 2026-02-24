@@ -1,20 +1,20 @@
-// frontend/src/pages/SupportChat.jsx
-
+// src/pages/ChatPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
+import './ChatPage.css';
 
-const SupportChat = () => {
+const ChatPage = () => {
   const navigate = useNavigate();
-  const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'bot',
       text: 'Hello! I\'m your QONNEXEA virtual assistant. How can I help you with your queue management today?',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      time: '8:30 PM'
     }
   ]);
+  const [inputMessage, setInputMessage] = useState('');
 
   const quickActions = [
     'Check my position',
@@ -26,17 +26,19 @@ const SupportChat = () => {
   ];
 
   const handleSendMessage = () => {
-    if (!message.trim()) return;
+    if (!inputMessage.trim()) return;
 
-    const newMessage = {
+    // Ajouter le message de l'utilisateur
+    const userMessage = {
       id: messages.length + 1,
       sender: 'user',
-      text: message,
+      text: inputMessage,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    setMessages([...messages, newMessage]);
-    setMessage('');
+    setMessages([...messages, userMessage]);
+    setInputMessage('');
 
+    // Simuler une réponse du bot
     setTimeout(() => {
       const botResponse = {
         id: messages.length + 2,
@@ -57,6 +59,7 @@ const SupportChat = () => {
     };
     setMessages([...messages, userMessage]);
 
+    // Réponse du bot selon l'action
     setTimeout(() => {
       let response = '';
       switch(action) {
@@ -67,16 +70,16 @@ const SupportChat = () => {
           response = 'Estimated wait time is 20 minutes.';
           break;
         case 'Cancel ticket':
-          response = 'To cancel your ticket, please visit any branch or call our support at 1530.';
+          response = 'To cancel your ticket, please visit any branch or call our support.';
           break;
         case 'New ticket':
-          response = 'You can create a new ticket from the "Get New Ticket" button in the navigation bar.';
+          response = 'You can create a new ticket from the "Get New Ticket" button.';
           break;
         case 'Services':
-          response = 'We offer: Cash Operations, Account Management, Loans, Credit Cards, and Digital Banking services.';
+          response = 'We offer: Cash Operations, Account Management, Loans, Cards, and more.';
           break;
         case 'Contact':
-          response = 'You can reach us at: support@agb.dz or call 1530 (24/7 support).';
+          response = 'You can reach us at: support@agb.dz or call 1530.';
           break;
         default:
           response = 'How can I help you?';
@@ -93,34 +96,34 @@ const SupportChat = () => {
   };
 
   return (
-    <div className="support-chat-page">
+    <div className="chat-page">
       <Navbar />
       
-      <div className="support-chat-container">
-        <div className="support-chat-header">
+      <div className="chat-container">
+        <div className="chat-header">
           <h1>QONNEXEA Support</h1>
           <p>How can we help you today?</p>
         </div>
 
-        <div className="support-chat-messages">
+        <div className="chat-messages">
           {messages.map((msg) => (
-            <div key={msg.id} className={`support-message ${msg.sender}`}>
+            <div key={msg.id} className={`message ${msg.sender}`}>
               {msg.sender === 'bot' && (
-                <div className="support-message-avatar">🤖</div>
+                <div className="message-avatar">🤖</div>
               )}
-              <div className="support-message-content">
+              <div className="message-content">
                 <p>{msg.text}</p>
-                <span className="support-message-time">{msg.time}</span>
+                <span className="message-time">{msg.time}</span>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="support-quick-actions">
+        <div className="quick-actions">
           {quickActions.map((action, index) => (
             <button
               key={index}
-              className="support-quick-btn"
+              className="quick-action-btn"
               onClick={() => handleQuickAction(action)}
             >
               {action}
@@ -128,26 +131,22 @@ const SupportChat = () => {
           ))}
         </div>
 
-        <div className="support-chat-input-area">
+        <div className="chat-input-area">
           <input
             type="text"
-            className="support-chat-input"
+            className="chat-input"
             placeholder="Type your message..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
-          <button className="support-send-btn" onClick={handleSendMessage}>
+          <button className="send-btn" onClick={handleSendMessage}>
             Send
           </button>
         </div>
-
-        <button className="support-back-btn" onClick={() => navigate('/queue')}>
-          ← Back to Queue
-        </button>
       </div>
     </div>
   );
 };
 
-export default SupportChat;
+export default ChatPage;

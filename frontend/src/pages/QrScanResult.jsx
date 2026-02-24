@@ -1,3 +1,5 @@
+// frontend/src/pages/QrScanResult.jsx
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './QrScanResult.css';
@@ -14,7 +16,6 @@ const QrScanResult = () => {
       <p className="welcome-subtitle">How can we help you today?</p>
 
       <div className="actions-grid">
-        {/* Create Virtual Ticket */}
         <div 
           className="action-card primary"
           onClick={() => navigate('/create-ticket')}
@@ -23,23 +24,12 @@ const QrScanResult = () => {
           <div className="action-label">Create Virtual Ticket</div>
         </div>
 
-        {/* Track My Queue */}
         <div 
           className="action-card secondary"
-          onClick={() => navigate('/track-queue')}
+          onClick={() => navigate('/queue')}
         >
           <div className="action-icon">📊</div>
           <div className="action-label">Track My Queue</div>
-        </div>
-
-        {/* Contact Support (Chatbot) */}
-        <div 
-          className="action-card tertiary"
-          onClick={() => navigate('/support')}
-          style={{ gridColumn: 'span 2' }}
-        >
-          <div className="action-icon">💬</div>
-          <div className="action-label">Chat with QONNEXEA Support</div>
         </div>
       </div>
 

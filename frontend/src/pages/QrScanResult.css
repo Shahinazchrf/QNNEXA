@@ -1,3 +1,5 @@
+/* frontend/src/pages/QrScanResult.css*/
+
 .qrscan-container {
   min-height: 100vh;
   background: white;
@@ -74,23 +76,9 @@
   border: 2px solid #0B2E59;
 }
 
-.action-card.tertiary {
-  background: #F5F5F5;
-  color: #0B2E59;
-  aspect-ratio: auto;
-  padding: 20px;
-  grid-column: span 2;
-  flex-direction: row;
-  gap: 15px;
-}
-
 .action-icon {
   font-size: 48px;
   margin-bottom: 15px;
-}
-
-.action-card.tertiary .action-icon {
-  margin-bottom: 0;
 }
 
 .action-label {
@@ -106,4 +94,42 @@
   cursor: pointer;
   text-decoration: underline;
   margin-top: 20px;
+  padding: 10px 20px;
+}
+
+.back-btn:hover {
+  text-decoration: none;
+  background: rgba(215,25,32,0.05);
+  border-radius: 4px;
+}
+
+@media (max-width: 600px) {
+  .agb-logo {
+    font-size: 48px;
+  }
+  
+  .welcome-title {
+    font-size: 28px;
+  }
+  
+  .welcome-subtitle {
+    font-size: 18px;
+    margin-bottom: 40px;
+  }
+  
+  .actions-grid {
+    gap: 15px;
+  }
+  
+  .action-card {
+    padding: 20px 15px;
+  }
+  
+  .action-icon {
+    font-size: 36px;
+  }
+  
+  .action-label {
+    font-size: 14px;
+  }
 }

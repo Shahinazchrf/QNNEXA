@@ -1,21 +1,25 @@
+// frontend/src/pages/CreateVirtualTicket.jsx
+
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CreateVirtualTicket = ({ onBack }) => {
+  const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState(null);
   const [ticketCreated, setTicketCreated] = useState(false);
 
   const services = [
-    { id: 1, name: 'Cash Operations' },
-    { id: 2, name: 'Customer Service' },
-    { id: 3, name: 'Corporate / VIP' },
-    { id: 4, name: 'Cards & Digital' },
+    { id: 1, name: 'Cash Operations', icon: '💰' },
+    { id: 2, name: 'Customer Service', icon: '👤' },
+    { id: 3, name: 'Corporate / VIP', icon: '🏢' },
+    { id: 4, name: 'Cards & Digital', icon: '💳' },
   ];
 
   const handleGetTicket = () => {
     if (selectedService) {
       setTicketCreated(true);
     } else {
-      alert('Veuillez choisir un service');
+      alert('Please select a service');
     }
   };
 
@@ -40,8 +44,8 @@ const CreateVirtualTicket = ({ onBack }) => {
           boxShadow: '0 4px 12px rgba(11,46,89,0.15)'
         }}>
           <div style={{ fontSize: '60px', marginBottom: '20px', color: '#0B2E59' }}>🎫</div>
-          <h2 style={{ fontSize: '28px', color: '#0B2E59', marginBottom: '10px', fontWeight: 'bold' }}>Ticket créé!</h2>
-          <p style={{ fontSize: '16px', color: '#1E5AA8', marginBottom: '20px' }}>Votre ticket virtuel est prêt</p>
+          <h2 style={{ fontSize: '28px', color: '#0B2E59', marginBottom: '10px', fontWeight: 'bold' }}>Ticket created!</h2>
+          <p style={{ fontSize: '16px', color: '#1E5AA8', marginBottom: '20px' }}>Your virtual ticket is ready</p>
           
           <div style={{ 
             background: '#F5F5F5', 
@@ -49,7 +53,7 @@ const CreateVirtualTicket = ({ onBack }) => {
             borderRadius: '8px', 
             marginBottom: '20px' 
           }}>
-            <p style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>Numéro de ticket</p>
+            <p style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>Ticket number</p>
             <p style={{ fontSize: '48px', fontWeight: 'bold', color: '#D71920' }}>V045</p>
             <p style={{ fontSize: '14px', color: '#1E5AA8', marginTop: '10px' }}>Service: Cash Operations</p>
           </div>
@@ -65,13 +69,13 @@ const CreateVirtualTicket = ({ onBack }) => {
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#0B2E59' }}>5</p>
             </div>
             <div style={{ background: '#F5F5F5', padding: '15px', borderRadius: '8px' }}>
-              <p style={{ fontSize: '12px', color: '#666' }}>Temps d'attente</p>
+              <p style={{ fontSize: '12px', color: '#666' }}>Wait time</p>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#0B2E59' }}>12 min</p>
             </div>
           </div>
 
           <button 
-            onClick={() => {}}
+            onClick={() => navigate('/track-queue')}
             style={{ 
               width: '100%', 
               background: '#0B2E59', 
@@ -85,7 +89,7 @@ const CreateVirtualTicket = ({ onBack }) => {
               marginBottom: '10px'
             }}
           >
-            SUIVRE MA POSITION
+            TRACK MY POSITION
           </button>
 
           <button 
@@ -101,7 +105,7 @@ const CreateVirtualTicket = ({ onBack }) => {
               cursor: 'pointer'
             }}
           >
-            NOUVEAU TICKET
+            NEW TICKET
           </button>
         </div>
       </div>
@@ -142,23 +146,51 @@ const CreateVirtualTicket = ({ onBack }) => {
               cursor: 'pointer',
               aspectRatio: '1/1',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              border: selectedService === service.id ? 'none' : '1px solid #E0E0E0'
+              border: selectedService === service.id ? 'none' : '1px solid #E0E0E0',
+              transition: 'all 0.2s'
             }}
           >
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: selectedService === service.id ? 'white' : '#0B2E59' }}>
+            <div style={{ fontSize: '40px', marginBottom: '10px' }}>{service.icon}</div>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: selectedService === service.id ? 'white' : '#0B2E59' }}>
               {service.name}
             </h3>
           </div>
         ))}
       </div>
 
-      <button onClick={handleGetTicket} style={{ width: '100%', maxWidth: '500px', background: '#0B2E59', color: 'white', padding: '18px', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '15px' }}>
+      <button 
+        onClick={handleGetTicket} 
+        style={{ 
+          width: '100%', 
+          maxWidth: '500px', 
+          background: '#0B2E59', 
+          color: 'white', 
+          padding: '18px', 
+          border: 'none', 
+          borderRadius: '8px', 
+          fontSize: '18px', 
+          fontWeight: 'bold', 
+          cursor: 'pointer', 
+          marginBottom: '15px' 
+        }}
+      >
         Get Your Virtual Ticket +
       </button>
 
-      <button onClick={onBack} style={{ background: 'none', color: '#D71920', border: 'none', fontSize: '16px', cursor: 'pointer', textDecoration: 'underline' }}>
+      <button 
+        onClick={() => navigate('/qonnexea')} 
+        style={{ 
+          background: 'none', 
+          color: '#D71920', 
+          border: 'none', 
+          fontSize: '16px', 
+          cursor: 'pointer', 
+          textDecoration: 'underline' 
+        }}
+      >
         Cancel
       </button>
     </div>

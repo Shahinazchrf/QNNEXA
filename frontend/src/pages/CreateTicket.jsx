@@ -1,165 +1,157 @@
-import React, { useState, useEffect } from 'react';
+// frontend/src/pages/CreateTicket.jsx
+
+// frontend/src/pages/CreateTicket.jsx
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ticketService from '../services/ticketService';
 import './CreateTicket.css';
 
 const CreateTicket = () => {
   const navigate = useNavigate();
-  const [services, setServices] = useState([]);
-  const [selectedService, setSelectedService] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [ticket, setTicket] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [stats, setStats] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
+  const [ticketCreated, setTicketCreated] = useState(false);
+  const [ticketData, setTicketData] = useState(null);
 
-  useEffect(() => {
-    loadServices();
-    fetchStats();
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // Service data with AGB color palette
+  const services = [
+    { id: 1, name: 'Cash Operations', icon: '💰', code: 'CASH', color: '#0B2E59' },
+    { id: 2, name: 'Account Management', icon: '👤', code: 'ACCT', color: '#1E5AA8' },
+    { id: 3, name: 'Corporate / VIP', icon: '🏢', code: 'VIP', color: '#2E7D32' },
+    { id: 4, name: 'Cards & Digital', icon: '💳', code: 'CARD', color: '#C2185B' },
+    { id: 5, name: 'Loans & Credit', icon: '🏦', code: 'LOAN', color: '#F57C00' },
+    { id: 6, name: 'Investment Services', icon: '📈', code: 'INV', color: '#7B1FA2' },
+  ];
 
-  const loadServices = async () => {
-    try {
-      const data = await ticketService.getServices();
-      setServices(data);
-    } catch (err) {
-      setError('Impossible de charger les services');
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const data = await ticketService.getQueueStats();
-      setStats(data);
-    } catch (err) {
-      console.error('Erreur stats:', err);
-    }
-  };
-
-  const handleCreateTicket = async (e) => {
-    e.preventDefault();
+  const handleCreateTicket = () => {
     if (!selectedService) {
-      setError('Veuillez sélectionner un service');
+      alert('Please select a service');
       return;
     }
 
-    setLoading(true);
-    setError('');
+    // Generate ticket number
+    const ticketNumber = generateTicketNumber(selectedService.code);
+    const position = Math.floor(Math.random() * 8) + 3; // Random position between 3-10
+    const waitTime = position * 2; // 2 minutes per person
 
-    try {
-      const service = services.find(s => s.id === selectedService);
-      const newTicket = await ticketService.createNormalTicket(
-        service.name,
-        customerName || 'Client'
-      );
-      setTicket(newTicket);
-    } catch (err) {
-      setError('Erreur lors de la création du ticket');
-    } finally {
-      setLoading(false);
-    }
+    setTicketData({
+      number: ticketNumber,
+      service: selectedService.name,
+      position: position,
+      waitTime: waitTime,
+      createdAt: new Date().toLocaleTimeString()
+    });
+    
+    setTicketCreated(true);
   };
 
-  if (ticket) {
+  const generateTicketNumber = (serviceCode) => {
+    const prefixes = {
+      'CASH': 'C',
+      'ACCT': 'A',
+      'VIP': 'V',
+      'CARD': 'D',
+      'LOAN': 'L',
+      'INV': 'I'
+    };
+    const prefix = prefixes[serviceCode] || 'T';
+    const randomNum = Math.floor(Math.random() * 900 + 100);
+    return `${prefix}${randomNum}`;
+  };
+
+  if (ticketCreated) {
     return (
-      <div className="ticket-created">
-        <div className="success-icon">✅</div>
-        <h2>Ticket créé avec succès !</h2>
-        
+      <div className="ticket-created-container">
         <div className="ticket-card">
-          <div className="ticket-number">{ticket.number}</div>
-          <div className="ticket-service">{ticket.service}</div>
-          <div className="ticket-time">
-            Créé à: {new Date(ticket.created_at).toLocaleTimeString()}
+          <div className="success-icon">✓</div>
+          <h2>Ticket Created</h2>
+          
+          <div className="ticket-number-display">
+            {ticketData.number}
           </div>
-          <div className="ticket-wait">
-            Temps d'attente estimé: {ticket.estimated_wait || 15} min
+          
+          <div className="ticket-info-grid">
+            <div className="info-item">
+              <span className="info-label">Service</span>
+              <span className="info-value">{ticketData.service}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Position</span>
+              <span className="info-value">{ticketData.position}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Wait Time</span>
+              <span className="info-value">{ticketData.waitTime} min</span>
+            </div>
           </div>
-        </div>
 
-        <div className="ticket-actions">
-          <button 
-            className="btn btn-primary"
+          <button
             onClick={() => navigate('/track-queue')}
+            className="btn-primary"
           >
-            Suivre ma position
+            Track Position
           </button>
-          <button 
-            className="btn btn-secondary"
-            onClick={() => {
-              setTicket(null);
-              setSelectedService('');
-              setCustomerName('');
-            }}
-          >
-            Nouveau ticket
-          </button>
-        </div>
 
-        <div className="info-message">
-          <p>💡 Vous recevrez une notification quand ce sera votre tour</p>
+          <button
+            onClick={() => {
+              setTicketCreated(false);
+              setSelectedService(null);
+            }}
+            className="btn-outline"
+          >
+            New Ticket
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="create-ticket-container">
-      <h1>🎫 Créer un ticket</h1>
-      
-      {error && <div className="error-message">{error}</div>}
+    <div className="create-ticket-page">
+      {/* Header with AGB branding */}
+      <div className="agb-header">
+        <div className="agb-logo">AGB</div>
+        <div className="agency-badge">Algiers Main</div>
+      </div>
 
-      <form onSubmit={handleCreateTicket} className="ticket-form">
-        <div className="form-group">
-          <label>Choisissez un service</label>
-          <select 
-            value={selectedService}
-            onChange={(e) => setSelectedService(e.target.value)}
-            required
+      {/* Main Content */}
+      <div className="create-ticket-content">
+        <h1 className="page-title">Choose Your Service</h1>
+
+        {/* Services Grid */}
+        <div className="services-grid">
+          {services.map((service) => (
+            <button
+              key={service.id}
+              onClick={() => setSelectedService(service)}
+              className={`service-card ${selectedService?.id === service.id ? 'selected' : ''}`}
+            >
+              <div className="service-icon">{service.icon}</div>
+              <div className="service-name">{service.name}</div>
+              {selectedService?.id === service.id && (
+                <div className="selected-indicator">✓</div>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button
+            onClick={handleCreateTicket}
+            className="btn-primary btn-large"
+            disabled={!selectedService}
           >
-            <option value="">-- Sélectionnez --</option>
-            {services.map(service => (
-              <option key={service.id} value={service.id}>
-                {service.name} - {service.description || ''}
-              </option>
-            ))}
-          </select>
-        </div>
+            Get Your Virtual Ticket
+          </button>
 
-        <div className="form-group">
-          <label>Votre nom (optionnel)</label>
-          <input
-            type="text"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="Entrez votre nom"
-          />
+          <button
+            onClick={() => navigate('/qonnexea')}
+            className="btn-link"
+          >
+            Cancel
+          </button>
         </div>
-
-        <button 
-          type="submit" 
-          className="btn-submit"
-          disabled={loading}
-        >
-          {loading ? 'Création...' : 'Créer mon ticket'}
-        </button>
-      </form>
-
-      {stats && (
-        <div className="queue-info">
-          <h3>File d'attente en direct</h3>
-          <div className="stats-simple">
-            <p>📊 {stats.total_waiting || 0} personne(s) en attente</p>
-            {stats.next_tickets && stats.next_tickets.length > 0 && (
-              <div className="next-tickets">
-                <small>Prochains: {stats.next_tickets.map(t => t.number).join(', ')}</small>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

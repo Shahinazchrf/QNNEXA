@@ -1,80 +1,109 @@
+/* forntend/rc/pages/TrackQueue.css*/
+
 .track-container {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 20px;
+  min-height: 100vh;
+  background: #f5f7fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 30px 20px 50px;
 }
 
-h1 {
+.track-header {
   text-align: center;
-  color: #333;
   margin-bottom: 40px;
 }
 
-.track-form {
-  max-width: 400px;
-  margin: 0 auto;
-  background: white;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+.track-header h1 {
+  font-size: 36px;
+  color: #0B2E59;
+  margin-bottom: 10px;
+  font-weight: 700;
 }
 
-.form-group {
+.track-header p {
+  color: #666;
+  font-size: 16px;
+}
+
+.track-form {
+  max-width: 450px;
+  margin: 0 auto 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.track-form-group {
   margin-bottom: 20px;
 }
 
-.form-group label {
+.track-form-group label {
   display: block;
   margin-bottom: 8px;
-  font-weight: bold;
-  color: #555;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
 }
 
 .track-input {
   width: 100%;
-  padding: 12px;
+  padding: 15px;
   border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 16px;
   text-transform: uppercase;
+  transition: border-color 0.2s;
 }
 
 .track-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #0B2E59;
 }
 
-.btn-track {
+.track-error {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.track-btn {
   width: 100%;
-  padding: 14px;
-  background: #667eea;
+  padding: 16px;
+  background: #0B2E59;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s;
 }
 
-.btn-track:hover:not(:disabled) {
-  background: #5a67d8;
+.track-btn:hover:not(:disabled) {
+  background: #1E5AA8;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(11,46,89,0.3);
 }
 
-.btn-track:disabled {
+.track-btn:disabled {
   background: #cbd5e0;
   cursor: not-allowed;
 }
 
-.ticket-status {
+.track-result {
+  max-width: 550px;
+  margin: 0 auto 40px;
   background: white;
-  border-radius: 15px;
+  border-radius: 20px;
   padding: 30px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.status-header {
+.track-ticket-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -83,81 +112,85 @@ h1 {
   border-bottom: 2px solid #f0f0f0;
 }
 
-.status-header h2 {
+.track-ticket-header h2 {
   color: #333;
   font-size: 24px;
 }
 
-.status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
+.track-status {
+  padding: 6px 14px;
+  border-radius: 30px;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 600;
 }
 
-.status-waiting {
+.track-status-waiting {
   background: #fef3c7;
   color: #92400e;
 }
 
-.status-called {
+.track-status-called {
   background: #dbeafe;
   color: #1e40af;
 }
 
-.status-serving {
+.track-status-serving {
   background: #dcfce7;
   color: #166534;
 }
 
-.status-completed {
+.track-status-completed {
   background: #e0f2fe;
   color: #0369a1;
 }
 
-.status-missed {
+.track-status-missed {
   background: #fee2e2;
   color: #991b1b;
 }
 
-.status-details {
-  display: grid;
-  gap: 15px;
+.track-ticket-details {
+  margin-bottom: 25px;
 }
 
-.detail-item {
+.track-detail-row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.detail-label {
+.track-detail-row:last-child {
+  border-bottom: none;
+}
+
+.track-detail-label {
   color: #666;
   font-weight: 500;
 }
 
-.detail-value {
-  color: #333;
+.track-detail-value {
   font-weight: 600;
+  color: #333;
 }
 
-.position {
-  color: #667eea;
-  font-size: 20px;
-}
-
-.wait-time {
-  color: #48bb78;
+.track-position {
+  color: #0B2E59;
   font-size: 18px;
+  font-weight: 700;
 }
 
-.progress-section {
-  margin-top: 25px;
-  padding: 20px 0;
+.track-wait {
+  color: #10b981;
+  font-size: 18px;
+  font-weight: 700;
 }
 
-.progress-bar {
+.track-progress {
+  margin: 25px 0;
+}
+
+.track-progress-bar {
   height: 10px;
   background: #e2e8f0;
   border-radius: 5px;
@@ -165,147 +198,160 @@ h1 {
   margin-bottom: 10px;
 }
 
-.progress-fill {
+.track-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #0B2E59, #1E5AA8);
   transition: width 0.3s ease;
 }
 
-.progress-text {
+.track-progress-text {
   text-align: center;
   color: #718096;
   font-size: 14px;
 }
 
-.survey-reminder {
+.track-survey {
   text-align: center;
   padding: 20px;
   background: #f0f9ff;
-  border-radius: 10px;
+  border-radius: 12px;
   margin: 20px 0;
 }
 
-.btn-survey {
-  background: #48bb78;
+.track-survey p {
+  color: #0B2E59;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.track-survey-btn {
+  padding: 12px 25px;
+  background: #0B2E59;
   color: white;
-  padding: 10px 20px;
   border: none;
   border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 10px;
-  transition: background 0.3s;
+  transition: all 0.2s;
 }
 
-.btn-survey:hover {
-  background: #38a169;
+.track-survey-btn:hover {
+  background: #1E5AA8;
+  transform: translateY(-2px);
 }
 
-.btn-back {
+.track-back-btn {
   width: 100%;
-  padding: 12px;
-  background: #e2e8f0;
-  color: #333;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  padding: 14px;
+  background: none;
+  border: 2px solid #D71920;
+  color: #D71920;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
   margin-top: 20px;
-  transition: background 0.3s;
+  transition: all 0.3s;
 }
 
-.btn-back:hover {
-  background: #cbd5e0;
+.track-back-btn:hover {
+  background: #D71920;
+  color: white;
 }
 
-.queue-stats {
+.track-stats {
+  max-width: 550px;
+  margin: 0 auto;
   background: white;
-  border-radius: 15px;
+  border-radius: 20px;
   padding: 25px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.queue-stats h3 {
+.track-stats h3 {
   color: #333;
   margin-bottom: 20px;
+  font-size: 18px;
   text-align: center;
 }
 
-.stats-grid {
+.track-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 15px;
   margin-bottom: 25px;
 }
 
-.stat-card {
-  background: #f7fafc;
+.track-stat-card {
+  background: #f8f9fa;
   padding: 15px;
-  border-radius: 10px;
+  border-radius: 12px;
   text-align: center;
 }
 
-.stat-value {
+.track-stat-value {
   font-size: 28px;
-  font-weight: bold;
-  color: #667eea;
+  font-weight: 700;
+  color: #0B2E59;
   margin-bottom: 5px;
 }
 
-.stat-label {
+.track-stat-label {
   color: #718096;
   font-size: 14px;
 }
 
-.next-tickets h4 {
+.track-next-tickets h4 {
   color: #555;
   margin-bottom: 15px;
+  font-size: 16px;
 }
 
-.tickets-list {
+.track-next-list {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.next-ticket {
-  background: #f7fafc;
+.track-next-item {
+  background: #f8f9fa;
   padding: 10px 15px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 10px;
+  border: 1px solid #e0e0e0;
 }
 
-.ticket-num {
-  font-weight: bold;
-  color: #667eea;
+.track-next-number {
+  font-weight: 700;
+  color: #0B2E59;
 }
 
-.ticket-service {
+.track-next-service {
   color: #718096;
-  font-size: 14px;
+  font-size: 13px;
 }
 
-@media (max-width: 768px) {
-  .track-container {
-    padding: 20px 15px;
+@media (max-width: 600px) {
+  .track-header h1 {
+    font-size: 28px;
   }
   
-  .status-header {
+  .track-ticket-header {
     flex-direction: column;
     gap: 10px;
     text-align: center;
   }
   
-  .detail-item {
+  .track-detail-row {
     flex-direction: column;
     gap: 5px;
     text-align: center;
   }
   
-  .stats-grid {
-    grid-template-columns: 1fr 1fr;
+  .track-next-list {
+    justify-content: center;
   }
 }

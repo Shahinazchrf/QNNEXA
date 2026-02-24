@@ -1,3 +1,5 @@
+// frontend/src/pages/Tablet.jsx
+
 import React, { useState } from 'react';
 import './Tablet.css';
 
@@ -185,7 +187,7 @@ const Tablet = () => {
             <div className="qr-container">
               <div className="qr-code">
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/qonnexea`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://10.167.50.243:3000/qonnexea`}
                   alt="QR Code QONNEXEA"
                   className="qr-image"
                 />
@@ -203,3 +205,15 @@ const Tablet = () => {
 };
 
 export default Tablet;
+{/* MENU DE TEST TEMPORAIRE */}
+<div style={{ position: 'fixed', bottom: '20px', left: '20px', background: '#0B2E59', padding: '15px', borderRadius: '10px', zIndex: 1000 }}>
+  <p style={{ color: 'white', marginBottom: '10px', fontWeight: 'bold' }}>🧪 MENU TEST</p>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+    <button onClick={() => window.location.href = '/qonnexea'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>QR Scan Result</button>
+    <button onClick={() => window.location.href = '/create-ticket'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Create Ticket</button>
+    <button onClick={() => window.location.href = '/create-virtual'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Create Virtual</button>
+    <button onClick={() => window.location.href = '/track-queue'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Track Queue</button>
+    <button onClick={() => window.location.href = '/support'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Support Chat</button>
+    <button onClick={() => window.location.href = '/satisfaction/123'} style={{ background: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}>Satisfaction</button>
+  </div>
+</div>

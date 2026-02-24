@@ -1,9 +1,13 @@
-const API_URL = 'http://localhost:5000/api';
+// frontend/src/services/api.js
+
+// frontend/src/services/api.js
+
+const API_URL = 'http://10.167.50.243:5000/api';
 
 const handleResponse = async (response) => {
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || 'Erreur réseau');
+    throw new Error(error.error || 'Network error');
   }
   return response.json();
 };

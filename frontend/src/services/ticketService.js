@@ -1,3 +1,5 @@
+// frontend /src/services/tivketService.js
+
 import api from './api';
 
 const ticketService = {
@@ -6,7 +8,7 @@ const ticketService = {
       const response = await api.get('/services');
       return response.services || [];
     } catch (error) {
-      console.error('Erreur services:', error);
+      console.error('Error loading services:', error);
       throw error;
     }
   },
@@ -19,7 +21,21 @@ const ticketService = {
       });
       return response.ticket;
     } catch (error) {
-      console.error('Erreur création ticket:', error);
+      console.error('Error creating ticket:', error);
+      throw error;
+    }
+  },
+
+  createVIPTicket: async (serviceCode, vipCode, customerName) => {
+    try {
+      const response = await api.post('/tickets/vip/generate', {
+        service_code: serviceCode,
+        vip_code: vipCode,
+        customer_name: customerName
+      });
+      return response.ticket;
+    } catch (error) {
+      console.error('Error creating VIP ticket:', error);
       throw error;
     }
   },
@@ -29,7 +45,7 @@ const ticketService = {
       const response = await api.get(`/tickets/${ticketNumber}`);
       return response.ticket;
     } catch (error) {
-      console.error('Erreur suivi ticket:', error);
+      console.error('Error tracking ticket:', error);
       throw error;
     }
   },
@@ -39,7 +55,7 @@ const ticketService = {
       const response = await api.get('/queue/stats');
       return response.data;
     } catch (error) {
-      console.error('Erreur stats:', error);
+      console.error('Error getting queue stats:', error);
       throw error;
     }
   }
