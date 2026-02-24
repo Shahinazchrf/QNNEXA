@@ -1,78 +1,174 @@
 // frontend/src/pages/Satisfaction.jsx
 
-import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import Navbar from '../components/common/Navbar';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Satisfaction.css';
 
 const Satisfaction = () => {
   const navigate = useNavigate();
-  const { ticketId } = useParams();
+  const location = useLocation();
+  const [darkMode, setDarkMode] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comments, setComments] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [criteria, setCriteria] = useState({
+    fastService: false,
+    professionalStaff: false,
+    helpfulSupport: false,
+    cleanAgency: false
+  });
 
-  const criteria = [
-    { id: 'fast', label: 'Fast Service' },
-    { id: 'professional', label: 'Professional Staff' },
-    { id: 'helpful', label: 'Helpful Support' },
-    { id: 'clean', label: 'Clean Agency' }
-  ];
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const questions = [
-    "How would you rate the waiting time?",
-    "Was the staff helpful?",
-    "Was the process clear?",
-    "Would you recommend us to others?"
-  ];
+  // Toggle dark mode
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [darkMode]);
 
-  const [answers, setAnswers] = useState({});
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
-  const handleAnswerChange = (index, value) => {
-    setAnswers({ ...answers, [index]: value });
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleCriteriaChange = (e) => {
+    setCriteria({
+      ...criteria,
+      [e.target.name]: e.target.checked
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Survey submitted:', { ticketId, rating, answers, comments });
-    setSubmitted(true);
+    alert('Thank you for your feedback!');
+    navigate('/queue');
   };
 
-  if (submitted) {
-    return (
-      <div className="satisfaction-container">
-        <Navbar />
-        <div className="satisfaction-content">
-          <div className="thank-you-card">
-            <div className="thank-you-icon">🎉</div>
-            <h2 className="thank-you-title">Thank you for visiting!</h2>
-            <div className="thank-you-stars">★★★★★</div>
-            <p className="thank-you-message">
-              Your feedback has been submitted successfully.<br />
-              We appreciate your time and help in improving our services.
-            </p>
-            <button className="home-btn" onClick={() => navigate('/queue')}>
-              Return to Queue
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="satisfaction-container">
-      <Navbar />
-      
-      <div className="satisfaction-content">
-        <h1 className="satisfaction-title">How was your experience?</h1>
-        <p className="satisfaction-subtitle">Your feedback helps us improve</p>
+    <div className={`satisfaction-page ${darkMode ? 'dark' : ''}`}>
+      {/* Navbar with Queue button */}
+      <nav className="queue-navbar">
+        <div className="nav-left">
+          <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
+          <span className="nav-slogan">Smart Queue Management System</span>
+        </div>
+        
+        <div className="nav-center">
+          <span className="datetime">
+            {formatDate(currentDateTime)} {formatTime(currentDateTime)}
+          </span>
+        </div>
+
+        <div className="nav-right">
+          <button 
+            className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`}
+            onClick={() => navigate('/queue')}
+          >
+            <span className="nav-icon">📊</span>
+            <span className="nav-label">Queue</span>
+          </button>
+          <button 
+            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
+            onClick={() => navigate('/satisfaction')}
+          >
+            <span className="nav-icon">⭐</span>
+            <span className="nav-label">Feedback</span>
+          </button>
+          <button 
+            className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`}
+            onClick={() => navigate('/faq')}
+          >
+            <span className="nav-icon">❓</span>
+            <span className="nav-label">FAQ</span>
+          </button>
+          <button 
+            className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`}
+            onClick={() => navigate('/support')}
+          >
+            <span className="nav-icon">💬</span>
+            <span className="nav-label">Chatbot</span>
+          </button>
+          <button 
+            className="dark-mode-btn"
+            onClick={() => setDarkMode(!darkMode)}
+          >
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </nav>
+
+      {/* Satisfaction Content */}
+      <div className="satisfaction-container">
+        <h1 className="satisfaction-title">Thank you for visiting!</h1>
+        <p className="satisfaction-subtitle">How was your experience today?</p>
 
         <form onSubmit={handleSubmit} className="satisfaction-form">
+          {/* Criteria Checklist */}
+          <div className="criteria-section">
+            <div className="criteria-grid">
+              <label className="criteria-item">
+                <input
+                  type="checkbox"
+                  name="fastService"
+                  checked={criteria.fastService}
+                  onChange={handleCriteriaChange}
+                />
+                <span>Fast Service</span>
+              </label>
+              <label className="criteria-item">
+                <input
+                  type="checkbox"
+                  name="professionalStaff"
+                  checked={criteria.professionalStaff}
+                  onChange={handleCriteriaChange}
+                />
+                <span>Professional Staff</span>
+              </label>
+              <label className="criteria-item">
+                <input
+                  type="checkbox"
+                  name="helpfulSupport"
+                  checked={criteria.helpfulSupport}
+                  onChange={handleCriteriaChange}
+                />
+                <span>Helpful Support</span>
+              </label>
+              <label className="criteria-item">
+                <input
+                  type="checkbox"
+                  name="cleanAgency"
+                  checked={criteria.cleanAgency}
+                  onChange={handleCriteriaChange}
+                />
+                <span>Clean Agency</span>
+              </label>
+            </div>
+          </div>
+
           {/* Star Rating */}
           <div className="rating-section">
-            <label className="section-label">Overall Rating *</label>
+            <p className="rating-label">Notez votre expérience</p>
             <div className="stars-container">
               {[1, 2, 3, 4, 5].map((star) => (
                 <span
@@ -82,63 +178,18 @@ const Satisfaction = () => {
                   onMouseEnter={() => setHover(star)}
                   onMouseLeave={() => setHover(0)}
                 >
-                  ★
+                  ⭐
                 </span>
               ))}
             </div>
-            <p className="rating-label">
-              {rating === 0 && "Tap to rate"}
-              {rating === 1 && "Poor"}
-              {rating === 2 && "Fair"}
-              {rating === 3 && "Good"}
-              {rating === 4 && "Very Good"}
-              {rating === 5 && "Excellent"}
-            </p>
           </div>
 
-          {/* Criteria Checklist */}
-          <div className="criteria-section">
-            <label className="section-label">What went well? (Select all that apply)</label>
-            <div className="criteria-grid">
-              {criteria.map((item) => (
-                <label key={item.id} className="criteria-item">
-                  <input type="checkbox" className="criteria-checkbox" />
-                  <span className="criteria-icon">✓</span>
-                  <span className="criteria-label">{item.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Questions */}
-          <div className="questions-section">
-            <label className="section-label">Quick Questions</label>
-            {questions.map((question, index) => (
-              <div key={index} className="question-item">
-                <p className="question-text">{question}</p>
-                <div className="question-options">
-                  {[1, 2, 3, 4, 5].map((value) => (
-                    <label key={value} className="option-label">
-                      <input
-                        type="radio"
-                        name={`q${index}`}
-                        value={value}
-                        onChange={(e) => handleAnswerChange(index, e.target.value)}
-                      />
-                      <span>{value}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Comments */}
+          {/* Comments Section */}
           <div className="comments-section">
-            <label className="section-label">Additional Comments (Optional)</label>
+            <p className="comments-label">Vos commentaires</p>
             <textarea
               className="comments-input"
-              placeholder="Tell us more about your experience..."
+              placeholder="Share your feedback..."
               value={comments}
               onChange={(e) => setComments(e.target.value)}
               rows="4"
@@ -147,13 +198,9 @@ const Satisfaction = () => {
 
           {/* Submit Button */}
           <button type="submit" className="submit-btn">
-            Submit Feedback
+            Envoyer
           </button>
         </form>
-
-        <button className="cancel-btn" onClick={() => navigate('/queue')}>
-          Cancel
-        </button>
       </div>
     </div>
   );

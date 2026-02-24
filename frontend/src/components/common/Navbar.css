@@ -1,78 +1,266 @@
-.navbar {
+/* frontend/src/components/Navbar.css */
+
+.main-navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 30px;
-  background: #0B2E59;
-  color: white;
+  padding: 12px 30px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.nav-left .logo {
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
+/* Dark Mode */
+.main-navbar.dark {
+  background: #1a1a1a;
+  border-bottom-color: #333;
 }
 
-.nav-center {
+.main-navbar.dark .nav-item {
+  color: #b0b0b0;
+}
+
+.main-navbar.dark .nav-item:hover {
+  background: #333;
+  color: white;
+}
+
+.main-navbar.dark .nav-item.active {
+  background: #0B2E59;
+  color: white;
+}
+
+.main-navbar.dark .brand-name,
+.main-navbar.dark .brand-logo {
+  color: #e0e0e0;
+}
+
+.main-navbar.dark .brand-slogan {
+  color: #a0a0a0;
+}
+
+.main-navbar.dark .date {
+  color: #b0b0b0;
+}
+
+.main-navbar.dark .time {
+  color: #e0e0e0;
+}
+
+/* Left Navigation */
+.nav-left {
   display: flex;
-  gap: 15px;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .nav-item {
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.8);
-  font-size: 15px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 30px;
-  cursor: pointer;
-  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .nav-item:hover {
-  background: rgba(255,255,255,0.15);
-  color: white;
-  transform: translateY(-2px);
+  background: #f0f0f0;
+  color: #0B2E59;
 }
 
 .nav-item.active {
-  background: rgba(255,255,255,0.25);
+  background: #0B2E59;
   color: white;
-  font-weight: 600;
 }
 
-.nav-right .agency {
+.nav-icon {
+  font-size: 18px;
+}
+
+.nav-label {
   font-size: 14px;
-  opacity: 0.9;
-  padding: 5px 15px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 20px;
 }
 
-@media (max-width: 900px) {
-  .navbar {
+/* Dark mode button */
+.nav-item.dark-mode-btn {
+  background: #f0f0f0;
+  margin-left: 5px;
+}
+
+.nav-item.dark-mode-btn:hover {
+  background: #e0e0e0;
+}
+
+/* New Ticket Button */
+.nav-item.new-ticket-btn {
+  background: #D71920;
+  color: white;
+  margin-left: 5px;
+}
+
+.nav-item.new-ticket-btn:hover {
+  background: #b3141a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(215, 25, 32, 0.3);
+}
+
+/* Right side - Brand and Time */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.brand-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.brand-logo {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0B2E59;
+  letter-spacing: 1px;
+}
+
+.brand-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0B2E59;
+  line-height: 1.2;
+}
+
+.brand-slogan {
+  font-size: 12px;
+  color: #777;
+  font-style: italic;
+}
+
+.datetime-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  border-left: 2px solid #0B2E59;
+  padding-left: 20px;
+}
+
+.date {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.time {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0B2E59;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .main-navbar {
     flex-direction: column;
-    padding: 15px;
     gap: 15px;
+    padding: 15px 20px;
   }
-  
-  .nav-center {
+
+  .nav-left {
     justify-content: center;
+  }
+
+  .nav-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-left {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .nav-item {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .nav-icon {
+    font-size: 16px;
+  }
+
+  .nav-right {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .brand-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 5px;
+  }
+
+  .datetime-info {
+    border-left: none;
+    border-top: 2px solid #0B2E59;
+    padding-left: 0;
+    padding-top: 10px;
+    align-items: center;
+  }
+
+  .date {
+    font-size: 12px;
+  }
+
+  .time {
+    font-size: 16px;
   }
 }
 
 @media (max-width: 480px) {
   .nav-item {
-    font-size: 13px;
-    padding: 6px 12px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .nav-label {
+    display: none; /* Hide labels on very small screens, keep only icons */
+  }
+
+  .nav-icon {
+    font-size: 20px;
+  }
+
+  .brand-logo {
+    font-size: 24px;
+  }
+
+  .brand-name {
+    font-size: 16px;
+  }
+
+  .brand-slogan {
+    font-size: 11px;
   }
 }

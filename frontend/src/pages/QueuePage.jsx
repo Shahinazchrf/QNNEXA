@@ -1,288 +1,211 @@
-import React, { useState } from 'react';
+// frontend/src/pages/QueuePage.jsx
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Navbar from '../components/common/Navbar';
 import './QueuePage.css';
 
 const QueuePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const ticketData = location.state?.ticket;
+  const ticketData = location.state?.ticket || {
+    number: 'T6457',
+    service: 'Account Opening',
+    position: 18,
+    waitTime: 20
+  };
   
-  const [activeTab, setActiveTab] = useState('tracking');
+  const [darkMode, setDarkMode] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
-  // Données simulées
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Toggle dark mode
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [darkMode]);
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const queueData = {
     position: ticketData?.position || 18,
-    ahead: 5,
-    waitTime: 20,
+    ahead: ticketData ? ticketData.position - 1 : 17,
+    waitTime: ticketData?.waitTime || 20,
     ticketNumber: ticketData?.number || 'T6457',
-    service: ticketData?.service || 'Account Opening',
-    currentServing: {
-      service: 'Account Opening',
-      position: '#1',
-      time: '0 min'
-    }
+    service: ticketData?.service || 'Account Opening'
   };
 
   const notifications = [
     {
       id: 1,
-      message: 'Your turn is approaching. Only 6 people ahead of you.',
-      time: '20:35'
+      message: 'Your turn is approaching. Only 6 people ahead of you.'
     },
     {
       id: 2,
-      message: 'Ticket T2466 generated for Loan Request. Your position: #12',
-      time: '19:50'
+      message: 'Ticket T2466 generated for Loan Request. Your position: #12'
     },
     {
       id: 3,
-      message: 'Thank you for your patience. Please fill out our satisfaction survey',
-      time: '19:15'
+      message: 'Thank you for your patience. Please fill out our satisfaction survey.'
     },
     {
       id: 4,
-      message: 'Ticket T6457 generated for Account Opening. Your position: #5',
-      time: '19:15'
+      message: 'Ticket T6457 generated for Account Opening. Your position: #5'
     }
   ];
 
   const faqItems = [
     {
-      question: "What documents are required for Gold credit card?",
-      answer: "For a Gold credit card, you typically need: valid ID, proof of income, bank statements for the last 3 months, and a good credit history."
+      question: "What documents are required for Gold credit card?"
     },
     {
-      question: "How do I apply for a personal loan?",
-      answer: "You can apply for a personal loan by visiting any AGB branch, using our online banking platform, or through the QONNEXEA app."
+      question: "How do apply Ina personal loan?"
     },
     {
-      question: "How can I check my account balance online?",
-      answer: "You can check your account balance through our online banking portal, mobile app, or by visiting any ATM."
+      question: "How can I check my account balance online?"
     },
     {
-      question: "What is mobile deposit?",
-      answer: "Mobile deposit allows you to deposit checks using your smartphone camera through our banking app."
+      question: "What is mobile deposit?"
     }
   ];
 
-  const [openFAQ, setOpenFAQ] = useState(null);
-
   return (
-    <div className="queue-page">
-      <Navbar />
-      
-      <div className="queue-header">
-        <div className="header-left">
-          <h1 className="queue-main-title">QONNEXEA</h1>
-          <p className="queue-subtitle">Smart Queue Management System</p>
+    <div className={`queue-page ${darkMode ? 'dark' : ''}`}>
+      {/* Navbar with Queue button */}
+      <nav className="queue-navbar">
+        <div className="nav-left">
+          <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
+          <span className="nav-slogan">Smart Queue Management System</span>
         </div>
-        <div className="header-right">
-          <div className="datetime">
-            <span>Thursday, February 24, 2026</span>
-            <span>{new Date().toLocaleTimeString()}</span>
+        
+        <div className="nav-center">
+          <span className="datetime">
+            {formatDate(currentDateTime)} {formatTime(currentDateTime)}
+          </span>
+        </div>
+
+        <div className="nav-right">
+          <button 
+            className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`}
+            onClick={() => navigate('/queue')}
+          >
+            <span className="nav-icon">📊</span>
+            <span className="nav-label">Queue</span>
+          </button>
+          <button 
+            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
+            onClick={() => navigate('/satisfaction')}
+          >
+            <span className="nav-icon">⭐</span>
+            <span className="nav-label">Feedback</span>
+          </button>
+          <button 
+            className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`}
+            onClick={() => navigate('/faq')}
+          >
+            <span className="nav-icon">❓</span>
+            <span className="nav-label">FAQ</span>
+          </button>
+          <button 
+            className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`}
+            onClick={() => navigate('/support')}
+          >
+            <span className="nav-icon">💬</span>
+            <span className="nav-label">Chatbot</span>
+          </button>
+          <button 
+            className="dark-mode-btn"
+            onClick={() => setDarkMode(!darkMode)}
+          >
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </nav>
+
+      {/* Queue Content */}
+      <div className="queue-container">
+        <h1 className="main-title">Tracking the Queue</h1>
+        
+        <div className="tracking-list">
+          <div className="tracking-item">
+            <span className="tracking-label">Your position:</span>
+            <span className="tracking-value">{queueData.position}</span>
+          </div>
+          <div className="tracking-item">
+            <span className="tracking-label">People ahead of you:</span>
+            <span className="tracking-value">{queueData.ahead}</span>
+          </div>
+          <div className="tracking-item">
+            <span className="tracking-label">Estimated wait time:</span>
+            <span className="tracking-value">{queueData.waitTime} minutes</span>
           </div>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="queue-tabs">
-        <button 
-          className={`tab-btn ${activeTab === 'tracking' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tracking')}
-        >
-          📊 Tracking
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
-          onClick={() => setActiveTab('notifications')}
-        >
-          🔔 Notifications
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'faq' ? 'active' : ''}`}
-          onClick={() => setActiveTab('faq')}
-        >
-          ❓ FAQ
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
-          onClick={() => setActiveTab('chat')}
-        >
-          💬 Chat
-        </button>
-      </div>
+        <div className="ticket-info">
+          <div className="ticket-number">{queueData.ticketNumber}</div>
+          <p className="ticket-message">Please wait for your number to be called</p>
+        </div>
 
-      {/* Contenu des tabs */}
-      <div className="tab-content">
-        {/* TAB TRACKING */}
-        {activeTab === 'tracking' && (
-          <div className="tracking-content">
-            <h2>Tracking the Queue</h2>
-            
-            <div className="tracking-card">
-              <div className="ticket-info-header">
-                <span className="ticket-label">Your ticket:</span>
-                <span className="ticket-number-large">{queueData.ticketNumber}</span>
-                <span className="ticket-service-badge">{queueData.service}</span>
+        <table className="service-table">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Position #1 Estimated Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="service-name">Account Opening #1</td>
+              <td className="service-time">0 min</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="notifications-section">
+          <h2 className="section-title">Notifications</h2>
+          <div className="notifications-list">
+            {notifications.map((notif, index) => (
+              <div key={index} className="notification-item">
+                <span className="notification-bullet">•</span>
+                <span className="notification-message">{notif.message}</span>
               </div>
-
-              <div className="position-stats">
-                <div className="stat-row">
-                  <span className="stat-label">Your position:</span>
-                  <span className="stat-value">{queueData.position}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">People ahead of you:</span>
-                  <span className="stat-value">{queueData.ahead}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">Estimated wait time:</span>
-                  <span className="stat-value">{queueData.waitTime} minutes</span>
-                </div>
-              </div>
-
-              <div className="progress-section">
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill"
-                    style={{ width: `${Math.min(100, (queueData.position / 20) * 100)}%` }}
-                  ></div>
-                </div>
-                <p className="progress-text">
-                  {queueData.position} of 20 in queue
-                </p>
-              </div>
-
-              <table className="queue-table">
-                <thead>
-                  <tr>
-                    <th>Service</th>
-                    <th>Position #1</th>
-                    <th>Estimated Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>{queueData.currentServing.service}</td>
-                    <td>{queueData.currentServing.position}</td>
-                    <td>{queueData.currentServing.time}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="assistance-section">
-              <h3>Need Assistance?</h3>
-              <div className="assistance-buttons">
-                <button className="assist-btn" onClick={() => setActiveTab('chat')}>
-                  💬 Chat with QONNEXEA Support
-                </button>
-                <button className="assist-btn" onClick={() => setActiveTab('faq')}>
-                  ❓ Browse FAQs
-                </button>
-                <button className="assist-btn" onClick={() => navigate('/create-ticket')}>
-                  🎫 Get New Ticket
-                </button>
-                <button className="assist-btn primary" onClick={() => navigate('/satisfaction')}>
-                  ⭐ Rate Your Experience
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* TAB NOTIFICATIONS */}
-        {activeTab === 'notifications' && (
-          <div className="notifications-content">
-            <h2>Notifications</h2>
-            <div className="notifications-list">
-              {notifications.map((notif) => (
-                <div key={notif.id} className="notification-item">
-                  <p className="notification-message">{notif.message}</p>
-                  <span className="notification-time">{notif.time}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB FAQ */}
-        {activeTab === 'faq' && (
-          <div className="faq-content">
-            <h2>Frequently Asked Questions</h2>
-            
-            <div className="faq-search">
-              <input 
-                type="text" 
-                placeholder="Search for a topic or keyword..."
-                className="faq-search-input"
-              />
-            </div>
-
-            <div className="faq-categories">
-              <button className="category-btn">Cards</button>
-              <button className="category-btn">Loans</button>
-              <button className="category-btn">Accounts</button>
-              <button className="category-btn">Digital Banking</button>
-            </div>
-
-            <div className="faq-list">
-              {faqItems.map((item, index) => (
-                <div key={index} className="faq-item">
-                  <button
-                    className="faq-question"
-                    onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
-                  >
-                    <span>{item.question}</span>
-                    <span className="faq-icon">{openFAQ === index ? '−' : '+'}</span>
-                  </button>
-                  {openFAQ === index && (
-                    <div className="faq-answer">
-                      {item.answer}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB CHAT */}
-        {activeTab === 'chat' && (
-          <div className="chat-content">
-            <h2>QONNEXEA Support</h2>
-            <p className="chat-subtitle">How can we help you today?</p>
-
-            <div className="chat-messages">
-              <div className="message bot-message">
-                <div className="message-avatar">🤖</div>
-                <div className="message-content">
-                  <p>Hello! I'm your QONNEXEA virtual assistant. How can I help you with your queue management today?</p>
-                  <span className="message-time">8:30 PM</span>
-                </div>
+        <div className="faq-section">
+          <h2 className="section-title">Frequently Asked Questions</h2>
+          <div className="faq-list">
+            {faqItems.map((item, index) => (
+              <div key={index} className="faq-item">
+                <span className="faq-question">{item.question}</span>
               </div>
-            </div>
-
-            <div className="quick-actions">
-              <button className="quick-btn">Check my position</button>
-              <button className="quick-btn">Estimated wait time</button>
-              <button className="quick-btn">Cancel ticket</button>
-              <button className="quick-btn">New ticket</button>
-              <button className="quick-btn">Services</button>
-              <button className="quick-btn">Contact</button>
-            </div>
-
-            <div className="chat-input-area">
-              <input 
-                type="text" 
-                placeholder="Type your message..."
-                className="chat-input"
-              />
-              <button className="send-btn">Send</button>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
