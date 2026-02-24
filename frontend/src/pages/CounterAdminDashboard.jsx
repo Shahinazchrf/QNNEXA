@@ -265,7 +265,7 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
       <div style={{ background: 'white', borderBottom: '2px solid #E0E0E0', padding: '0 30px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '20px' }}>
           <button onClick={() => setActiveTab('employee')} style={{ padding: '15px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'employee' ? '3px solid #0B2E59' : 'none', color: activeTab === 'employee' ? '#0B2E59' : '#666', cursor: 'pointer' }}>
-            👨‍💼 Teller View
+            👨‍💼 Employee View
           </button>
           <button onClick={() => setActiveTab('admin')} style={{ padding: '15px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'admin' ? '3px solid #0B2E59' : 'none', color: activeTab === 'admin' ? '#0B2E59' : '#666', cursor: 'pointer' }}>
             👑 Admin View

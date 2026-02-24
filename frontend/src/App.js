@@ -1,10 +1,12 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Tablet from './pages/Tablet';
 import EmployeeLogin from './pages/EmployeeLogin';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import CounterAdminDashboard from './pages/CounterAdminDashboard';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import VipLogin from './pages/VipLogin';
+import VipDashboard from './pages/VipDashboard';
 import './App.css';
 
 // Admin unique (fixe)
@@ -15,27 +17,41 @@ const adminUser = {
 };
 
 function App() {
+  const [vipUser, setVipUser] = useState(null);
+
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Tablet />} />
         
-        {/* Route employé avec login */}
+        {/* VIP Routes */}
+        <Route 
+          path="/vip" 
+          element={
+            vipUser ? (
+              <VipDashboard user={vipUser} onLogout={() => setVipUser(null)} />
+            ) : (
+              <VipLogin onLogin={(user) => setVipUser(user)} />
+            )
+          } 
+        />
+        
+        {/* Employee route with login */}
         <Route path="/employee" element={<EmployeeLoginWrapper />} />
         
-        {/* Route admin direct */}
+        {/* Admin direct */}
         <Route path="/admin" element={<CounterAdminDashboard admin={adminUser} onLogout={() => window.location.href = '/'} />} />
         
-        {/* Route super admin direct */}
+        {/* Super admin direct */}
         <Route path="/superadmin" element={<SuperAdminDashboard admin={{ name: 'Super Admin' }} onLogout={() => window.location.href = '/'} />} />
       </Routes>
     </Router>
   );
 }
 
-// Wrapper pour employé
+// Wrapper for employee
 function EmployeeLoginWrapper() {
-  const [currentEmployee, setCurrentEmployee] = React.useState(null);
+  const [currentEmployee, setCurrentEmployee] = useState(null);
   const navigate = useNavigate();
 
   if (currentEmployee) {
