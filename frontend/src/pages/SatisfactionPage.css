@@ -1,0 +1,288 @@
+.satisfaction-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.satisfaction-content {
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.satisfaction-title {
+  font-size: 32px;
+  color: #0B2E59;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.satisfaction-subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 40px;
+  font-size: 18px;
+}
+
+/* Star Rating */
+.rating-section {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.stars-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.star {
+  font-size: 48px;
+  color: #ddd;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.star:hover {
+  transform: scale(1.1);
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.rating-label {
+  color: #666;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Criteria Grid */
+.criteria-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.criteria-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.criteria-item:hover {
+  background: #e3f2fd;
+  transform: translateY(-2px);
+}
+
+.criteria-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.criteria-icon {
+  font-size: 20px;
+}
+
+.criteria-label {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Questions Section */
+.questions-section {
+  margin-bottom: 40px;
+}
+
+.questions-section h3 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.question-item {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.question-text {
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 15px;
+}
+
+.question-options {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.option-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.option-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.option-label span {
+  color: #666;
+  font-size: 14px;
+}
+
+/* Comments Section */
+.comments-section {
+  margin-bottom: 30px;
+}
+
+.comments-label {
+  display: block;
+  margin-bottom: 10px;
+  color: #333;
+  font-weight: 500;
+}
+
+.comments-input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.comments-input:focus {
+  outline: none;
+  border-color: #0B2E59;
+}
+
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: #0B2E59;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 15px;
+  transition: background 0.3s;
+}
+
+.submit-btn:hover {
+  background: #1E5AA8;
+}
+
+/* Cancel Button */
+.cancel-btn {
+  width: 100%;
+  padding: 14px;
+  background: none;
+  border: 2px solid #D71920;
+  color: #D71920;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cancel-btn:hover {
+  background: #D71920;
+  color: white;
+}
+
+/* Thank You Card */
+.thank-you-card {
+  text-align: center;
+  padding: 40px;
+}
+
+.thank-you-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  animation: bounce 1s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.thank-you-title {
+  font-size: 28px;
+  color: #0B2E59;
+  margin-bottom: 20px;
+}
+
+.thank-you-message {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.thank-you-btn {
+  padding: 15px 40px;
+  background: #0B2E59;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.thank-you-btn:hover {
+  background: #1E5AA8;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .satisfaction-content {
+    margin: 20px;
+    padding: 20px;
+  }
+  
+  .satisfaction-title {
+    font-size: 24px;
+  }
+  
+  .star {
+    font-size: 36px;
+  }
+  
+  .criteria-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .question-options {
+    gap: 10px;
+  }
+  
+  .option-label span {
+    font-size: 12px;
+  }
+}

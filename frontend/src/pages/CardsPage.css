@@ -1,0 +1,222 @@
+/*frontend/src/pages/Cards.css*/
+
+.cards-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.cards-header {
+  text-align: center;
+  padding: 40px 20px 20px;
+}
+
+.cards-title {
+  font-size: 36px;
+  color: #0B2E59;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.cards-subtitle {
+  color: #666;
+  font-size: 16px;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.card-item {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(11,46,89,0.15);
+}
+
+.card-item.selected {
+  border: 2px solid #0B2E59;
+  box-shadow: 0 0 0 3px rgba(11,46,89,0.2);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.card-icon {
+  font-size: 40px;
+}
+
+.card-type {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+}
+
+.card-details {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.card-details > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.card-details > div:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: #666;
+  font-size: 14px;
+}
+
+.detail-value {
+  font-weight: 600;
+  color: #0B2E59;
+  font-size: 15px;
+}
+
+.card-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.benefit-tag {
+  background: #e3f2fd;
+  color: #0B2E59;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.apply-btn {
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: auto;
+}
+
+.apply-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.cards-actions {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.cards-actions h3 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+.actions-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 12px 25px;
+  background: white;
+  border: 2px solid #0B2E59;
+  border-radius: 30px;
+  color: #0B2E59;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-btn:hover {
+  background: #0B2E59;
+  color: white;
+}
+
+/* Dark Mode */
+body.dark-mode .cards-page {
+  background: #1a1a1a;
+}
+
+body.dark-mode .card-item {
+  background: #2d2d2d;
+  border-color: #444;
+}
+
+body.dark-mode .card-type {
+  color: #e0e0e0;
+}
+
+body.dark-mode .card-details {
+  background: #3d3d3d;
+}
+
+body.dark-mode .detail-label {
+  color: #aaa;
+}
+
+body.dark-mode .detail-value {
+  color: #4a90e2;
+}
+
+body.dark-mode .benefit-tag {
+  background: #3d3d3d;
+  color: #e0e0e0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cards-title {
+    font-size: 28px;
+  }
+  
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .action-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+}

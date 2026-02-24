@@ -1,0 +1,161 @@
+/* frontend/src/pages/Qonnexea.css*/
+
+.qonnexea-container {
+  min-height: 100vh;
+  background: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 20px;
+}
+
+.qonnexea-header {
+  text-align: center;
+  padding: 30px 0 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.qonnexea-logo {
+  color: #003366;
+  font-size: 42px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 2px;
+}
+
+.agency-name {
+  color: #666;
+  font-size: 16px;
+}
+
+.welcome-message {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.welcome-message h2 {
+  color: #333;
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.welcome-message p {
+  color: #666;
+  font-size: 18px;
+  margin-bottom: 30px;
+}
+
+.qonnexea-title {
+  font-size: 56px;
+  font-weight: 800;
+  color: #0B2E59;
+  margin: 15px 0;
+}
+
+.main-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 400px;
+  margin: 0 auto 30px;
+}
+
+.action-btn {
+  padding: 18px;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.action-btn.primary {
+  background: #0B2E59;
+  color: white;
+}
+
+.action-btn.secondary {
+  background: #f0f4f8;
+  color: #0B2E59;
+  border: 2px solid #0B2E59;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+}
+
+.tracking-form {
+  max-width: 400px;
+  margin: 20px auto;
+  display: flex;
+  gap: 10px;
+}
+
+.tracking-input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.tracking-input:focus {
+  outline: none;
+  border-color: #0B2E59;
+}
+
+.tracking-btn {
+  padding: 12px 24px;
+  background: #0B2E59;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tracking-btn:hover {
+  background: #1E5AA8;
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 50px;
+  padding: 20px;
+  border-top: 1px solid #eee;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: #0B2E59;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background: #f0f0f0;
+  text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  .qonnexea-title {
+    font-size: 42px;
+  }
+  
+  .tracking-form {
+    flex-direction: column;
+  }
+  
+  .bottom-nav {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+}

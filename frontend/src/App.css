@@ -1,0 +1,94 @@
+/* ================= GLOBAL STYLES ================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 
+    'Droid Sans', 'Helvetica Neue', sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  background: #f5f7fa;
+  color: #333;
+}
+
+.App {
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 
+    'Courier New', monospace;
+}
+
+
+/* ================= SCROLLBAR ================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0B2E59;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1E5AA8;
+}
+
+
+/* ================= LOADING SPINNER ================= */
+
+.loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(11,46,89,0.3);
+  border-radius: 50%;
+  border-top-color: #0B2E59;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { 
+    transform: rotate(360deg); 
+  }
+}
+
+
+/* ================= UTILITY CLASSES ================= */
+
+.text-center { 
+  text-align: center; 
+}
+
+.mt-20 { 
+  margin-top: 20px; 
+}
+
+.mb-20 { 
+  margin-bottom: 20px; 
+}
+
+.p-20 { 
+  padding: 20px; 
+}
