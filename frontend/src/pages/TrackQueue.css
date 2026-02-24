@@ -1,357 +1,232 @@
-/* forntend/rc/pages/TrackQueue.css*/
+/* frontend/src/pages/TrackQueue.css */
 
-.track-container {
+.track-queue-page {
   min-height: 100vh;
-  background: #f5f7fa;
+  background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  padding: 30px 20px 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
-.track-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.track-header h1 {
-  font-size: 36px;
-  color: #0B2E59;
-  margin-bottom: 10px;
-  font-weight: 700;
-}
-
-.track-header p {
-  color: #666;
-  font-size: 16px;
-}
-
-.track-form {
-  max-width: 450px;
-  margin: 0 auto 40px;
-  background: white;
-  padding: 30px;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-}
-
-.track-form-group {
-  margin-bottom: 20px;
-}
-
-.track-form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
-}
-
-.track-input {
+.track-queue-container {
+  max-width: 500px;
   width: 100%;
-  padding: 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 16px;
-  text-transform: uppercase;
-  transition: border-color 0.2s;
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
-.track-input:focus {
+/* Initial Form */
+.track-queue-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.track-queue-subtitle {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.track-queue-form {
+  display: flex;
+  gap: 10px;
+}
+
+.track-queue-input {
+  flex: 1;
+  padding: 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 16px;
   outline: none;
+  transition: border-color 0.2s;
+  text-transform: uppercase;
+}
+
+.track-queue-input:focus {
   border-color: #0B2E59;
 }
 
-.track-error {
-  background: #fee2e2;
-  color: #dc2626;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  text-align: center;
-  font-size: 14px;
-}
-
-.track-btn {
-  width: 100%;
-  padding: 16px;
+.track-queue-submit {
+  padding: 15px 25px;
   background: #0B2E59;
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: background 0.2s;
+  white-space: nowrap;
 }
 
-.track-btn:hover:not(:disabled) {
+.track-queue-submit:hover {
   background: #1E5AA8;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(11,46,89,0.3);
 }
 
-.track-btn:disabled {
-  background: #cbd5e0;
-  cursor: not-allowed;
-}
-
-.track-result {
-  max-width: 550px;
-  margin: 0 auto 40px;
-  background: white;
-  border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-}
-
-.track-ticket-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Tracking View */
+.ticket-info-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 25px;
   margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f0f0f0;
+  text-align: center;
 }
 
-.track-ticket-header h2 {
-  color: #333;
-  font-size: 24px;
-}
-
-.track-status {
-  padding: 6px 14px;
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.track-status-waiting {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.track-status-called {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.track-status-serving {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.track-status-completed {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.track-status-missed {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.track-ticket-details {
-  margin-bottom: 25px;
-}
-
-.track-detail-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.track-detail-row:last-child {
-  border-bottom: none;
-}
-
-.track-detail-label {
-  color: #666;
-  font-weight: 500;
-}
-
-.track-detail-value {
-  font-weight: 600;
-  color: #333;
-}
-
-.track-position {
+.ticket-number {
+  font-size: 48px;
+  font-weight: 700;
   color: #0B2E59;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.track-wait {
-  color: #10b981;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.track-progress {
-  margin: 25px 0;
-}
-
-.track-progress-bar {
-  height: 10px;
-  background: #e2e8f0;
-  border-radius: 5px;
-  overflow: hidden;
   margin-bottom: 10px;
 }
 
-.track-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #0B2E59, #1E5AA8);
-  transition: width 0.3s ease;
-}
-
-.track-progress-text {
-  text-align: center;
-  color: #718096;
-  font-size: 14px;
-}
-
-.track-survey {
-  text-align: center;
-  padding: 20px;
-  background: #f0f9ff;
-  border-radius: 12px;
-  margin: 20px 0;
-}
-
-.track-survey p {
-  color: #0B2E59;
-  margin-bottom: 15px;
-  font-size: 16px;
-}
-
-.track-survey-btn {
-  padding: 12px 25px;
-  background: #0B2E59;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.track-survey-btn:hover {
-  background: #1E5AA8;
-  transform: translateY(-2px);
-}
-
-.track-back-btn {
-  width: 100%;
-  padding: 14px;
-  background: none;
-  border: 2px solid #D71920;
-  color: #D71920;
-  border-radius: 10px;
+.ticket-details p {
+  color: #6c757d;
   font-size: 15px;
+  margin: 5px 0;
+}
+
+.wait-time-card {
+  background: #e7f1ff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wait-time-label {
+  font-size: 16px;
+  color: #495057;
   font-weight: 500;
-  cursor: pointer;
-  margin-top: 20px;
-  transition: all 0.3s;
 }
 
-.track-back-btn:hover {
-  background: #D71920;
-  color: white;
+.wait-time-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0B2E59;
 }
 
-.track-stats {
-  max-width: 550px;
-  margin: 0 auto;
-  background: white;
-  border-radius: 20px;
-  padding: 25px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-}
-
-.track-stats h3 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 18px;
-  text-align: center;
-}
-
-.track-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 15px;
+/* Stats Table */
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
   margin-bottom: 25px;
 }
 
-.track-stat-card {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 12px;
-  text-align: center;
+.stats-table th {
+  text-align: left;
+  padding: 15px 0;
+  color: #0B2E59;
+  font-weight: 600;
+  border-bottom: 2px solid #0B2E59;
+  font-size: 15px;
 }
 
-.track-stat-value {
-  font-size: 28px;
+.stats-table td {
+  padding: 15px 0;
+  color: #212529;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.position-value {
   font-weight: 700;
   color: #0B2E59;
-  margin-bottom: 5px;
+  font-size: 18px;
 }
 
-.track-stat-label {
-  color: #718096;
-  font-size: 14px;
-}
-
-.track-next-tickets h4 {
-  color: #555;
-  margin-bottom: 15px;
-  font-size: 16px;
-}
-
-.track-next-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.track-next-item {
-  background: #f8f9fa;
-  padding: 10px 15px;
+/* Last Notification */
+.last-notification {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
   border-radius: 8px;
+  padding: 20px;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #e0e0e0;
+  gap: 15px;
+  align-items: flex-start;
 }
 
-.track-next-number {
-  font-weight: 700;
-  color: #0B2E59;
+.notification-icon {
+  font-size: 20px;
 }
 
-.track-next-service {
-  color: #718096;
-  font-size: 13px;
+.notification-text {
+  font-size: 14px;
+  color: #856404;
+  line-height: 1.5;
 }
 
-@media (max-width: 600px) {
-  .track-header h1 {
-    font-size: 28px;
-  }
-  
-  .track-ticket-header {
-    flex-direction: column;
-    gap: 10px;
-    text-align: center;
-  }
-  
-  .track-detail-row {
-    flex-direction: column;
-    gap: 5px;
-    text-align: center;
-  }
-  
-  .track-next-list {
-    justify-content: center;
-  }
+.notification-text strong {
+  font-weight: 600;
+}
+
+/* Dark Mode */
+.track-queue-page.dark {
+  background: #1a1a1a;
+}
+
+.track-queue-page.dark .track-queue-container {
+  background: #2d2d2d;
+}
+
+.track-queue-page.dark .track-queue-title {
+  color: #e9ecef;
+}
+
+.track-queue-page.dark .track-queue-subtitle {
+  color: #adb5bd;
+}
+
+.track-queue-page.dark .track-queue-input {
+  background: #404040;
+  border-color: #555;
+  color: #e9ecef;
+}
+
+.track-queue-page.dark .ticket-info-card {
+  background: #404040;
+}
+
+.track-queue-page.dark .ticket-details p {
+  color: #adb5bd;
+}
+
+.track-queue-page.dark .wait-time-card {
+  background: #1a3a5e;
+}
+
+.track-queue-page.dark .wait-time-label {
+  color: #e9ecef;
+}
+
+.track-queue-page.dark .stats-table th {
+  color: #e9ecef;
+  border-bottom-color: #404040;
+}
+
+.track-queue-page.dark .stats-table td {
+  color: #e9ecef;
+  border-bottom-color: #404040;
+}
+
+.track-queue-page.dark .position-value {
+  color: #e9ecef;
+}
+
+.track-queue-page.dark .last-notification {
+  background: #332d1a;
+  border-left-color: #856404;
+}
+
+.track-queue-page.dark .notification-text {
+  color: #e9ecef;
 }

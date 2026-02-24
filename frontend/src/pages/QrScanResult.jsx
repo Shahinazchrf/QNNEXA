@@ -9,33 +9,35 @@ const QrScanResult = () => {
 
   return (
     <div className="qrscan-container">
-      <h1 className="agb-logo">AGB</h1>
-      <p className="agency-name">Agency: Algiers Main</p>
-
-      <h2 className="welcome-title">Welcome to QONNEXEA</h2>
-      <p className="welcome-subtitle">How can we help you today?</p>
-
-      <div className="actions-grid">
-        <div 
-          className="action-card primary"
-          onClick={() => navigate('/create-ticket')}
-        >
-          <div className="action-icon">🎫</div>
-          <div className="action-label">Create Virtual Ticket</div>
-        </div>
-
-        <div 
-          className="action-card secondary"
-          onClick={() => navigate('/queue')}
-        >
-          <div className="action-icon">📊</div>
-          <div className="action-label">Track My Queue</div>
-        </div>
+      <div className="qrscan-header">
+        <h1 className="agb-logo">AGB</h1>
+        <p className="agency-name">Agency: Algiers Main</p>
       </div>
 
-      <button className="back-btn" onClick={() => navigate('/')}>
-        ← Back to Tablet
-      </button>
+      <div className="qrscan-content">
+        <h2 className="welcome-title">Welcome to QONNEXEA</h2>
+        <p className="welcome-subtitle">How can we help you today?</p>
+
+        <div className="qrscan-actions">
+          <button 
+            className="action-btn primary"
+            onClick={() => navigate('/create-ticket')}
+          >
+            Create Virtual Ticket
+          </button>
+
+          <button 
+            className="action-btn secondary"
+            onClick={() => navigate('/queue')}
+          >
+            Track My Queue
+          </button>
+        </div>
+
+        <button className="back-btn" onClick={() => navigate('/')}>
+          ← Back to Tablet
+        </button>
+      </div>
     </div>
   );
 };

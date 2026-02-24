@@ -4,341 +4,167 @@
   min-height: 100vh;
   background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* ===== NAVBAR STYLES ===== */
-.queue-navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 30px;
-  background: white;
-  border-bottom: 1px solid #e9ecef;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.nav-logo {
-  font-size: 24px;
-  font-weight: 700;
-  color: #0B2E59;
-  cursor: pointer;
-  letter-spacing: 1px;
-}
-
-.nav-slogan {
-  font-size: 14px;
-  color: #6c757d;
-  font-style: italic;
-  border-left: 1px solid #dee2e6;
-  padding-left: 15px;
-}
-
-.nav-center .datetime {
-  font-size: 14px;
-  color: #495057;
-  font-weight: 500;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border: none;
-  background: none;
-  border-radius: 30px;
-  font-size: 14px;
-  color: #495057;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-}
-
-.nav-item:hover {
-  background: #f1f3f5;
-  color: #0B2E59;
-}
-
-.nav-item.active {
-  background: #0B2E59;
-  color: white;
-}
-
-.nav-icon {
-  font-size: 16px;
-}
-
-.nav-label {
-  font-size: 14px;
-}
-
-.dark-mode-btn {
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: #f1f3f5;
-  border-radius: 50%;
-  font-size: 18px;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  margin-left: 5px;
+  padding: 20px;
 }
 
-.dark-mode-btn:hover {
-  background: #e9ecef;
-  transform: scale(1.05);
-}
-
-/* ===== MAIN CONTENT ===== */
 .queue-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 30px 20px;
+  max-width: 500px;
+  width: 100%;
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
-/* Main Title */
-.main-title {
-  font-size: 28px;
+/* Initial Form */
+.queue-title {
+  font-size: 24px;
   font-weight: 600;
   color: #212529;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  text-align: center;
 }
 
-/* Tracking List */
-.tracking-list {
-  margin-bottom: 25px;
+.queue-subtitle {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 30px;
+  text-align: center;
 }
 
-.tracking-item {
+.queue-form {
   display: flex;
-  align-items: baseline;
   gap: 10px;
-  padding: 5px 0;
+}
+
+.queue-input {
+  flex: 1;
+  padding: 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
   font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  text-transform: uppercase;
 }
 
-.tracking-label {
-  color: #495057;
-  min-width: 160px;
+.queue-input:focus {
+  border-color: #0B2E59;
 }
 
-.tracking-value {
-  color: #0B2E59;
+.queue-submit {
+  padding: 15px 25px;
+  background: #0B2E59;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
   font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
 }
 
-/* Ticket Info */
-.ticket-info {
-  margin: 30px 0 20px 0;
+.queue-submit:hover {
+  background: #1E5AA8;
+}
+
+/* Tracking View */
+.ticket-info-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
 .ticket-number {
-  font-size: 42px;
+  font-size: 48px;
   font-weight: 700;
-  color: #D71920;
-  margin-bottom: 5px;
-  letter-spacing: 1px;
+  color: #0B2E59;
+  margin-bottom: 10px;
 }
 
-.ticket-message {
-  font-size: 16px;
+.ticket-details p {
   color: #6c757d;
-  margin-bottom: 20px;
+  font-size: 15px;
+  margin: 5px 0;
 }
 
-/* Service Table */
-.service-table {
+.wait-time-card {
+  background: #e7f1ff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wait-time-label {
+  font-size: 16px;
+  color: #495057;
+  font-weight: 500;
+}
+
+.wait-time-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0B2E59;
+}
+
+/* Stats Table */
+.stats-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 20px 0 30px 0;
-  font-size: 16px;
+  margin-bottom: 25px;
 }
 
-.service-table th {
+.stats-table th {
   text-align: left;
-  padding: 10px 0;
+  padding: 15px 0;
   color: #0B2E59;
   font-weight: 600;
   border-bottom: 2px solid #0B2E59;
+  font-size: 15px;
 }
 
-.service-table td {
-  padding: 12px 0;
+.stats-table td {
+  padding: 15px 0;
   color: #212529;
   border-bottom: 1px solid #e9ecef;
 }
 
-.service-name {
-  font-weight: 500;
-}
-
-.service-time {
-  font-weight: 500;
-  color: #6c757d;
-}
-
-/* Section Title */
-.section-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #212529;
-  margin: 30px 0 15px 0;
-}
-
-/* Notifications Section */
-.notifications-section {
-  margin: 30px 0;
-}
-
-.notifications-list {
-  list-style: none;
-  padding: 0;
-}
-
-.notification-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.notification-item:last-child {
-  border-bottom: none;
-}
-
-.notification-bullet {
+.position-value {
+  font-weight: 700;
   color: #0B2E59;
   font-size: 18px;
-  font-weight: bold;
 }
 
-.notification-message {
-  color: #212529;
-  font-size: 15px;
+/* Last Notification */
+.last-notification {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.notification-icon {
+  font-size: 20px;
+}
+
+.notification-text {
+  font-size: 14px;
+  color: #856404;
   line-height: 1.5;
 }
 
-/* FAQ Section */
-.faq-section {
-  margin: 40px 0;
-}
-
-.faq-list {
-  list-style: none;
-  padding: 0;
-}
-
-.faq-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #e9ecef;
-  font-size: 15px;
-  color: #212529;
-}
-
-.faq-item:last-child {
-  border-bottom: none;
-}
-
-.faq-question {
-  color: #212529;
-}
-
-/* ===== DARK MODE ===== */
-.queue-page.dark {
-  background: #1a1a1a;
-}
-
-.queue-page.dark .queue-navbar {
-  background: #2d2d2d;
-  border-bottom-color: #404040;
-}
-
-.queue-page.dark .nav-logo {
-  color: #e9ecef;
-}
-
-.queue-page.dark .nav-slogan {
-  color: #adb5bd;
-  border-left-color: #404040;
-}
-
-.queue-page.dark .nav-center .datetime {
-  color: #adb5bd;
-}
-
-.queue-page.dark .nav-item {
-  color: #adb5bd;
-}
-
-.queue-page.dark .nav-item:hover {
-  background: #404040;
-  color: white;
-}
-
-.queue-page.dark .nav-item.active {
-  background: #0B2E59;
-  color: white;
-}
-
-.queue-page.dark .main-title {
-  color: #e9ecef;
-}
-
-.queue-page.dark .tracking-label {
-  color: #adb5bd;
-}
-
-.queue-page.dark .tracking-value {
-  color: #e9ecef;
-}
-
-.queue-page.dark .ticket-message {
-  color: #adb5bd;
-}
-
-.queue-page.dark .section-title {
-  color: #e9ecef;
-}
-
-.queue-page.dark .notification-message,
-.queue-page.dark .faq-question,
-.queue-page.dark .service-name {
-  color: #e9ecef;
-}
-
-.queue-page.dark .service-time {
-  color: #adb5bd;
-}
-
-.queue-page.dark .notification-item,
-.queue-page.dark .faq-item,
-.queue-page.dark .service-table td {
-  border-bottom-color: #404040;
-}
-
-.queue-page.dark .service-table th {
-  color: #e9ecef;
-  border-bottom-color: #404040;
-}
-
-.queue-page.dark .notification-bullet {
-  color: #e9ecef;
+.notification-text strong {
+  font-weight: 600;
 }
