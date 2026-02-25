@@ -1,58 +1,132 @@
 // frontend/src/pages/CreateTicket.jsx
 
-import React, { useState } from 'react';
+// frontend/src/pages/CreateTicket.jsx
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import './CreateTicket.css';
 
 const CreateTicket = () => {
   const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState(null);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const services = [
-    { id: 1, name: 'Cash Operations', icon: '💰', code: 'CASH' },
-    { id: 2, name: 'Account Management', icon: '👤', code: 'ACCT' },
-    { id: 3, name: 'Corporate / VIP', icon: '🏢', code: 'VIP' },
-    { id: 4, name: 'Cards & Digital', icon: '💳', code: 'CARD' },
-    { id: 5, name: 'Loans & Credit', icon: '🏦', code: 'LOAN' },
-    { id: 6, name: 'Investment Services', icon: '📈', code: 'INV' },
-  ];
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/services');
+        console.log('Services loaded:', response);
+        
+        if (response.success && response.services) {
+          const formattedServices = response.services.map(s => ({
+            id: s.id,
+            code: s.name,
+            displayName: getDisplayName(s.name),
+            icon: getServiceIcon(s.name),
+            description: s.description || getDescription(s.name),
+            estimated_time: s.estimated_time || 15
+          }));
+          setServices(formattedServices);
+        }
+      } catch (err) {
+        console.error('Error loading services:', err);
+        setError('Cannot connect to server');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleCreateTicket = () => {
+    loadServices();
+  }, []);
+
+  const getDisplayName = (code) => {
+    const names = {
+      'W': 'Cash Operations',
+      'D': 'Cash Operations',
+      'A': 'Account Management',
+      'C': 'Customer Service',
+      'L': 'Loans & Credit',
+      'XCH': 'Currency Exchange'
+    };
+    return names[code] || code;
+  };
+
+  const getDescription = (code) => {
+    const desc = {
+      'W': 'Withdrawal',
+      'D': 'Deposit',
+      'A': 'Account Opening',
+      'C': 'Complaint',
+      'L': 'Loan',
+      'XCH': 'Currency Exchange'
+    };
+    return desc[code] || 'Service';
+  };
+
+  const getServiceIcon = (code) => {
+    const icons = {
+      'W': '💰',
+      'D': '💵',
+      'A': '👤',
+      'C': '💬',
+      'L': '🏦',
+      'XCH': '💱'
+    };
+    return icons[code] || '🏢';
+  };
+
+  const handleCreateTicket = async () => {
     if (!selectedService) {
       alert('Please select a service');
       return;
     }
 
-    // Generate ticket data
-    const ticketNumber = generateTicketNumber(selectedService.code);
-    const position = Math.floor(Math.random() * 15) + 3; // Random position between 3-18
-    const waitTime = position * 2;
+    try {
+      setLoading(true);
+      setError('');
+      
+      console.log('=================================');
+      console.log('SELECTED SERVICE:', selectedService);
+      console.log('SENDING CODE:', selectedService.code);
+      console.log('=================================');
+      
+      const payload = {
+        serviceCode: selectedService.code,
+        customerName: 'Customer'
+      };
+      
+      console.log('PAYLOAD:', payload);
+      
+      const response = await api.post('/tickets/generate', payload);
+      
+      console.log('RESPONSE:', response);
 
-    const ticketData = {
-      number: ticketNumber,
-      service: selectedService.name,
-      serviceCode: selectedService.code,
-      position: position,
-      waitTime: waitTime,
-      icon: selectedService.icon,
-    };
-
-    // Navigate to queue page with ticket data
-    navigate('/queue', { state: { ticket: ticketData } });
-  };
-
-  const generateTicketNumber = (serviceCode) => {
-    const prefixes = {
-      'CASH': 'C',
-      'ACCT': 'A',
-      'VIP': 'V',
-      'CARD': 'D',
-      'LOAN': 'L',
-      'INV': 'I'
-    };
-    const prefix = prefixes[serviceCode] || 'T';
-    const randomNum = Math.floor(Math.random() * 900 + 100);
-    return `${prefix}${randomNum}`;
+      if (response.success && response.ticket) {
+        navigate('/queue', { 
+          state: { 
+            ticket: {
+              number: response.ticket.number,
+              service: selectedService.displayName,
+              serviceCode: selectedService.code,
+              icon: selectedService.icon,
+              position: 1,
+              waitTime: response.ticket.estimated_wait || 15
+            }
+          }
+        });
+      } else {
+        setError('Error: ' + (response.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('ERROR:', err);
+      setError('Error creating ticket: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,32 +139,48 @@ const CreateTicket = () => {
       <div className="create-ticket-content">
         <h1 className="page-title">Choose Your Service</h1>
 
-        <div className="services-grid">
-          {services.map((service) => (
-            <button
-              key={service.id}
-              onClick={() => setSelectedService(service)}
-              className={`service-card ${selectedService?.id === service.id ? 'selected' : ''}`}
-            >
-              <span className="service-icon">{service.icon}</span>
-              <span className="service-name">{service.name}</span>
-            </button>
-          ))}
-        </div>
+        {error && (
+          <div style={{ 
+            background: '#ffebee', 
+            color: '#D71920', 
+            padding: '15px', 
+            borderRadius: '8px',
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <div className="services-grid">
+            {services.map((service) => (
+              <button
+                key={service.id}
+                onClick={() => setSelectedService(service)}
+                className={`service-card ${selectedService?.id === service.id ? 'selected' : ''}`}
+              >
+                <span className="service-icon">{service.icon}</span>
+                <span className="service-name">{service.displayName}</span>
+                <span className="service-description">{service.description}</span>
+                <span className="service-time">{service.estimated_time} min</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="action-buttons">
           <button
             onClick={handleCreateTicket}
             className="create-btn"
-            disabled={!selectedService}
+            disabled={!selectedService || loading}
           >
-            Get Your Virtual Ticket +
+            {loading ? 'Creating...' : 'Get Your Virtual Ticket +'}
           </button>
 
-          <button
-            onClick={() => navigate('/')}
-            className="cancel-link"
-          >
+          <button onClick={() => navigate('/')} className="cancel-link">
             Cancel
           </button>
         </div>

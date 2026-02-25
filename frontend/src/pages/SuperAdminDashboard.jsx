@@ -1,58 +1,36 @@
-import React, { useState } from 'react';
+//frontend/src/pages/SuperAdminDashboard.js
+
+import React, { useState, useEffect } from 'react';
+import adminService from '../services/adminService';
+import ticketService from '../services/ticketService';
+import authService from '../services/authService';
 
 const SuperAdminDashboard = ({ admin, onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // ===== AGENCIES DATA =====
-  const [agencies, setAgencies] = useState([
-    { id: 1, name: 'Chéraga', location: 'Chéraga, Algiers', code: 'CHR', employees: 8, counters: 4, status: 'active', services: [1, 2, 3, 4] },
-    { id: 2, name: 'Dely Ibrahim', location: 'Dely Ibrahim, Algiers', code: 'DLY', employees: 6, counters: 3, status: 'active', services: [1, 2, 5] },
-    { id: 3, name: 'Hydra', location: 'Hydra, Algiers', code: 'HYD', employees: 10, counters: 5, status: 'active', services: [1, 2, 3, 4, 5, 6] },
-    { id: 4, name: 'Bab Ezzouar', location: 'Bab Ezzouar, Algiers', code: 'BAB', employees: 7, counters: 4, status: 'inactive', services: [1, 2, 3] },
-    { id: 5, name: 'Bir Mourad Rais', location: 'Bir Mourad Rais, Algiers', code: 'BMR', employees: 5, counters: 3, status: 'active', services: [1, 2, 4, 6] },
-  ]);
+  const [agencies, setAgencies] = useState([]);
 
   // ===== SERVICES DATA =====
-  const [services, setServices] = useState([
-    { id: 1, name: 'Account Opening', code: 'ACC', category: 'Account', avgTime: 15, active: true, counters: [1, 2, 3, 4, 5] },
-    { id: 2, name: 'Cash Withdrawal', code: 'WTH', category: 'Cash', avgTime: 5, active: true, counters: [1, 2, 3, 4, 5] },
-    { id: 3, name: 'Cash Deposit', code: 'DEP', category: 'Cash', avgTime: 5, active: true, counters: [1, 2, 3, 4] },
-    { id: 4, name: 'Personal Loan', code: 'LOAN', category: 'Loan', avgTime: 25, active: true, counters: [3, 4] },
-    { id: 5, name: 'Credit Cards', code: 'CARD', category: 'Cards', avgTime: 10, active: true, counters: [2, 3, 5] },
-    { id: 6, name: 'VIP Services', code: 'VIP', category: 'Premium', avgTime: 20, active: true, counters: [5] },
-    { id: 7, name: 'Savings Account', code: 'SAV', category: 'Savings', avgTime: 12, active: false, counters: [1, 3] },
-  ]);
+  const [services, setServices] = useState([]);
 
   // ===== COUNTERS DATA =====
-  const [counters, setCounters] = useState([
-    { id: 1, number: '#1', agency: 'Chéraga', service: 'General', status: 'active' },
-    { id: 2, number: '#2', agency: 'Chéraga', service: 'General', status: 'active' },
-    { id: 3, number: '#3', agency: 'Chéraga', service: 'Loans', status: 'active' },
-    { id: 4, number: '#1', agency: 'Dely Ibrahim', service: 'General', status: 'active' },
-    { id: 5, number: '#2', agency: 'Dely Ibrahim', service: 'VIP', status: 'break' },
-    { id: 6, number: '#1', agency: 'Hydra', service: 'General', status: 'active' },
-    { id: 7, number: '#2', agency: 'Hydra', service: 'Loans', status: 'active' },
-    { id: 8, number: '#3', agency: 'Hydra', service: 'VIP', status: 'active' },
-  ]);
+  const [counters, setCounters] = useState([]);
 
   // ===== USERS DATA =====
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Ahmed Benali', email: 'a.benali@agb.dz', role: 'admin', agency: 'Chéraga', status: 'active', lastLogin: '2024-02-23' },
-    { id: 2, name: 'Fatima Zohra', email: 'f.zohra@agb.dz', role: 'supervisor', agency: 'Dely Ibrahim', status: 'active', lastLogin: '2024-02-23' },
-    { id: 3, name: 'Karim Mansour', email: 'k.mansour@agb.dz', role: 'employee', agency: 'Hydra', status: 'active', lastLogin: '2024-02-22' },
-    { id: 4, name: 'Leila Haddad', email: 'l.haddad@agb.dz', role: 'employee', agency: 'Bab Ezzouar', status: 'inactive', lastLogin: '2024-02-20' },
-    { id: 5, name: 'Mohamed Said', email: 'm.said@agb.dz', role: 'admin', agency: 'Bir Mourad Rais', status: 'active', lastLogin: '2024-02-23' },
-  ]);
+  const [users, setUsers] = useState([]);
 
   // ===== GLOBAL STATS =====
   const [globalStats, setGlobalStats] = useState({
-    totalAgencies: agencies.length,
-    activeAgencies: agencies.filter(a => a.status === 'active').length,
-    totalServices: services.filter(s => s.active).length,
-    totalCounters: counters.length,
-    totalEmployees: users.length,
-    totalTicketsToday: 892,
+    totalAgencies: 0,
+    activeAgencies: 0,
+    totalServices: 0,
+    totalCounters: 0,
+    totalEmployees: 0,
+    totalTicketsToday: 0,
     averageSatisfaction: 4.3,
     busiestAgency: 'Hydra',
     fastestAgency: 'Dely Ibrahim'
@@ -60,185 +38,418 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
 
   // ===== AGENCY COMPARISON =====
   const [comparison, setComparison] = useState({
-    byTraffic: [
-      { agency: 'Hydra', tickets: 245, satisfaction: 4.5 },
-      { agency: 'Chéraga', tickets: 210, satisfaction: 4.3 },
-      { agency: 'Dely Ibrahim', tickets: 187, satisfaction: 4.4 },
-      { agency: 'Bir Mourad Rais', tickets: 156, satisfaction: 4.1 },
-      { agency: 'Bab Ezzouar', tickets: 94, satisfaction: 3.9 },
-    ],
-    byService: [
-      { service: 'Withdrawal', total: 412, avgTime: 4.8 },
-      { service: 'Deposit', total: 289, avgTime: 5.2 },
-      { service: 'Account Opening', total: 98, avgTime: 16.3 },
-      { service: 'Loan', total: 52, avgTime: 24.7 },
-      { service: 'VIP', total: 41, avgTime: 18.2 },
-    ]
+    byTraffic: [],
+    byService: []
   });
 
+  // Load all data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get agencies
+        const agenciesResponse = await adminService.getAgencies();
+        if (agenciesResponse.success) {
+          setAgencies(agenciesResponse.data || []);
+          setGlobalStats(prev => ({
+            ...prev,
+            totalAgencies: agenciesResponse.data?.length || 0,
+            activeAgencies: agenciesResponse.data?.filter(a => a.is_active).length || 0
+          }));
+        }
+        
+        // Get services
+        const servicesResponse = await adminService.getServices();
+        if (servicesResponse.success) {
+          setServices(servicesResponse.services || []);
+          setGlobalStats(prev => ({
+            ...prev,
+            totalServices: servicesResponse.services?.length || 0
+          }));
+        }
+        
+        // Get counters
+        const countersResponse = await adminService.getCounters();
+        if (countersResponse.success) {
+          setCounters(countersResponse.counters || []);
+          setGlobalStats(prev => ({
+            ...prev,
+            totalCounters: countersResponse.counters?.length || 0
+          }));
+        }
+        
+        // Get users
+        const usersResponse = await adminService.getUsers();
+        if (usersResponse.success) {
+          setUsers(usersResponse.data?.users || []);
+          setGlobalStats(prev => ({
+            ...prev,
+            totalEmployees: usersResponse.data?.users?.filter(u => u.role === 'employee').length || 0
+          }));
+        }
+        
+        // Get service stats for comparison
+        const serviceStatsResponse = await ticketService.getQueueStats();
+        if (serviceStatsResponse.success && serviceStatsResponse.data) {
+          // Format by service
+          const byServiceData = Object.entries(serviceStatsResponse.data.by_service || {}).map(([service, count]) => ({
+            service,
+            total: count,
+            avgTime: 15 // Default, would come from real data
+          }));
+          setComparison(prev => ({ ...prev, byService: byServiceData }));
+        }
+        
+      } catch (err) {
+        console.error('Error loading super admin data:', err);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
   // ===== AGENCY HANDLERS =====
-  const handleAddAgency = () => {
+  const handleAddAgency = async () => {
     const name = prompt('Agency name:');
-    if (name) {
-      const location = prompt('Location:');
-      const newAgency = {
-        id: agencies.length + 1,
+    if (!name) return;
+    
+    const location = prompt('Location:');
+    const code = prompt('Agency code (3 letters):', name.substring(0, 3).toUpperCase());
+    
+    try {
+      const response = await adminService.createAgency({
+        code,
         name,
-        location: location || 'Algiers',
-        code: name.substring(0, 3).toUpperCase(),
-        employees: 0,
-        counters: 0,
-        status: 'active',
-        services: []
-      };
-      setAgencies([...agencies, newAgency]);
+        address: location || 'Algiers',
+        city: 'Algiers',
+        is_active: true
+      });
+      
+      if (response.success) {
+        // Refresh agencies
+        const agenciesResponse = await adminService.getAgencies();
+        if (agenciesResponse.success) {
+          setAgencies(agenciesResponse.data || []);
+        }
+      } else {
+        alert('Failed to create agency: ' + response.error);
+      }
+    } catch (err) {
+      console.error('Error creating agency:', err);
+      alert('Failed to create agency');
     }
   };
 
-  const handleEditAgency = (id) => {
+  const handleEditAgency = async (id) => {
     const agency = agencies.find(a => a.id === id);
-    const newName = prompt('New name:', agency.name);
-    if (newName) {
-      setAgencies(agencies.map(a => a.id === id ? {...a, name: newName} : a));
+    const newName = prompt('New name:', agency?.name);
+    if (!newName) return;
+    
+    try {
+      const response = await adminService.updateAgency(id, { name: newName });
+      
+      if (response.success) {
+        setAgencies(agencies.map(a => a.id === id ? { ...a, name: newName } : a));
+      } else {
+        alert('Failed to update agency');
+      }
+    } catch (err) {
+      console.error('Error updating agency:', err);
+      alert('Failed to update agency');
     }
   };
 
-  const handleToggleAgency = (id) => {
-    setAgencies(agencies.map(a => a.id === id ? {...a, status: a.status === 'active' ? 'inactive' : 'active'} : a));
-  };
-
-  const handleDeleteAgency = (id) => {
-    if (window.confirm('Delete this agency?')) {
-      setAgencies(agencies.filter(a => a.id !== id));
+  const handleToggleAgency = async (id) => {
+    const agency = agencies.find(a => a.id === id);
+    try {
+      const response = await adminService.updateAgency(id, { 
+        is_active: !agency.is_active 
+      });
+      
+      if (response.success) {
+        setAgencies(agencies.map(a => 
+          a.id === id ? { ...a, is_active: !a.is_active } : a
+        ));
+      }
+    } catch (err) {
+      console.error('Error toggling agency:', err);
     }
   };
 
-  const handleAssignServices = (agencyId) => {
-    const servicesList = services.filter(s => s.active).map(s => s.name).join('\n');
-    alert(`Available services:\n${servicesList}\n\n(Simulation: assigning services)`);
+  const handleDeleteAgency = async (id) => {
+    if (!window.confirm('Delete this agency?')) return;
+    
+    try {
+      const response = await adminService.deleteAgency(id);
+      
+      if (response.success) {
+        setAgencies(agencies.filter(a => a.id !== id));
+      } else {
+        alert('Failed to delete agency');
+      }
+    } catch (err) {
+      console.error('Error deleting agency:', err);
+      alert('Failed to delete agency');
+    }
   };
 
   // ===== SERVICE HANDLERS =====
-  const handleAddService = () => {
+  const handleAddService = async () => {
     const name = prompt('Service name:');
-    if (name) {
-      const category = prompt('Category (Cash/Account/Loan/Cards/Premium):');
-      const newService = {
-        id: services.length + 1,
+    if (!name) return;
+    
+    const code = prompt('Service code (e.g., W, D, A):', name.substring(0, 1).toUpperCase());
+    const estimatedTime = prompt('Estimated time (minutes):', '15');
+    
+    try {
+      const response = await adminService.createService({
+        code,
         name,
-        code: name.substring(0, 3).toUpperCase(),
-        category: category || 'General',
-        avgTime: 10,
-        active: true,
-        counters: []
-      };
-      setServices([...services, newService]);
+        estimated_time: parseInt(estimatedTime) || 15
+      });
+      
+      if (response.success) {
+        // Refresh services
+        const servicesResponse = await adminService.getServices();
+        if (servicesResponse.success) {
+          setServices(servicesResponse.services || []);
+        }
+      } else {
+        alert('Failed to create service: ' + response.error);
+      }
+    } catch (err) {
+      console.error('Error creating service:', err);
+      alert('Failed to create service');
     }
   };
 
-  const handleEditService = (id) => {
+  const handleEditService = async (id) => {
     const service = services.find(s => s.id === id);
-    const newName = prompt('New name:', service.name);
-    if (newName) {
-      setServices(services.map(s => s.id === id ? {...s, name: newName} : s));
+    const newName = prompt('New name:', service?.name);
+    if (!newName) return;
+    
+    try {
+      const response = await adminService.updateService(id, { name: newName });
+      
+      if (response.success) {
+        setServices(services.map(s => s.id === id ? { ...s, name: newName } : s));
+      } else {
+        alert('Failed to update service');
+      }
+    } catch (err) {
+      console.error('Error updating service:', err);
+      alert('Failed to update service');
     }
   };
 
-  const handleToggleService = (id) => {
-    setServices(services.map(s => s.id === id ? {...s, active: !s.active} : s));
-  };
-
-  const handleDeleteService = (id) => {
-    if (window.confirm('Delete this service?')) {
-      setServices(services.filter(s => s.id !== id));
+  const handleToggleService = async (id) => {
+    const service = services.find(s => s.id === id);
+    try {
+      const response = await adminService.updateService(id, { 
+        is_active: !service.is_active 
+      });
+      
+      if (response.success) {
+        setServices(services.map(s => 
+          s.id === id ? { ...s, is_active: !s.is_active } : s
+        ));
+      }
+    } catch (err) {
+      console.error('Error toggling service:', err);
     }
   };
 
-  const handleAssignToCounters = (serviceId) => {
-    const service = services.find(s => s.id === serviceId);
-    alert(`(Simulation: assigning ${service.name} to counters)`);
+  const handleDeleteService = async (id) => {
+    if (!window.confirm('Delete this service?')) return;
+    
+    try {
+      const response = await adminService.deleteService(id);
+      
+      if (response.success) {
+        setServices(services.filter(s => s.id !== id));
+      } else {
+        alert('Failed to delete service');
+      }
+    } catch (err) {
+      console.error('Error deleting service:', err);
+      alert('Failed to delete service');
+    }
   };
 
   // ===== COUNTER HANDLERS =====
-  const handleAddCounter = () => {
-    const number = prompt('Counter number (e.g., #5):');
+  const handleAddCounter = async () => {
+    const number = prompt('Counter number (e.g., 5):');
     if (!number) return;
     
-    const agency = prompt('Agency (Chéraga, Dely Ibrahim, Hydra, Bab Ezzouar, Bir Mourad Rais):', 'Chéraga');
-    const service = prompt('Service assigned:', 'General');
+    const name = prompt('Counter name:', `Counter ${number}`);
+    const location = prompt('Location:', 'Main Hall');
     
-    const newCounter = {
-      id: counters.length + 1,
-      number,
-      agency: agency || 'Chéraga',
-      service: service || 'General',
-      status: 'active'
-    };
-    
-    setCounters([...counters, newCounter]);
-    alert(`✅ Counter ${number} created at ${agency}`);
-  };
-
-  const handleEditCounter = (id) => {
-    const counter = counters.find(c => c.id === id);
-    const newNumber = prompt('Counter number:', counter.number);
-    if (newNumber) {
-      setCounters(counters.map(c => c.id === id ? {...c, number: newNumber} : c));
+    try {
+      const response = await adminService.createCounter({
+        number: parseInt(number),
+        name,
+        location,
+        is_active: true
+      });
+      
+      if (response.success) {
+        // Refresh counters
+        const countersResponse = await adminService.getCounters();
+        if (countersResponse.success) {
+          setCounters(countersResponse.counters || []);
+        }
+      } else {
+        alert('Failed to create counter: ' + response.error);
+      }
+    } catch (err) {
+      console.error('Error creating counter:', err);
+      alert('Failed to create counter');
     }
   };
 
-  const handleToggleCounter = (id) => {
-    setCounters(counters.map(c => 
-      c.id === id ? {...c, status: c.status === 'active' ? 'inactive' : 'active'} : c
-    ));
+  const handleEditCounter = async (id) => {
+    const counter = counters.find(c => c.id === id);
+    const newName = prompt('Counter name:', counter?.name);
+    if (!newName) return;
+    
+    try {
+      const response = await adminService.updateCounter(id, { name: newName });
+      
+      if (response.success) {
+        setCounters(counters.map(c => c.id === id ? { ...c, name: newName } : c));
+      } else {
+        alert('Failed to update counter');
+      }
+    } catch (err) {
+      console.error('Error updating counter:', err);
+      alert('Failed to update counter');
+    }
   };
 
-  const handleDeleteCounter = (id) => {
-    if (window.confirm('Delete this counter?')) {
-      setCounters(counters.filter(c => c.id !== id));
+  const handleToggleCounter = async (id) => {
+    const counter = counters.find(c => c.id === id);
+    try {
+      const response = await adminService.updateCounter(id, { 
+        is_active: !counter.is_active 
+      });
+      
+      if (response.success) {
+        setCounters(counters.map(c => 
+          c.id === id ? { ...c, is_active: !c.is_active } : c
+        ));
+      }
+    } catch (err) {
+      console.error('Error toggling counter:', err);
+    }
+  };
+
+  const handleDeleteCounter = async (id) => {
+    if (!window.confirm('Delete this counter?')) return;
+    
+    try {
+      const response = await adminService.deleteCounter(id);
+      
+      if (response.success) {
+        setCounters(counters.filter(c => c.id !== id));
+      } else {
+        alert('Failed to delete counter');
+      }
+    } catch (err) {
+      console.error('Error deleting counter:', err);
+      alert('Failed to delete counter');
     }
   };
 
   // ===== USER HANDLERS =====
-  const handleAddUser = () => {
-    const name = prompt('Full name:');
-    if (!name) return;
+  const handleAddUser = async () => {
+    const firstName = prompt('First name:');
+    if (!firstName) return;
     
-    const email = prompt('Email:');
-    if (!email) return;
+    const lastName = prompt('Last name:');
+    const email = prompt('Email:', `${firstName.toLowerCase()}.${lastName.toLowerCase()}@bank.com`);
+    const role = prompt('Role (client/employee/admin):', 'employee');
+    const password = prompt('Password:', '123456');
     
-    const role = prompt('Role (admin/supervisor/employee):', 'employee');
-    const agency = prompt('Agency (Chéraga, Dely Ibrahim, Hydra, Bab Ezzouar, Bir Mourad Rais):', 'Chéraga');
-    
-    const newUser = {
-      id: users.length + 1,
-      name,
-      email,
-      role: role || 'employee',
-      agency: agency || 'Chéraga',
-      status: 'active',
-      lastLogin: 'Never'
-    };
-    
-    setUsers([...users, newUser]);
-    alert(`✅ User ${name} created successfully\nDefault password: 1234`);
-  };
-
-  const handleEditUser = (id) => {
-    const user = users.find(u => u.id === id);
-    const newName = prompt('Edit name:', user.name);
-    if (newName) {
-      setUsers(users.map(u => u.id === id ? {...u, name: newName} : u));
+    try {
+      const response = await adminService.createUser({
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        role,
+        is_active: true
+      });
+      
+      if (response.success) {
+        // Refresh users
+        const usersResponse = await adminService.getUsers();
+        if (usersResponse.success) {
+          setUsers(usersResponse.data?.users || []);
+        }
+        alert(`✅ User created successfully`);
+      } else {
+        alert('Failed to create user: ' + response.error);
+      }
+    } catch (err) {
+      console.error('Error creating user:', err);
+      alert('Failed to create user');
     }
   };
 
-  const handleToggleUser = (id) => {
-    setUsers(users.map(u => u.id === id ? {...u, status: u.status === 'active' ? 'inactive' : 'active'} : u));
+  const handleEditUser = async (id) => {
+    const user = users.find(u => u.id === id);
+    const newName = prompt('First name:', user?.first_name);
+    if (!newName) return;
+    
+    try {
+      const response = await adminService.updateUser(id, { first_name: newName });
+      
+      if (response.success) {
+        setUsers(users.map(u => u.id === id ? { ...u, first_name: newName } : u));
+      } else {
+        alert('Failed to update user');
+      }
+    } catch (err) {
+      console.error('Error updating user:', err);
+      alert('Failed to update user');
+    }
   };
 
-  const handleDeleteUser = (id) => {
-    if (window.confirm('Delete this user?')) {
-      setUsers(users.filter(u => u.id !== id));
+  const handleToggleUser = async (id) => {
+    const user = users.find(u => u.id === id);
+    try {
+      const response = await adminService.updateUser(id, { 
+        is_active: !user.is_active 
+      });
+      
+      if (response.success) {
+        setUsers(users.map(u => 
+          u.id === id ? { ...u, is_active: !u.is_active } : u
+        ));
+      }
+    } catch (err) {
+      console.error('Error toggling user:', err);
+    }
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm('Delete this user?')) return;
+    
+    try {
+      const response = await adminService.deleteUser(id);
+      
+      if (response.success) {
+        setUsers(users.filter(u => u.id !== id));
+      } else {
+        alert('Failed to delete user');
+      }
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      alert('Failed to delete user');
     }
   };
 
@@ -273,13 +484,17 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
         <div style={{ background: 'white', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <h3 style={{ fontSize: '18px', color: '#0B2E59', marginBottom: '15px' }}>Traffic by Agency</h3>
-          {comparison.byTraffic.map(item => (
-            <div key={item.agency} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span>{item.agency}</span>
-              <span style={{ fontWeight: 'bold' }}>{item.tickets} tickets</span>
-              <span style={{ color: item.satisfaction >= 4 ? '#0B2E59' : '#D71920' }}>{item.satisfaction}⭐</span>
-            </div>
-          ))}
+          {comparison.byTraffic.length === 0 ? (
+            <p>No data available</p>
+          ) : (
+            comparison.byTraffic.map(item => (
+              <div key={item.agency} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span>{item.agency}</span>
+                <span style={{ fontWeight: 'bold' }}>{item.tickets} tickets</span>
+                <span style={{ color: item.satisfaction >= 4 ? '#0B2E59' : '#D71920' }}>{item.satisfaction}⭐</span>
+              </div>
+            ))
+          )}
         </div>
         <div style={{ background: 'white', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <h3 style={{ fontSize: '18px', color: '#0B2E59', marginBottom: '15px' }}>Top Services</h3>
@@ -309,38 +524,35 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
             <tr style={{ borderBottom: '2px solid #E0E0E0' }}>
               <th style={{ textAlign: 'left', padding: '12px' }}>Code</th>
               <th style={{ textAlign: 'left', padding: '12px' }}>Name</th>
-              <th style={{ textAlign: 'left', padding: '12px' }}>Location</th>
-              <th style={{ textAlign: 'center', padding: '12px' }}>Employees</th>
-              <th style={{ textAlign: 'center', padding: '12px' }}>Counters</th>
-              <th style={{ textAlign: 'center', padding: '12px' }}>Services</th>
+              <th style={{ textAlign: 'left', padding: '12px' }}>City</th>
               <th style={{ textAlign: 'center', padding: '12px' }}>Status</th>
               <th style={{ textAlign: 'center', padding: '12px' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {agencies.map(agency => (
-              <tr key={agency.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                <td style={{ padding: '12px', fontWeight: 'bold', color: '#0B2E59' }}>{agency.code}</td>
-                <td style={{ padding: '12px' }}>{agency.name}</td>
-                <td style={{ padding: '12px' }}>{agency.location}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>{agency.employees}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>{agency.counters}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>{agency.services.length}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  <span style={{ background: agency.status === 'active' ? '#0B2E59' : '#D71920', color: 'white', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>
-                    {agency.status === 'active' ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  <button onClick={() => handleEditAgency(agency.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">✏️</button>
-                  <button onClick={() => handleToggleAgency(agency.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title={agency.status === 'active' ? 'Deactivate' : 'Activate'}>
-                    {agency.status === 'active' ? '⏸️' : '▶️'}
-                  </button>
-                  <button onClick={() => handleAssignServices(agency.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Assign Services">🔗</button>
-                  <button onClick={() => handleDeleteAgency(agency.id)} style={{ background: 'none', border: 'none', color: '#D71920', cursor: 'pointer' }} title="Delete">🗑️</button>
-                </td>
-              </tr>
-            ))}
+            {agencies.length === 0 ? (
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>No agencies found</td></tr>
+            ) : (
+              agencies.map(agency => (
+                <tr key={agency.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#0B2E59' }}>{agency.code}</td>
+                  <td style={{ padding: '12px' }}>{agency.name}</td>
+                  <td style={{ padding: '12px' }}>{agency.city}</td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <span style={{ background: agency.is_active ? '#0B2E59' : '#D71920', color: 'white', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>
+                      {agency.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <button onClick={() => handleEditAgency(agency.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">✏️</button>
+                    <button onClick={() => handleToggleAgency(agency.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title={agency.is_active ? 'Deactivate' : 'Activate'}>
+                      {agency.is_active ? '🔴' : '🟢'}
+                    </button>
+                    <button onClick={() => handleDeleteAgency(agency.id)} style={{ background: 'none', border: 'none', color: '#D71920', cursor: 'pointer' }} title="Delete">🗑️</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -361,36 +573,35 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
             <tr style={{ borderBottom: '2px solid #E0E0E0' }}>
               <th style={{ textAlign: 'left', padding: '12px' }}>Code</th>
               <th style={{ textAlign: 'left', padding: '12px' }}>Service</th>
-              <th style={{ textAlign: 'left', padding: '12px' }}>Category</th>
-              <th style={{ textAlign: 'center', padding: '12px' }}>Avg Time</th>
-              <th style={{ textAlign: 'center', padding: '12px' }}>Counters</th>
+              <th style={{ textAlign: 'center', padding: '12px' }}>Est. Time</th>
               <th style={{ textAlign: 'center', padding: '12px' }}>Status</th>
               <th style={{ textAlign: 'center', padding: '12px' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {services.map(service => (
-              <tr key={service.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                <td style={{ padding: '12px', fontWeight: 'bold', color: '#0B2E59' }}>{service.code}</td>
-                <td style={{ padding: '12px' }}>{service.name}</td>
-                <td style={{ padding: '12px' }}>{service.category}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>{service.avgTime} min</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>{service.counters.length}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  <span style={{ background: service.active ? '#0B2E59' : '#999', color: 'white', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>
-                    {service.active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  <button onClick={() => handleEditService(service.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">✏️</button>
-                  <button onClick={() => handleToggleService(service.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title={service.active ? 'Deactivate' : 'Activate'}>
-                    {service.active ? '🔴' : '🟢'}
-                  </button>
-                  <button onClick={() => handleAssignToCounters(service.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Assign to Counters">🔗</button>
-                  <button onClick={() => handleDeleteService(service.id)} style={{ background: 'none', border: 'none', color: '#D71920', cursor: 'pointer' }} title="Delete">🗑️</button>
-                </td>
-              </tr>
-            ))}
+            {services.length === 0 ? (
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>No services found</td></tr>
+            ) : (
+              services.map(service => (
+                <tr key={service.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#0B2E59' }}>{service.code}</td>
+                  <td style={{ padding: '12px' }}>{service.name || service.code}</td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>{service.estimated_time || 15} min</td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <span style={{ background: service.is_active ? '#0B2E59' : '#999', color: 'white', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>
+                      {service.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <button onClick={() => handleEditService(service.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">✏️</button>
+                    <button onClick={() => handleToggleService(service.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title={service.is_active ? 'Deactivate' : 'Activate'}>
+                      {service.is_active ? '🔴' : '🟢'}
+                    </button>
+                    <button onClick={() => handleDeleteService(service.id)} style={{ background: 'none', border: 'none', color: '#D71920', cursor: 'pointer' }} title="Delete">🗑️</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -411,48 +622,49 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #E0E0E0' }}>
-              <th style={{ textAlign: 'left', padding: '12px' }}>Agency</th>
               <th style={{ textAlign: 'left', padding: '12px' }}>Counter</th>
-              <th style={{ textAlign: 'left', padding: '12px' }}>Service</th>
-              <th style={{ textAlign: 'center', padding: '12px' }}>Status</th>
+              <th style={{ textAlign: 'left', padding: '12px' }}>Name</th>
+              <th style={{ textAlign: 'left', padding: '12px' }}>Status</th>
               <th style={{ textAlign: 'center', padding: '12px' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {counters.map(counter => (
-              <tr key={counter.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                <td style={{ padding: '12px' }}>{counter.agency}</td>
-                <td style={{ padding: '12px', fontWeight: 'bold' }}>{counter.number}</td>
-                <td style={{ padding: '12px' }}>{counter.service}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  <span style={{ 
-                    background: counter.status === 'active' ? '#0B2E59' : counter.status === 'break' ? '#FFA500' : '#D71920', 
-                    color: 'white', 
-                    padding: '3px 10px', 
-                    borderRadius: '12px', 
-                    fontSize: '12px' 
-                  }}>
-                    {counter.status}
-                  </span>
-                </td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  <button onClick={() => handleEditCounter(counter.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">✏️</button>
-                  <button onClick={() => handleToggleCounter(counter.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Toggle Status">
-                    {counter.status === 'active' ? '⏸️' : '▶️'}
-                  </button>
-                  <button onClick={() => handleDeleteCounter(counter.id)} style={{ background: 'none', border: 'none', color: '#D71920', cursor: 'pointer' }} title="Delete">🗑️</button>
-                </td>
-              </tr>
-            ))}
+            {counters.length === 0 ? (
+              <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>No counters found</td></tr>
+            ) : (
+              counters.map(counter => (
+                <tr key={counter.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                  <td style={{ padding: '12px', fontWeight: 'bold' }}>{counter.number}</td>
+                  <td style={{ padding: '12px' }}>{counter.name || `Counter ${counter.number}`}</td>
+                  <td style={{ padding: '12px' }}>
+                    <span style={{ 
+                      background: counter.status === 'active' ? '#0B2E59' : counter.status === 'busy' ? '#FFA500' : '#D71920', 
+                      color: 'white', 
+                      padding: '3px 10px', 
+                      borderRadius: '12px', 
+                      fontSize: '12px' 
+                    }}>
+                      {counter.status || 'inactive'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <button onClick={() => handleEditCounter(counter.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">✏️</button>
+                    <button onClick={() => handleToggleCounter(counter.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Toggle Status">
+                      {counter.is_active ? '🔴' : '🟢'}
+                    </button>
+                    <button onClick={() => handleDeleteCounter(counter.id)} style={{ background: 'none', border: 'none', color: '#D71920', cursor: 'pointer' }} title="Delete">🗑️</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 
         {/* Summary */}
         <div style={{ marginTop: '20px', padding: '15px', background: '#F5F5F5', borderRadius: '8px', display: 'flex', gap: '20px' }}>
           <div><strong>Total Counters:</strong> {counters.length}</div>
-          <div><strong>Active:</strong> {counters.filter(c => c.status === 'active').length}</div>
-          <div><strong>Break:</strong> {counters.filter(c => c.status === 'break').length}</div>
-          <div><strong>Inactive:</strong> {counters.filter(c => c.status === 'inactive').length}</div>
+          <div><strong>Active:</strong> {counters.filter(c => c.status === 'active' || c.status === 'busy').length}</div>
+          <div><strong>Inactive:</strong> {counters.filter(c => c.status === 'inactive' || c.status === 'closed').length}</div>
         </div>
       </div>
     </div>
@@ -475,58 +687,62 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
               <th style={{ textAlign: 'left', padding: '12px' }}>Name</th>
               <th style={{ textAlign: 'left', padding: '12px' }}>Email</th>
               <th style={{ textAlign: 'left', padding: '12px' }}>Role</th>
-              <th style={{ textAlign: 'left', padding: '12px' }}>Agency</th>
               <th style={{ textAlign: 'center', padding: '12px' }}>Status</th>
-              <th style={{ textAlign: 'center', padding: '12px' }}>Last Login</th>
               <th style={{ textAlign: 'center', padding: '12px' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.map(user => (
-              <tr key={user.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                <td style={{ padding: '12px', fontWeight: 'bold', color: '#0B2E59' }}>{user.name}</td>
-                <td style={{ padding: '12px' }}>{user.email}</td>
-                <td style={{ padding: '12px' }}>
-                  <span style={{ 
-                    background: user.role === 'admin' ? '#0B2E59' : user.role === 'supervisor' ? '#FFA500' : '#666',
-                    color: 'white', 
-                    padding: '3px 10px', 
-                    borderRadius: '12px', 
-                    fontSize: '12px' 
-                  }}>
-                    {user.role}
-                  </span>
-                </td>
-                <td style={{ padding: '12px' }}>{user.agency}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  <span style={{ background: user.status === 'active' ? '#0B2E59' : '#D71920', color: 'white', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>
-                    {user.status}
-                  </span>
-                </td>
-                <td style={{ padding: '12px', textAlign: 'center', color: '#666' }}>{user.lastLogin}</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>
-                  <button onClick={() => handleEditUser(user.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">✏️</button>
-                  <button onClick={() => handleToggleUser(user.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title={user.status === 'active' ? 'Deactivate' : 'Activate'}>
-                    {user.status === 'active' ? '🔴' : '🟢'}
-                  </button>
-                  <button onClick={() => handleResetPassword(user.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Reset Password">🔑</button>
-                  <button onClick={() => handleDeleteUser(user.id)} style={{ background: 'none', border: 'none', color: '#D71920', cursor: 'pointer' }} title="Delete">🗑️</button>
-                </td>
-              </tr>
-            ))}
+            {users.length === 0 ? (
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>No users found</td></tr>
+            ) : (
+              users.map(user => (
+                <tr key={user.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#0B2E59' }}>{user.first_name} {user.last_name}</td>
+                  <td style={{ padding: '12px' }}>{user.email}</td>
+                  <td style={{ padding: '12px' }}>
+                    <span style={{ 
+                      background: user.role === 'admin' ? '#0B2E59' : user.role === 'employee' ? '#FFA500' : '#666',
+                      color: 'white', 
+                      padding: '3px 10px', 
+                      borderRadius: '12px', 
+                      fontSize: '12px' 
+                    }}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <span style={{ background: user.is_active ? '#0B2E59' : '#D71920', color: 'white', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>
+                      {user.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <button onClick={() => handleEditUser(user.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Edit">✏️</button>
+                    <button onClick={() => handleToggleUser(user.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title={user.is_active ? 'Deactivate' : 'Activate'}>
+                      {user.is_active ? '🔴' : '🟢'}
+                    </button>
+                    <button onClick={() => handleResetPassword(user.id)} style={{ marginRight: '5px', background: 'none', border: 'none', cursor: 'pointer' }} title="Reset Password">🔑</button>
+                    <button onClick={() => handleDeleteUser(user.id)} style={{ background: 'none', border: 'none', color: '#D71920', cursor: 'pointer' }} title="Delete">🗑️</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 
         {/* Summary */}
         <div style={{ marginTop: '20px', padding: '15px', background: '#F5F5F5', borderRadius: '8px', display: 'flex', gap: '20px' }}>
           <div><strong>Total:</strong> {users.length}</div>
-          <div><strong>Active:</strong> {users.filter(u => u.status === 'active').length}</div>
+          <div><strong>Active:</strong> {users.filter(u => u.is_active).length}</div>
           <div><strong>Admins:</strong> {users.filter(u => u.role === 'admin').length}</div>
           <div><strong>Employees:</strong> {users.filter(u => u.role === 'employee').length}</div>
         </div>
       </div>
     </div>
   );
+
+  if (loading) {
+    return <div style={{ padding: '50px', textAlign: 'center' }}>Loading super admin dashboard...</div>;
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#F5F7FA', fontFamily: 'Arial, sans-serif' }}>
@@ -539,7 +755,7 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
           </button>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Enterprise Administration</h1>
-            <p style={{ fontSize: '14px', opacity: '0.9' }}>{admin?.name}</p>
+            <p style={{ fontSize: '14px', opacity: '0.9' }}>{admin?.first_name} {admin?.last_name}</p>
           </div>
         </div>
         <div style={{ background: '#D71920', padding: '8px 20px', borderRadius: '25px', fontSize: '14px' }}>

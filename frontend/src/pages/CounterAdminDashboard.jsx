@@ -1,32 +1,27 @@
+// frontend/src/pages/CounterAdminDashboard.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import problemDetector from '../services/problemDetector';
+import ticketService from '../services/ticketService';
+import counterService from '../services/counterService';
+import statsService from '../services/statsService';
+import authService from '../services/authService';
 
 const CounterAdminDashboard = ({ admin, onLogout }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('employee');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Employee section data
-  const [currentTicket, setCurrentTicket] = useState({
-    number: 'A045',
-    service: 'Cash Operations',
-    waitingTime: '5 min',
-    status: 'in_progress'
-  });
-
-  const [nextTickets, setNextTickets] = useState([
-    { id: 1, number: 'A046', service: 'Cards & Payments', time: '3 min', vip: false },
-    { id: 2, number: 'VIP01', service: 'Corporate VIP', time: '0 min', vip: true },
-    { id: 3, number: 'A047', service: 'Account Management', time: '8 min', vip: false },
-    { id: 4, number: 'A048', service: 'Cash Operations', time: '12 min', vip: false },
-  ]);
-
+  const [currentTicket, setCurrentTicket] = useState(null);
+  const [nextTickets, setNextTickets] = useState([]);
   const [queueStats, setQueueStats] = useState({
-    totalWaiting: 15,
-    averageWaitTime: '12 min',
-    vipWaiting: 2,
-    estimatedTimeForNext: '3 min'
+    totalWaiting: 0,
+    averageWaitTime: '0 min',
+    vipWaiting: 0,
+    estimatedTimeForNext: '0 min'
   });
 
   // Admin data
@@ -37,132 +32,147 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
     cancelledTickets: 16,
     peakHour: '10:30 - 11:30',
     lastHourArrivals: 18,
-    activeCounters: 3,
-    closedCounters: 1
+    activeCounters: 0,
+    closedCounters: 0
   });
 
-  const [alerts, setAlerts] = useState([
-    { id: 1, type: 'warning', message: 'Ticket A045 waiting for 25 min', time: '14:32', severity: 'high' },
-    { id: 2, type: 'info', message: 'Counter #2 inactive for 15 min', time: '14:28', severity: 'medium' },
-    { id: 3, type: 'success', message: 'Daily target reached (120 clients)', time: '14:15', severity: 'low' },
-    { id: 4, type: 'warning', message: 'VIP waiting for 10 min', time: '14:05', severity: 'high' },
-  ]);
-
-  const [queueEvolution, setQueueEvolution] = useState([
-    { time: '08:00', waiting: 5 },
-    { time: '09:00', waiting: 12 },
-    { time: '10:00', waiting: 28 },
-    { time: '11:00', waiting: 35 },
-    { time: '12:00', waiting: 42 },
-    { time: '13:00', waiting: 38 },
-    { time: '14:00', waiting: 45 },
-    { time: '15:00', waiting: 40 },
-    { time: '16:00', waiting: 32 },
-  ]);
-
+  const [alerts, setAlerts] = useState([]);
+  const [queueEvolution, setQueueEvolution] = useState([]);
+  const [counters, setCounters] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
 
-  // ===== MODULE DE DÉTECTION INTELLIGENT =====
+  // Load data
   useEffect(() => {
-    const analyzeProblems = () => {
-      // Prépare les données des tickets
-      const ticketsData = [
-        ...(currentTicket ? [{
-          id: currentTicket.number,
-          number: currentTicket.number,
-          status: 'in_progress',
-          service: currentTicket.service,
-          isVIP: false,
-          waitTime: parseInt(currentTicket.waitingTime) || 0,
-          createdAt: new Date().toISOString()
-        }] : []),
-        ...nextTickets.map(t => ({
-          id: t.number,
-          number: t.number,
-          status: 'waiting',
-          service: t.service,
-          isVIP: t.vip,
-          waitTime: parseInt(t.time) || 0,
-          createdAt: new Date(Date.now() - (parseInt(t.time) * 60000)).toISOString()
-        }))
-      ];
-
-      // Données des guichets
-      const countersData = [
-        { id: 1, number: '#1', status: 'active', lastActivityAt: new Date().toISOString() },
-        { id: 2, number: '#2', status: 'active', lastActivityAt: new Date().toISOString() },
-        { id: 3, number: '#3', status: 'active', lastActivityAt: new Date().toISOString() },
-        { id: 4, number: '#4', status: 'inactive', lastActivityAt: new Date(Date.now() - 20 * 60000).toISOString() }
-      ];
-
-      // Données satisfaction
-      const satisfactionData = {
-        average: adminStats.totalSatisfaction,
-        correlations: { waitTime: 0.75 }
-      };
-
-      // Analyse
-      const analysis = problemDetector.analyze(
-        ticketsData, 
-        countersData, 
-        satisfactionData,
-        new Date()
-      );
-
-      // Met à jour les alertes
-      if (analysis.problems.length > 0) {
-        const newAlerts = analysis.problems.map((p, index) => ({
-          id: Date.now() + index,
-          type: p.type === 'FORGOTTEN_TICKET' ? 'warning' : 
-                p.type === 'IDLE_COUNTER' ? 'info' : 'warning',
-          message: p.message,
-          time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-          severity: p.severity
-        }));
+    const loadData = async () => {
+      try {
+        setLoading(true);
         
-        setAlerts(prev => [...newAlerts, ...prev].slice(0, 10));
+        // Get queue status
+        const queueResponse = await ticketService.getQueueStatus();
+        if (queueResponse.success && queueResponse.data) {
+          setQueueStats({
+            totalWaiting: queueResponse.data.total_waiting || 0,
+            averageWaitTime: queueResponse.data.estimated_wait ? `${queueResponse.data.estimated_wait} min` : '0 min',
+            vipWaiting: queueResponse.data.next_tickets?.filter(t => t.is_vip).length || 0,
+            estimatedTimeForNext: queueResponse.data.next_tickets?.[0]?.estimated_wait ? `${queueResponse.data.next_tickets[0].estimated_wait} min` : '0 min'
+          });
+          setNextTickets(queueResponse.data.next_tickets || []);
+        }
+        
+        // Get counters
+        const countersResponse = await counterService.getAllCounters();
+        if (countersResponse.success) {
+          setCounters(countersResponse.counters || []);
+          setAdminStats(prev => ({
+            ...prev,
+            activeCounters: countersResponse.counters?.filter(c => c.status === 'active' || c.status === 'busy').length || 0,
+            closedCounters: countersResponse.counters?.filter(c => c.status === 'closed' || c.status === 'inactive').length || 0
+          }));
+        }
+        
+        // Get real-time stats
+        const statsResponse = await statsService.getRealTimeStats();
+        if (statsResponse.success && statsResponse.data) {
+          // Update alerts from stats
+          if (statsResponse.data.alerts) {
+            setAlerts(statsResponse.data.alerts.map((alert, index) => ({
+              id: Date.now() + index,
+              type: alert.type === 'warning' ? 'warning' : 'info',
+              message: alert.message,
+              time: new Date().toLocaleTimeString(),
+              severity: alert.priority || 'medium'
+            })));
+          }
+        }
+        
+        // Get daily stats
+        const dailyResponse = await statsService.getDailyStats(selectedDate);
+        if (dailyResponse.success && dailyResponse.data) {
+          // Format queue evolution data
+          const evolution = dailyResponse.data.hourly_stats?.map((stat, index) => ({
+            time: stat.hour,
+            waiting: stat.tickets || 0
+          })) || [];
+          setQueueEvolution(evolution);
+        }
+        
+      } catch (err) {
+        console.error('Error loading dashboard:', err);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
       }
-
-      // Stocke les recommandations
-      setRecommendations(analysis.recommendations || []);
     };
 
-    // Analyse immédiate au chargement
-    analyzeProblems();
-
-    // Puis toutes les 30 secondes
-    const interval = setInterval(analyzeProblems, 30000);
+    loadData();
     
+    // Refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
-  }, [currentTicket, nextTickets, adminStats.totalSatisfaction]);
+  }, [selectedDate]);
 
   // Employee actions
-  const handleCallNext = () => {
-    if (nextTickets.length > 0) {
-      const next = nextTickets[0];
-      setCurrentTicket({
-        number: next.number,
-        service: next.service,
-        waitingTime: '0 min',
-        status: 'in_progress'
-      });
-      setNextTickets(nextTickets.slice(1));
+  const handleCallNext = async () => {
+    try {
+      const response = await ticketService.callNextTicket(1); // Assuming counter ID 1
       
-      setQueueStats(prev => ({
-        ...prev,
-        totalWaiting: prev.totalWaiting - 1,
-        estimatedTimeForNext: nextTickets[1]?.time || '0 min'
-      }));
+      if (response.success) {
+        // Refresh data
+        const queueResponse = await ticketService.getQueueStatus();
+        if (queueResponse.success) {
+          setQueueStats({
+            totalWaiting: queueResponse.data.total_waiting || 0,
+            averageWaitTime: queueResponse.data.estimated_wait ? `${queueResponse.data.estimated_wait} min` : '0 min',
+            vipWaiting: queueResponse.data.next_tickets?.filter(t => t.is_vip).length || 0,
+            estimatedTimeForNext: queueResponse.data.next_tickets?.[0]?.estimated_wait ? `${queueResponse.data.next_tickets[0].estimated_wait} min` : '0 min'
+          });
+          setNextTickets(queueResponse.data.next_tickets || []);
+        }
+        
+        if (response.ticket) {
+          setCurrentTicket(response.ticket);
+        }
+      } else {
+        alert(response.message || 'No tickets in queue');
+      }
+    } catch (err) {
+      console.error('Error calling next ticket:', err);
+      alert('Failed to call next ticket');
     }
   };
 
-  const handleComplete = () => {
-    setCurrentTicket(null);
-    alert('Ticket completed ✓');
+  const handleComplete = async () => {
+    if (!currentTicket) return;
+    
+    try {
+      const response = await ticketService.completeTicket(currentTicket.id);
+      
+      if (response.success) {
+        setCurrentTicket(null);
+        
+        // Refresh queue
+        const queueResponse = await ticketService.getQueueStatus();
+        if (queueResponse.success) {
+          setQueueStats({
+            totalWaiting: queueResponse.data.total_waiting || 0,
+            averageWaitTime: queueResponse.data.estimated_wait ? `${queueResponse.data.estimated_wait} min` : '0 min',
+            vipWaiting: queueResponse.data.next_tickets?.filter(t => t.is_vip).length || 0,
+            estimatedTimeForNext: queueResponse.data.next_tickets?.[0]?.estimated_wait ? `${queueResponse.data.next_tickets[0].estimated_wait} min` : '0 min'
+          });
+          setNextTickets(queueResponse.data.next_tickets || []);
+        }
+      } else {
+        alert('Failed to complete ticket');
+      }
+    } catch (err) {
+      console.error('Error completing ticket:', err);
+      alert('Failed to complete ticket');
+    }
   };
 
   const handleProblem = () => {
     alert('Problem reported - Ticket transferred');
+    handleComplete();
   };
 
   const handleBreak = () => {
@@ -172,6 +182,46 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
   // Admin actions
   const handleDismissAlert = (alertId) => {
     setAlerts(alerts.filter(a => a.id !== alertId));
+  };
+
+  const handlePrioritizeTicket = async (ticketId) => {
+    try {
+      const token = authService.getToken();
+      // This endpoint would need to be implemented
+      alert('Prioritize feature coming soon');
+    } catch (err) {
+      console.error('Error prioritizing ticket:', err);
+    }
+  };
+
+  const handleReassignTicket = async (ticketId, newCounterId) => {
+    try {
+      // This endpoint would need to be implemented
+      alert('Reassign feature coming soon');
+    } catch (err) {
+      console.error('Error reassigning ticket:', err);
+    }
+  };
+
+  const handleToggleCounter = async (counterId, action) => {
+    try {
+      const status = action === 'open' ? 'active' : 'closed';
+      await counterService.updateCounterStatus(counterId, status);
+      
+      // Refresh counters
+      const countersResponse = await counterService.getAllCounters();
+      if (countersResponse.success) {
+        setCounters(countersResponse.counters || []);
+        setAdminStats(prev => ({
+          ...prev,
+          activeCounters: countersResponse.counters?.filter(c => c.status === 'active' || c.status === 'busy').length || 0,
+          closedCounters: countersResponse.counters?.filter(c => c.status === 'closed' || c.status === 'inactive').length || 0
+        }));
+      }
+    } catch (err) {
+      console.error('Error toggling counter:', err);
+      alert('Failed to toggle counter');
+    }
   };
 
   // Employee view
@@ -205,7 +255,7 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
             <div>
               <p style={{ fontSize: '60px', fontWeight: 'bold', color: '#0B2E59', lineHeight: '1' }}>{currentTicket.number}</p>
               <p style={{ fontSize: '18px', color: '#666', marginTop: '10px' }}>{currentTicket.service}</p>
-              <p style={{ fontSize: '14px', color: '#999' }}>Wait: {currentTicket.waitingTime}</p>
+              <p style={{ fontSize: '14px', color: '#999' }}>Wait: {currentTicket.waiting_time || '0 min'}</p>
             </div>
             <div style={{ display: 'flex', gap: '15px' }}>
               <button onClick={handleComplete} style={{ background: '#D71920', color: 'white', padding: '15px 30px', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>✓ COMPLETE</button>
@@ -224,16 +274,20 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
       <div style={{ background: 'white', borderRadius: '10px', padding: '30px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <h2 style={{ fontSize: '18px', color: '#666', marginBottom: '20px' }}>⏳ NEXT TICKETS</h2>
         
-        {nextTickets.map((ticket, index) => (
-          <div key={ticket.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: index === 0 ? '#F0F8FF' : 'white', borderBottom: '1px solid #E0E0E0', borderLeft: ticket.vip ? '4px solid #D71920' : 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <span style={{ fontSize: '22px', fontWeight: 'bold', color: ticket.vip ? '#D71920' : '#0B2E59' }}>{ticket.number}</span>
-              <span style={{ color: '#666' }}>{ticket.service}</span>
-              {ticket.vip && <span style={{ background: '#D71920', color: 'white', padding: '3px 10px', borderRadius: '15px', fontSize: '12px', fontWeight: 'bold' }}>VIP</span>}
+        {nextTickets.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#999', padding: '20px' }}>No tickets in queue</p>
+        ) : (
+          nextTickets.map((ticket, index) => (
+            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: index === 0 ? '#F0F8FF' : 'white', borderBottom: '1px solid #E0E0E0', borderLeft: ticket.is_vip ? '4px solid #D71920' : 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <span style={{ fontSize: '22px', fontWeight: 'bold', color: ticket.is_vip ? '#D71920' : '#0B2E59' }}>{ticket.number}</span>
+                <span style={{ color: '#666' }}>{ticket.service}</span>
+                {ticket.is_vip && <span style={{ background: '#D71920', color: 'white', padding: '3px 10px', borderRadius: '15px', fontSize: '12px', fontWeight: 'bold' }}>VIP</span>}
+              </div>
+              <span style={{ color: '#999', fontSize: '14px' }}>{ticket.estimated_wait ? `${ticket.estimated_wait} min` : 'N/A'}</span>
             </div>
-            <span style={{ color: '#999', fontSize: '14px' }}>{ticket.time}</span>
-          </div>
-        ))}
+          ))
+        )}
 
         <button onClick={handleCallNext} style={{ width: '100%', background: '#0B2E59', color: 'white', padding: '15px', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '20px' }}>
           CALL NEXT ({nextTickets.length} waiting)
@@ -291,12 +345,16 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
       <h2 style={{ fontSize: '22px', color: '#0B2E59', marginTop: '40px', marginBottom: '20px', fontWeight: 'bold' }}>⚠️ Alerts</h2>
       
       <div style={{ background: 'white', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', marginBottom: '30px' }}>
-        {alerts.map(alert => (
-          <div key={alert.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: alert.severity === 'high' ? '#FFEBEE' : alert.severity === 'medium' ? '#FFF3CD' : '#F0F0F0', borderRadius: '5px', marginBottom: '5px' }}>
-            <span>{alert.message} - {alert.time}</span>
-            <button onClick={() => handleDismissAlert(alert.id)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer' }}>✖</button>
-          </div>
-        ))}
+        {alerts.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#999', padding: '20px' }}>No active alerts</p>
+        ) : (
+          alerts.map(alert => (
+            <div key={alert.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: alert.severity === 'high' ? '#FFEBEE' : alert.severity === 'medium' ? '#FFF3CD' : '#F0F0F0', borderRadius: '5px', marginBottom: '5px' }}>
+              <span>{alert.message} - {alert.time}</span>
+              <button onClick={() => handleDismissAlert(alert.id)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer' }}>✖</button>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Recommendations */}
@@ -334,7 +392,7 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
         </div>
         <div style={{ background: 'white', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <p style={{ color: '#666', fontSize: '14px' }}>Active Counters</p>
-          <p style={{ fontSize: '36px', fontWeight: 'bold', color: '#0B2E59' }}>{adminStats.activeCounters}/4</p>
+          <p style={{ fontSize: '36px', fontWeight: 'bold', color: '#0B2E59' }}>{adminStats.activeCounters}/{counters.length}</p>
         </div>
         <div style={{ background: 'white', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <p style={{ color: '#666', fontSize: '14px' }}>Cancellations</p>
@@ -343,6 +401,10 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
       </div>
     </div>
   );
+
+  if (loading) {
+    return <div style={{ padding: '50px', textAlign: 'center' }}>Loading dashboard...</div>;
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#F5F7FA', fontFamily: 'Arial, sans-serif' }}>
@@ -355,7 +417,7 @@ const CounterAdminDashboard = ({ admin, onLogout }) => {
           </button>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Counter Administration</h1>
-            <p style={{ fontSize: '14px', opacity: '0.9' }}>{admin?.name}</p>
+            <p style={{ fontSize: '14px', opacity: '0.9' }}>{admin?.first_name} {admin?.last_name}</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>

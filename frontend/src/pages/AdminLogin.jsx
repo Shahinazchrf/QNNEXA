@@ -1,29 +1,44 @@
+// frontend/src/pages/AdminLogin.jsx
+
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 
 const AdminLogin = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Admins de test
-  const admins = [
-    { id: 1, username: 'admin1', password: '1234', name: 'Admin Principal' },
-  
-    { id: 3, username: 'super', password: '1234', name: 'Super Admin' },
-  ];
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const admin = admins.find(
-      a => a.username === username && a.password === password
-    );
+    setLoading(true);
+    setError('');
 
-    if (admin) {
-      setError('');
-      onLogin(admin);
-    } else {
-      setError('Nom d\'utilisateur ou mot de passe incorrect');
+    try {
+      // For admin login, we use email field with username
+      const email = username.includes('@') ? username : `${username}@bank.com`;
+      
+      const response = await authService.login(email, password);
+      
+      if (response.success) {
+        const user = response.user;
+        
+        // Check if user is admin
+        if (['admin', 'super_admin'].includes(user.role)) {
+          onLogin(user);
+        } else {
+          setError('This account does not have admin privileges');
+          authService.logout();
+        }
+      } else {
+        setError(response.error || 'Invalid username or password');
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -131,6 +146,7 @@ const AdminLogin = ({ onLogin }) => {
 
           <button
             type="submit"
+            disabled={loading}
             style={{
               width: '100%',
               background: '#D71920',
@@ -140,10 +156,11 @@ const AdminLogin = ({ onLogin }) => {
               borderRadius: '8px',
               fontSize: '18px',
               fontWeight: 'bold',
-              cursor: 'pointer'
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1
             }}
           >
-            SE CONNECTER
+            {loading ? 'CONNEXION...' : 'SE CONNECTER'}
           </button>
         </form>
 
@@ -156,9 +173,8 @@ const AdminLogin = ({ onLogin }) => {
           color: '#666'
         }}>
           <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>Comptes de test :</p>
-          <div>admin1 / 1234 - Admin Principal</div>
-          
-          <div>super / 1234 - Super Admin</div>
+          <div>admin@bank.com / 1234 - Admin</div>
+          <div>super@bank.com / 1234 - Super Admin</div>
         </div>
       </div>
     </div>

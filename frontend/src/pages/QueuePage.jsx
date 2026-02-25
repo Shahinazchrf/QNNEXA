@@ -1,5 +1,7 @@
 // frontend/src/pages/QueuePage.jsx
 
+// frontend/src/pages/QueuePage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './QueuePage.css';
@@ -7,22 +9,151 @@ import './QueuePage.css';
 const QueuePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const ticketData = location.state?.ticket || {
-    number: 'T6457',
-    service: 'Account Opening',
-    position: 18,
-    waitTime: 20
-  };
+  const ticketData = location.state?.ticket;
   
   const [darkMode, setDarkMode] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [queueData, setQueueData] = useState({
+    position: ticketData?.position || 3,
+    ahead: ticketData ? ticketData.position - 1 : 2,
+    waitTime: ticketData?.waitTime || 6,
+    ticketNumber: ticketData?.number || 'W492',
+    service: ticketData?.service || 'Cash Operations'
+  });
+  
+  // Notifications dynamiques
+  const [notifications, setNotifications] = useState([]);
 
-  // Update time every second
+  // Mettre à jour l'heure toutes les secondes
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Charger les notifications depuis localStorage au démarrage
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem('notifications');
+    if (savedNotifications) {
+      setNotifications(JSON.parse(savedNotifications));
+    } else {
+      // Notifications par défaut si aucune n'existe
+      const defaultNotifications = [
+        {
+          id: 1,
+          message: 'Your turn is approaching. Only 6 people ahead of you.',
+          time: '20:35',
+          date: new Date().toLocaleDateString()
+        },
+        {
+          id: 2,
+          message: 'Ticket T2466 generated for Loan Request. Your position: #12',
+          time: '19:50',
+          date: new Date().toLocaleDateString()
+        },
+        {
+          id: 3,
+          message: 'Thank you for your patience. Please fill out our satisfaction survey.',
+          time: '19:15',
+          date: new Date().toLocaleDateString()
+        },
+        {
+          id: 4,
+          message: 'Ticket T6457 generated for Account Opening. Your position: #5',
+          time: '19:15',
+          date: new Date().toLocaleDateString()
+        }
+      ];
+      setNotifications(defaultNotifications);
+      localStorage.setItem('notifications', JSON.stringify(defaultNotifications));
+    }
+  }, []);
+
+  // Sauvegarder les notifications dans localStorage à chaque changement
+  useEffect(() => {
+    if (notifications.length > 0) {
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+    }
+  }, [notifications]);
+
+  // Générer des notifications dynamiques basées sur la file d'attente
+  useEffect(() => {
+    const generateNotifications = () => {
+      const newNotifications = [];
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      // Notification basée sur la position (si position <= 5)
+      if (queueData.position <= 5 && queueData.position > 0) {
+        const existingPositionNotif = notifications.some(
+          n => n.message.includes('turn is approaching') && 
+               n.message.includes(queueData.position.toString())
+        );
+        
+        if (!existingPositionNotif) {
+          newNotifications.push({
+            id: Date.now(),
+            message: `Your turn is approaching. Only ${queueData.position} people ahead of you.`,
+            time: timeString,
+            date: now.toLocaleDateString(),
+            isRead: false
+          });
+        }
+      }
+
+      // Notification pour le nouveau ticket (si ticketData existe)
+      if (ticketData && !notifications.some(n => n.message.includes(ticketData.number))) {
+        newNotifications.push({
+          id: Date.now() + 1,
+          message: `Ticket ${queueData.ticketNumber} generated for ${queueData.service}. Your position: #${queueData.position}`,
+          time: timeString,
+          date: now.toLocaleDateString(),
+          isRead: false
+        });
+      }
+
+      // Notification quand le temps d'attente est court
+      if (queueData.waitTime <= 5) {
+        const existingWaitNotif = notifications.some(
+          n => n.message.includes('wait time') && n.message.includes(queueData.waitTime.toString())
+        );
+        
+        if (!existingWaitNotif) {
+          newNotifications.push({
+            id: Date.now() + 2,
+            message: `Your wait time is now only ${queueData.waitTime} minutes. Please be ready.`,
+            time: timeString,
+            date: now.toLocaleDateString(),
+            isRead: false
+          });
+        }
+      }
+
+      // Ajouter les nouvelles notifications
+      if (newNotifications.length > 0) {
+        setNotifications(prev => {
+          const combined = [...newNotifications, ...prev];
+          return combined.slice(0, 20); // Garder les 20 plus récentes
+        });
+      }
+    };
+
+    generateNotifications();
+  }, [queueData.position, queueData.waitTime, queueData.ticketNumber, queueData.service, ticketData]);
+
+  // Simuler la mise à jour de la position (pour tester)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQueueData(prev => ({
+        ...prev,
+        position: Math.max(1, prev.position - 1),
+        ahead: Math.max(0, prev.ahead - 1),
+        waitTime: Math.max(2, prev.waitTime - 2)
+      }));
+    }, 30000); // Met à jour toutes les 30 secondes
+
+    return () => clearInterval(interval);
   }, []);
 
   // Toggle dark mode
@@ -46,58 +177,25 @@ const QueuePage = () => {
   const formatTime = (date) => {
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: true
     });
   };
 
-  const queueData = {
-    position: ticketData?.position || 18,
-    ahead: ticketData ? ticketData.position - 1 : 17,
-    waitTime: ticketData?.waitTime || 20,
-    ticketNumber: ticketData?.number || 'T6457',
-    service: ticketData?.service || 'Account Opening'
+  // Marquer une notification comme lue
+  const markAsRead = (id) => {
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    );
   };
-
-  const notifications = [
-    {
-      id: 1,
-      message: 'Your turn is approaching. Only 6 people ahead of you.'
-    },
-    {
-      id: 2,
-      message: 'Ticket T2466 generated for Loan Request. Your position: #12'
-    },
-    {
-      id: 3,
-      message: 'Thank you for your patience. Please fill out our satisfaction survey.'
-    },
-    {
-      id: 4,
-      message: 'Ticket T6457 generated for Account Opening. Your position: #5'
-    }
-  ];
-
-  const faqItems = [
-    {
-      question: "What documents are required for Gold credit card?"
-    },
-    {
-      question: "How do apply Ina personal loan?"
-    },
-    {
-      question: "How can I check my account balance online?"
-    },
-    {
-      question: "What is mobile deposit?"
-    }
-  ];
 
   return (
     <div className={`queue-page ${darkMode ? 'dark' : ''}`}>
-      {/* Navbar with Queue button */}
+      {/* Navbar avec bouton HOME */}
       <nav className="queue-navbar">
         <div className="nav-left">
           <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
+          <span className="nav-brand">QONNEXA</span>
           <span className="nav-slogan">Smart Queue Management System</span>
         </div>
         
@@ -108,23 +206,27 @@ const QueuePage = () => {
         </div>
 
         <div className="nav-right">
+          {/* BOUTON HOME AJOUTÉ */}
+          <button 
+            className={`nav-item ${location.pathname === '/create-ticket' ? 'active' : ''}`}
+            onClick={() => navigate('/create-ticket')}
+            title="Go to Home"
+          >
+            <span className="nav-icon">🏠</span>
+            <span className="nav-label">Home</span>
+          </button>
           <button 
             className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`}
             onClick={() => navigate('/queue')}
+            title="Track your queue"
           >
             <span className="nav-icon">📊</span>
-            <span className="nav-label">Queue</span>
-          </button>
-          <button 
-            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
-            onClick={() => navigate('/satisfaction')}
-          >
-            <span className="nav-icon">⭐</span>
-            <span className="nav-label">Feedback</span>
+            <span className="nav-label">Tracking Queue</span>
           </button>
           <button 
             className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`}
             onClick={() => navigate('/faq')}
+            title="Frequently Asked Questions"
           >
             <span className="nav-icon">❓</span>
             <span className="nav-label">FAQ</span>
@@ -132,23 +234,42 @@ const QueuePage = () => {
           <button 
             className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`}
             onClick={() => navigate('/support')}
+            title="Chat with Support"
           >
             <span className="nav-icon">💬</span>
             <span className="nav-label">Chatbot</span>
           </button>
           <button 
+            className={`nav-item ${location.pathname === '/cards' ? 'active' : ''}`}
+            onClick={() => navigate('/cards')}
+            title="Cards & Services"
+          >
+            <span className="nav-icon">💳</span>
+            <span className="nav-label">Cards</span>
+          </button>
+          <button 
+            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
+            onClick={() => navigate('/satisfaction')}
+            title="Give Feedback"
+          >
+            <span className="nav-icon">⭐</span>
+            <span className="nav-label">Satisfaction</span>
+          </button>
+          <button 
             className="dark-mode-btn"
             onClick={() => setDarkMode(!darkMode)}
+            title={darkMode ? 'Light Mode' : 'Dark Mode'}
           >
             {darkMode ? '☀️' : '🌙'}
           </button>
         </div>
       </nav>
 
-      {/* Queue Content */}
+      {/* Main Content */}
       <div className="queue-container">
         <h1 className="main-title">Tracking the Queue</h1>
         
+        {/* Section des statistiques */}
         <div className="tracking-list">
           <div className="tracking-item">
             <span className="tracking-label">Your position:</span>
@@ -164,11 +285,13 @@ const QueuePage = () => {
           </div>
         </div>
 
+        {/* Ticket Info */}
         <div className="ticket-info">
           <div className="ticket-number">{queueData.ticketNumber}</div>
           <p className="ticket-message">Please wait for your number to be called</p>
         </div>
 
+        {/* Tableau des services */}
         <table className="service-table">
           <thead>
             <tr>
@@ -178,32 +301,38 @@ const QueuePage = () => {
           </thead>
           <tbody>
             <tr>
-              <td className="service-name">Account Opening #1</td>
+              <td className="service-name">{queueData.service} #1</td>
               <td className="service-time">0 min</td>
             </tr>
           </tbody>
         </table>
 
+        {/* Section Notifications DYNAMIQUES */}
         <div className="notifications-section">
           <h2 className="section-title">Notifications</h2>
           <div className="notifications-list">
-            {notifications.map((notif, index) => (
-              <div key={index} className="notification-item">
-                <span className="notification-bullet">•</span>
-                <span className="notification-message">{notif.message}</span>
+            {notifications.slice(0, 4).map((notif) => (
+              <div 
+                key={notif.id} 
+                className={`notification-item ${!notif.isRead ? 'unread' : ''}`}
+                onClick={() => markAsRead(notif.id)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="notification-content">
+                  <span className="notification-message">{notif.message}</span>
+                  <span className="notification-time">{notif.time}</span>
+                </div>
+                {!notif.isRead && <span className="unread-dot">●</span>}
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="faq-section">
-          <h2 className="section-title">Frequently Asked Questions</h2>
-          <div className="faq-list">
-            {faqItems.map((item, index) => (
-              <div key={index} className="faq-item">
-                <span className="faq-question">{item.question}</span>
-              </div>
-            ))}
+          <div className="view-all-link">
+            <button 
+              className="view-all-btn"
+              onClick={() => navigate('/notifications')}
+            >
+              View All Notifications ({notifications.filter(n => !n.isRead).length} unread) →
+            </button>
           </div>
         </div>
       </div>

@@ -60,14 +60,17 @@ app.use(mongoSanitize());
 app.use(hpp());
 
 // 5. CORS configuré
+// Remplacer la configuration CORS existante par celle-ci
 const corsOptions = {
-  origin: process.env.FRONTEND_URLS ? 
-    process.env.FRONTEND_URLS.split(',') : 
-    ['http://localhost:3000', 'http://localhost:5173'],
+  origin: [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://10.167.50.243:3000',  // Votre IP
+    'https://subjectional-galilea-unthawing.ngrok-free.app'  // Votre URL ngrok
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 };
 
 app.use(cors(corsOptions));
@@ -1010,6 +1013,7 @@ app.get('/api/queue/stats', async (req, res) => {
 });
 
 // Get queue status
+// Get queue status - VERSION CORRIGÉE
 app.get('/api/tickets/queue', async (req, res) => {
   try {
     const { serviceCode } = req.query;
@@ -1025,14 +1029,11 @@ app.get('/api/tickets/queue', async (req, res) => {
     
     const count = await Ticket.count({ where });
     
+    // Version simplifiée sans les colonnes problématiques
     const nextTickets = await Ticket.findAll({
       where,
       include: [{ model: Service, as: 'ticketService' }],
-      order: [
-        ['is_appointment', 'DESC'],
-        ['priority', 'DESC'],
-        ['createdAt', 'ASC']
-      ],
+      order: [['createdAt', 'ASC']],
       limit: 5
     });
     
@@ -1051,9 +1052,6 @@ app.get('/api/tickets/queue', async (req, res) => {
         next_tickets: nextTickets.map(t => ({
           number: t.ticket_number,
           service: t.ticketService?.name,
-          priority: t.priority,
-          is_vip: t.is_vip === 1 ? true : false,
-          is_appointment: t.is_appointment === 1 ? true : false,
           waiting_since: t.createdAt
         })),
         estimated_wait: count * 10,

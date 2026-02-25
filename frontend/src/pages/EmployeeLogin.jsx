@@ -1,30 +1,44 @@
+// frontend/src/pages/EmployeeLogin.jsx
+
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 
 const EmployeeLogin = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Liste des employés (simulée)
-  const employees = [
-    { id: 1, username: 'guichetier1', password: '1234', name: 'Ahmed', counter: '#1', service: 'Cash Operations' },
-    { id: 2, username: 'guichetier2', password: '1234', name: 'Fatima', counter: '#2', service: 'Customer Service' },
-    { id: 3, username: 'guichetier3', password: '1234', name: 'Karim', counter: '#3', service: 'Cards & Payments' },
-    { id: 4, username: 'guichetier4', password: '1234', name: 'Leila', counter: '#4', service: 'Corporate VIP' },
-  ];
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const employee = employees.find(
-      emp => emp.username === username && emp.password === password
-    );
+    setLoading(true);
+    setError('');
 
-    if (employee) {
-      setError('');
-      onLogin(employee);
-    } else {
-      setError('Nom d\'utilisateur ou mot de passe incorrect');
+    try {
+      // For employee login, we use email field with username
+      const email = username.includes('@') ? username : `${username}@bank.com`;
+      
+      const response = await authService.login(email, password);
+      
+      if (response.success) {
+        const user = response.user;
+        
+        // Check if user is employee or admin
+        if (['employee', 'admin', 'super_admin'].includes(user.role)) {
+          onLogin(user);
+        } else {
+          setError('This account does not have employee privileges');
+          authService.logout();
+        }
+      } else {
+        setError(response.error || 'Invalid username or password');
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,7 +53,6 @@ const EmployeeLogin = ({ onLogin }) => {
       fontFamily: 'Arial, sans-serif'
     }}>
       
-      {/* Carte de connexion */}
       <div style={{ 
         background: 'white', 
         borderRadius: '15px',
@@ -49,7 +62,6 @@ const EmployeeLogin = ({ onLogin }) => {
         boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
       }}>
         
-        {/* Logo AGB */}
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
           <h1 style={{ 
             fontSize: '48px', 
@@ -63,7 +75,6 @@ const EmployeeLogin = ({ onLogin }) => {
           <p style={{ color: '#666', fontSize: '14px' }}>Espace Guichetier</p>
         </div>
 
-        {/* Formulaire */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '20px' }}>
             <label style={{ 
@@ -85,8 +96,7 @@ const EmployeeLogin = ({ onLogin }) => {
                 border: '2px solid #E0E0E0',
                 borderRadius: '8px',
                 fontSize: '16px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
+                outline: 'none'
               }}
               placeholder="Entrez votre nom d'utilisateur"
               required
@@ -113,8 +123,7 @@ const EmployeeLogin = ({ onLogin }) => {
                 border: '2px solid #E0E0E0',
                 borderRadius: '8px',
                 fontSize: '16px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
+                outline: 'none'
               }}
               placeholder="Entrez votre mot de passe"
               required
@@ -137,6 +146,7 @@ const EmployeeLogin = ({ onLogin }) => {
 
           <button
             type="submit"
+            disabled={loading}
             style={{
               width: '100%',
               background: '#D71920',
@@ -146,15 +156,14 @@ const EmployeeLogin = ({ onLogin }) => {
               borderRadius: '8px',
               fontSize: '18px',
               fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'background 0.2s'
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1
             }}
           >
-            SE CONNECTER
+            {loading ? 'CONNEXION...' : 'SE CONNECTER'}
           </button>
         </form>
 
-        {/* Liste des comptes (pour test) */}
         <div style={{ 
           marginTop: '30px', 
           padding: '15px', 
@@ -164,11 +173,8 @@ const EmployeeLogin = ({ onLogin }) => {
           color: '#666'
         }}>
           <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>Comptes de test :</p>
-          {employees.map(emp => (
-            <div key={emp.id} style={{ marginBottom: '5px' }}>
-              {emp.counter} - {emp.name} ({emp.service}) : <span style={{ color: '#0B2E59' }}>{emp.username} / 1234</span>
-            </div>
-          ))}
+          <div>employee@bank.com / 1234 - Employé</div>
+          <div>admin@bank.com / 1234 - Admin</div>
         </div>
       </div>
     </div>

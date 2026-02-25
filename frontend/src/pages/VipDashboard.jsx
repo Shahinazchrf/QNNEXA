@@ -1,52 +1,59 @@
-import React, { useState } from 'react';
+// forntend/src/pages/VipDashboard.jsx
+
+import React, { useState, useEffect } from 'react';
+import ticketService from '../services/ticketService';
+import authService from '../services/authService';
 
 const VipDashboard = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  const [appointments, setAppointments] = useState([]);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
-  // Mock appointments (these ARE the tickets)
-  const [appointments, setAppointments] = useState([
-    { 
-      id: 1, 
-      date: '2024-03-15', 
-      time: '10:30', 
-      service: 'Account Opening', 
-      status: 'confirmed', 
-      branch: 'Algiers Main',
-      ticketNumber: 'VIP001',
-      
-      estimatedWait: '15 min'
-    },
-    { 
-      id: 2, 
-      date: '2024-03-20', 
-      time: '14:00', 
-      service: 'Loan Consultation', 
-      status: 'pending', 
-      branch: 'Algiers Main',
-      ticketNumber: 'VIP002',
-      
-      estimatedWait: null
-    },
-  ]);
-
   // Form state
   const [formData, setFormData] = useState({
-    service: '',
+    serviceCode: '',
     date: '',
     time: '',
     branch: 'Algiers Main',
     notes: ''
   });
 
-  const services = [
-    'Account Opening',
-    'Loan Consultation',
-    'Cards & Payments',
-    'Investment Advisory',
-    'Corporate Banking',
-    'Wealth Management'
-  ];
+  // Load user's appointments and services
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get all tickets for this user (simulated - in real app, you'd have an endpoint)
+        const ticketsResponse = await ticketService.getAllTickets();
+        
+        if (ticketsResponse.success) {
+          // Filter VIP appointments
+          const vipAppointments = ticketsResponse.tickets?.filter(t => 
+            t.is_vip === true || t.is_appointment === true
+          ) || [];
+          setAppointments(vipAppointments);
+        }
+        
+        // Get services
+        const servicesResponse = await ticketService.getServices();
+        if (servicesResponse.success) {
+          setServices(servicesResponse.services || []);
+        }
+        
+      } catch (err) {
+        console.error('Error loading VIP data:', err);
+        setError('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const branches = [
     'Algiers Main',
@@ -63,41 +70,65 @@ const VipDashboard = ({ user, onLogout }) => {
     });
   };
 
-  const handleSubmitAppointment = (e) => {
+  const handleSubmitAppointment = async (e) => {
     e.preventDefault();
+    setLoading(true);
     
-    // Generate VIP ticket number
-    const ticketNumber = `VIP${String(appointments.length + 1).padStart(3, '0')}`;
-    
-    const newAppointment = {
-      id: appointments.length + 1,
-      date: formData.date,
-      time: formData.time,
-      service: formData.service,
-      status: 'confirmed', // VIP appointments are auto-confirmed
-      branch: formData.branch,
-      notes: formData.notes,
-      ticketNumber: ticketNumber,
+    try {
+      const appointmentDateTime = `${formData.date}T${formData.time}:00`;
       
-      estimatedWait: '10 min'
-    };
-    
-    setAppointments([...appointments, newAppointment]);
-    setShowAppointmentForm(false);
-    setFormData({
-      service: '',
-      date: '',
-      time: '',
-      branch: 'Algiers Main',
-      notes: ''
-    });
-    
-    alert(`✅ Appointment confirmed! Your VIP ticket number is ${ticketNumber}`);
+      const response = await ticketService.bookVIPAppointment(
+        formData.serviceCode,
+        appointmentDateTime,
+        user?.vip_code || 'VIP001',
+        formData.notes
+      );
+
+      if (response.success) {
+        // Refresh appointments
+        const ticketsResponse = await ticketService.getAllTickets();
+        if (ticketsResponse.success) {
+          const vipAppointments = ticketsResponse.tickets?.filter(t => 
+            t.is_vip === true || t.is_appointment === true
+          ) || [];
+          setAppointments(vipAppointments);
+        }
+        
+        setShowAppointmentForm(false);
+        setFormData({
+          serviceCode: '',
+          date: '',
+          time: '',
+          branch: 'Algiers Main',
+          notes: ''
+        });
+        
+        alert(`✅ Appointment confirmed! Your VIP ticket number is ${response.ticket?.number}`);
+      } else {
+        setError(response.error || 'Failed to book appointment');
+      }
+    } catch (err) {
+      console.error('Error booking appointment:', err);
+      setError('Failed to book appointment');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCancelAppointment = (id) => {
+  const handleCancelAppointment = async (id) => {
     if (window.confirm('Cancel this appointment?')) {
-      setAppointments(appointments.filter(a => a.id !== id));
+      try {
+        const response = await ticketService.cancelTicket(id, 'Cancelled by VIP client');
+        
+        if (response.success) {
+          setAppointments(appointments.filter(a => a.id !== id));
+        } else {
+          alert('Failed to cancel appointment');
+        }
+      } catch (err) {
+        console.error('Error cancelling appointment:', err);
+        alert('Failed to cancel appointment');
+      }
     }
   };
 
@@ -113,7 +144,10 @@ const VipDashboard = ({ user, onLogout }) => {
         </button>
       </div>
 
-      {appointments.length === 0 ? (
+      {loading && <p>Loading appointments...</p>}
+      {error && <p style={{ color: '#D71920' }}>{error}</p>}
+
+      {!loading && appointments.length === 0 ? (
         <p style={{ color: '#999', textAlign: 'center', padding: '40px' }}>No appointments found</p>
       ) : (
         <div style={{ display: 'grid', gap: '15px' }}>
@@ -123,12 +157,12 @@ const VipDashboard = ({ user, onLogout }) => {
               padding: '20px', 
               borderRadius: '10px', 
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)', 
-              borderLeft: apt.status === 'confirmed' ? '4px solid #0B2E59' : '4px solid #FFA500'
+              borderLeft: apt.status === 'waiting' ? '4px solid #0B2E59' : '4px solid #FFA500'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
-                    <h3 style={{ fontSize: '24px', color: '#0B2E59', fontWeight: 'bold' }}>{apt.ticketNumber}</h3>
+                    <h3 style={{ fontSize: '24px', color: '#0B2E59', fontWeight: 'bold' }}>{apt.number}</h3>
                     <span style={{ 
                       background: '#D71920', 
                       color: 'white', 
@@ -140,7 +174,7 @@ const VipDashboard = ({ user, onLogout }) => {
                       VIP
                     </span>
                     <span style={{ 
-                      background: apt.status === 'confirmed' ? '#0B2E59' : '#FFA500', 
+                      background: apt.status === 'waiting' ? '#0B2E59' : '#FFA500', 
                       color: 'white', 
                       padding: '3px 10px', 
                       borderRadius: '12px', 
@@ -152,10 +186,10 @@ const VipDashboard = ({ user, onLogout }) => {
                   
                   <p style={{ fontSize: '16px', color: '#0B2E59', marginBottom: '5px' }}>{apt.service}</p>
                   <p style={{ color: '#666', marginBottom: '5px' }}>
-                    📅 {apt.date} at {apt.time} - {apt.branch}
+                    📅 {new Date(apt.created_at).toLocaleDateString()} at {new Date(apt.created_at).toLocaleTimeString()} 
                   </p>
                   
-                  {apt.status === 'confirmed' && (
+                  {apt.status === 'waiting' && (
                     <div style={{ 
                       background: '#F0F8FF', 
                       padding: '10px', 
@@ -164,16 +198,15 @@ const VipDashboard = ({ user, onLogout }) => {
                       display: 'flex',
                       gap: '20px'
                     }}>
-                      
                       <div>
                         <span style={{ fontSize: '12px', color: '#666' }}>Est. Wait</span>
-                        <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#D71920' }}>{apt.estimatedWait}</p>
+                        <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#D71920' }}>{apt.estimated_wait || 5} min</p>
                       </div>
                     </div>
                   )}
                 </div>
                 
-                {apt.status === 'pending' && (
+                {apt.status === 'waiting' && (
                   <button 
                     onClick={() => handleCancelAppointment(apt.id)} 
                     style={{ 
@@ -223,12 +256,14 @@ const VipDashboard = ({ user, onLogout }) => {
           ⭐ Your appointment will generate a priority VIP ticket
         </p>
         
+        {error && <p style={{ color: '#D71920', marginBottom: '15px' }}>{error}</p>}
+        
         <form onSubmit={handleSubmitAppointment}>
           <div style={{ marginBottom: '15px' }}>
             <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>Service *</label>
             <select 
-              name="service" 
-              value={formData.service} 
+              name="serviceCode" 
+              value={formData.serviceCode} 
               onChange={handleInputChange} 
               required 
               style={{ 
@@ -239,7 +274,9 @@ const VipDashboard = ({ user, onLogout }) => {
               }}
             >
               <option value="">Select a service</option>
-              {services.map(s => <option key={s} value={s}>{s}</option>)}
+              {services.map(s => (
+                <option key={s.id} value={s.code}>{s.name || s.code}</option>
+              ))}
             </select>
           </div>
 
@@ -315,6 +352,7 @@ const VipDashboard = ({ user, onLogout }) => {
           <div style={{ display: 'flex', gap: '10px' }}>
             <button 
               type="submit" 
+              disabled={loading}
               style={{ 
                 flex: 1, 
                 background: '#0B2E59', 
@@ -324,10 +362,11 @@ const VipDashboard = ({ user, onLogout }) => {
                 borderRadius: '5px', 
                 fontSize: '16px', 
                 fontWeight: 'bold', 
-                cursor: 'pointer' 
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1
               }}
             >
-              Confirm Appointment
+              {loading ? 'Booking...' : 'Confirm Appointment'}
             </button>
             <button 
               type="button" 
@@ -379,7 +418,7 @@ const VipDashboard = ({ user, onLogout }) => {
           </button>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>VIP Client Space</h1>
-            <p style={{ fontSize: '14px', opacity: '0.9' }}>Welcome, {user?.name}</p>
+            <p style={{ fontSize: '14px', opacity: '0.9' }}>Welcome, {user?.first_name} {user?.last_name}</p>
           </div>
         </div>
         <div style={{ 
