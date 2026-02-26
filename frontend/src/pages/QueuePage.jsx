@@ -189,6 +189,7 @@ const QueuePage = () => {
 
   return (
     <div className={`queue-page ${darkMode ? 'dark' : ''}`}>
+
       {/* Main Content */}
       <div className="queue-container">
         <h1 className="main-title">Tracking the Queue</h1>

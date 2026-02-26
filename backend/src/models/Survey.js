@@ -1,3 +1,4 @@
+// backend/src/models/Survey.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
@@ -29,7 +30,9 @@ const Survey = sequelize.define('Survey', {
   }
 }, {
   tableName: 'surveys',
-  timestamps: true,
+  timestamps: true,           // Keep timestamps enabled
+  createdAt: 'createdAt',      // This matches your database column
+  updatedAt: false,            // This disables updatedAt completely
   indexes: [
     {
       fields: ['ticket_id']

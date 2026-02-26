@@ -1,9 +1,8 @@
 // frontend/src/pages/Satisfaction.jsx
 
-// frontend/src/pages/Satisfaction.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import surveyService from '../services/surveyService';
 import './Satisfaction.css';
 
 const Satisfaction = () => {
@@ -21,6 +20,8 @@ const Satisfaction = () => {
   const [cleanAgency, setCleanAgency] = useState(false);
   const [comments, setComments] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Questions supplémentaires
   const [answers, setAnswers] = useState({
@@ -68,36 +69,68 @@ const Satisfaction = () => {
       ...answers,
       [question]: value
     });
+    console.log(`Answer ${question} changed to:`, value);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (rating === 0) {
-      alert('Please give a rating');
+    console.log('='.repeat(50));
+    console.log('🔵 SURVEY SUBMIT BUTTON CLICKED');
+    console.log('Current answers:', answers);
+    console.log('q1 value:', answers.q1);
+    
+    // Use the answer from question 1 as the rating
+    const selectedRating = parseInt(answers.q1);
+    console.log('Parsed rating:', selectedRating);
+    console.log('Comments:', comments);
+    
+    if (!selectedRating || isNaN(selectedRating) || selectedRating < 1 || selectedRating > 5) {
+      alert('Please rate the waiting time (question 1)');
       return;
     }
 
-    // Ici vous enverriez les données à l'API
-    console.log({
-      rating,
-      criteria: {
-        fastService,
-        professionalStaff,
-        helpfulSupport,
-        cleanAgency
-      },
-      answers,
-      comments
-    });
+    setLoading(true);
+    setError('');
 
-    setSubmitted(true);
+    try {
+      // For now, use a fixed ticket ID for testing
+      const ticketId = 'test-ticket-123';
+      console.log('🎫 Using ticket ID:', ticketId);
+      
+      console.log('📤 Sending survey data:', {
+        ticket_id: ticketId,
+        rating: selectedRating,
+        comments: comments
+      });
+      
+      const response = await surveyService.submitSurvey(
+        ticketId,
+        selectedRating,
+        comments
+      );
+      
+      console.log('📥 API Response:', response);
+
+      if (response.success) {
+        console.log('✅ Survey submitted successfully!');
+        setSubmitted(true);
+      } else {
+        console.error('❌ API Error:', response.error);
+        setError(response.error || 'Failed to submit survey');
+      }
+    } catch (err) {
+      console.error('❌ Exception:', err);
+      setError('Error submitting survey. Please try again.');
+    } finally {
+      setLoading(false);
+      console.log('='.repeat(50));
+    }
   };
 
   if (submitted) {
     return (
       <div className={`satisfaction-page ${darkMode ? 'dark' : ''}`}>
-        {/* Navbar avec bouton Tracking Queue */}
         <nav className="queue-navbar">
           <div className="nav-left">
             <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
@@ -113,47 +146,18 @@ const Satisfaction = () => {
 
           <div className="nav-right">
             <button 
-              className={`nav-item ${location.pathname === '/create-ticket' ? 'active' : ''}`}
+              className="nav-item"
               onClick={() => navigate('/create-ticket')}
             >
               <span className="nav-icon">🏠</span>
               <span className="nav-label">Home</span>
             </button>
-            {/* BOUTON TRACKING QUEUE AJOUTÉ */}
             <button 
-              className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`}
+              className="nav-item"
               onClick={() => navigate('/queue')}
             >
               <span className="nav-icon">📊</span>
               <span className="nav-label">Tracking Queue</span>
-            </button>
-            <button 
-              className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`}
-              onClick={() => navigate('/faq')}
-            >
-              <span className="nav-icon">❓</span>
-              <span className="nav-label">FAQ</span>
-            </button>
-            <button 
-              className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`}
-              onClick={() => navigate('/support')}
-            >
-              <span className="nav-icon">💬</span>
-              <span className="nav-label">Chatbot</span>
-            </button>
-            <button 
-              className={`nav-item ${location.pathname === '/cards' ? 'active' : ''}`}
-              onClick={() => navigate('/cards')}
-            >
-              <span className="nav-icon">💳</span>
-              <span className="nav-label">Cards</span>
-            </button>
-            <button 
-              className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
-              onClick={() => navigate('/satisfaction')}
-            >
-              <span className="nav-icon">⭐</span>
-              <span className="nav-label">Satisfaction</span>
             </button>
             <button 
               className="dark-mode-btn"
@@ -185,7 +189,6 @@ const Satisfaction = () => {
 
   return (
     <div className={`satisfaction-page ${darkMode ? 'dark' : ''}`}>
-      {/* Navbar avec bouton Tracking Queue */}
       <nav className="queue-navbar">
         <div className="nav-left">
           <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
@@ -201,43 +204,42 @@ const Satisfaction = () => {
 
         <div className="nav-right">
           <button 
-            className={`nav-item ${location.pathname === '/create-ticket' ? 'active' : ''}`}
+            className="nav-item"
             onClick={() => navigate('/create-ticket')}
           >
             <span className="nav-icon">🏠</span>
             <span className="nav-label">Home</span>
           </button>
-          {/* BOUTON TRACKING QUEUE AJOUTÉ */}
           <button 
-            className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`}
+            className="nav-item"
             onClick={() => navigate('/queue')}
           >
             <span className="nav-icon">📊</span>
             <span className="nav-label">Tracking Queue</span>
           </button>
           <button 
-            className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`}
+            className="nav-item"
             onClick={() => navigate('/faq')}
           >
             <span className="nav-icon">❓</span>
             <span className="nav-label">FAQ</span>
           </button>
           <button 
-            className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`}
+            className="nav-item"
             onClick={() => navigate('/support')}
           >
             <span className="nav-icon">💬</span>
             <span className="nav-label">Chatbot</span>
           </button>
           <button 
-            className={`nav-item ${location.pathname === '/cards' ? 'active' : ''}`}
+            className="nav-item"
             onClick={() => navigate('/cards')}
           >
             <span className="nav-icon">💳</span>
             <span className="nav-label">Cards</span>
           </button>
           <button 
-            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
+            className="nav-item active"
             onClick={() => navigate('/satisfaction')}
           >
             <span className="nav-icon">⭐</span>
@@ -252,7 +254,6 @@ const Satisfaction = () => {
         </div>
       </nav>
 
-      {/* Contenu Satisfaction */}
       <div className="satisfaction-container">
         <div className="satisfaction-header">
           <span className="logo">AGB</span>
@@ -262,7 +263,46 @@ const Satisfaction = () => {
         <h1 className="satisfaction-title">Thank you for visiting!</h1>
         <p className="satisfaction-subtitle">How was your experience today?</p>
 
+        {error && (
+          <div style={{ 
+            background: '#FFEBEE', 
+            color: '#D71920', 
+            padding: '12px', 
+            borderRadius: '8px',
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="satisfaction-form">
+          {/* Star Rating */}
+          <div className="rating-section">
+            <label className="section-label">Overall Rating *</label>
+            <div className="stars-container">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  className={`star ${star <= (hover || rating) ? 'filled' : ''}`}
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHover(star)}
+                  onMouseLeave={() => setHover(0)}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            <p className="rating-label">
+              {rating === 0 && "Tap to rate"}
+              {rating === 1 && "Poor"}
+              {rating === 2 && "Fair"}
+              {rating === 3 && "Good"}
+              {rating === 4 && "Very Good"}
+              {rating === 5 && "Excellent"}
+            </p>
+          </div>
+
           {/* Critères */}
           <div className="criteria-section">
             <div className="criteria-grid">
@@ -318,6 +358,7 @@ const Satisfaction = () => {
                       type="radio"
                       name="q1"
                       value={value}
+                      checked={answers.q1 === value.toString()}
                       onChange={(e) => handleAnswerChange('q1', e.target.value)}
                     />
                     <span>{value}</span>
@@ -334,6 +375,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q2"
                     value="yes"
+                    checked={answers.q2 === 'yes'}
                     onChange={(e) => handleAnswerChange('q2', e.target.value)}
                   />
                   <span>Yes</span>
@@ -343,6 +385,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q2"
                     value="no"
+                    checked={answers.q2 === 'no'}
                     onChange={(e) => handleAnswerChange('q2', e.target.value)}
                   />
                   <span>No</span>
@@ -352,6 +395,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q2"
                     value="somewhat"
+                    checked={answers.q2 === 'somewhat'}
                     onChange={(e) => handleAnswerChange('q2', e.target.value)}
                   />
                   <span>Somewhat</span>
@@ -367,6 +411,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q3"
                     value="very clear"
+                    checked={answers.q3 === 'very clear'}
                     onChange={(e) => handleAnswerChange('q3', e.target.value)}
                   />
                   <span>Very Clear</span>
@@ -376,6 +421,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q3"
                     value="somewhat clear"
+                    checked={answers.q3 === 'somewhat clear'}
                     onChange={(e) => handleAnswerChange('q3', e.target.value)}
                   />
                   <span>Somewhat Clear</span>
@@ -385,6 +431,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q3"
                     value="confusing"
+                    checked={answers.q3 === 'confusing'}
                     onChange={(e) => handleAnswerChange('q3', e.target.value)}
                   />
                   <span>Confusing</span>
@@ -400,6 +447,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q4"
                     value="definitely"
+                    checked={answers.q4 === 'definitely'}
                     onChange={(e) => handleAnswerChange('q4', e.target.value)}
                   />
                   <span>Definitely</span>
@@ -409,6 +457,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q4"
                     value="maybe"
+                    checked={answers.q4 === 'maybe'}
                     onChange={(e) => handleAnswerChange('q4', e.target.value)}
                   />
                   <span>Maybe</span>
@@ -418,6 +467,7 @@ const Satisfaction = () => {
                     type="radio"
                     name="q4"
                     value="no"
+                    checked={answers.q4 === 'no'}
                     onChange={(e) => handleAnswerChange('q4', e.target.value)}
                   />
                   <span>No</span>
@@ -439,8 +489,12 @@ const Satisfaction = () => {
           </div>
 
           {/* Submit Button */}
-          <button type="submit" className="submit-btn">
-            Submit Feedback
+          <button 
+            type="submit" 
+            className="submit-btn"
+            disabled={loading}
+          >
+            {loading ? 'Submitting...' : 'Submit Feedback'}
           </button>
         </form>
 
