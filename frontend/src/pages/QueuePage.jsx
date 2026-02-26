@@ -1,7 +1,5 @@
 // frontend/src/pages/QueuePage.jsx
 
-// frontend/src/pages/QueuePage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './QueuePage.css';
@@ -191,80 +189,6 @@ const QueuePage = () => {
 
   return (
     <div className={`queue-page ${darkMode ? 'dark' : ''}`}>
-      {/* Navbar avec bouton HOME */}
-      <nav className="queue-navbar">
-        <div className="nav-left">
-          <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
-          <span className="nav-brand">QONNEXA</span>
-          <span className="nav-slogan">Smart Queue Management System</span>
-        </div>
-        
-        <div className="nav-center">
-          <span className="datetime">
-            {formatDate(currentDateTime)} {formatTime(currentDateTime)}
-          </span>
-        </div>
-
-        <div className="nav-right">
-          {/* BOUTON HOME AJOUTÉ */}
-          <button 
-            className={`nav-item ${location.pathname === '/create-ticket' ? 'active' : ''}`}
-            onClick={() => navigate('/create-ticket')}
-            title="Go to Home"
-          >
-            <span className="nav-icon">🏠</span>
-            <span className="nav-label">Home</span>
-          </button>
-          <button 
-            className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`}
-            onClick={() => navigate('/queue')}
-            title="Track your queue"
-          >
-            <span className="nav-icon">📊</span>
-            <span className="nav-label">Tracking Queue</span>
-          </button>
-          <button 
-            className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`}
-            onClick={() => navigate('/faq')}
-            title="Frequently Asked Questions"
-          >
-            <span className="nav-icon">❓</span>
-            <span className="nav-label">FAQ</span>
-          </button>
-          <button 
-            className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`}
-            onClick={() => navigate('/support')}
-            title="Chat with Support"
-          >
-            <span className="nav-icon">💬</span>
-            <span className="nav-label">Chatbot</span>
-          </button>
-          <button 
-            className={`nav-item ${location.pathname === '/cards' ? 'active' : ''}`}
-            onClick={() => navigate('/cards')}
-            title="Cards & Services"
-          >
-            <span className="nav-icon">💳</span>
-            <span className="nav-label">Cards</span>
-          </button>
-          <button 
-            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
-            onClick={() => navigate('/satisfaction')}
-            title="Give Feedback"
-          >
-            <span className="nav-icon">⭐</span>
-            <span className="nav-label">Satisfaction</span>
-          </button>
-          <button 
-            className="dark-mode-btn"
-            onClick={() => setDarkMode(!darkMode)}
-            title={darkMode ? 'Light Mode' : 'Dark Mode'}
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-        </div>
-      </nav>
-
       {/* Main Content */}
       <div className="queue-container">
         <h1 className="main-title">Tracking the Queue</h1>
@@ -326,6 +250,7 @@ const QueuePage = () => {
               </div>
             ))}
           </div>
+          {/* SUPPRIMEZ CE BLOC SI VOUS VOULEZ ENLEVER COMPLÈTEMENT LE BOUTON
           <div className="view-all-link">
             <button 
               className="view-all-btn"
@@ -334,6 +259,7 @@ const QueuePage = () => {
               View All Notifications ({notifications.filter(n => !n.isRead).length} unread) →
             </button>
           </div>
+          */}
         </div>
       </div>
     </div>
