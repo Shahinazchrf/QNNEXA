@@ -1,3 +1,5 @@
+// backend/src/models/Ticket.js
+
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
@@ -113,13 +115,9 @@ const Ticket = sequelize.define('Ticket', {
   notes: {
     type: DataTypes.TEXT,
     allowNull: true
-  },
-  transferred_from: {
-    type: DataTypes.STRING(20),
-    allowNull: true
   }
-},
- {
+  // ❌ REMOVED: transferred_from - this column doesn't exist in your database
+}, {
   tableName: 'tickets',
   timestamps: true,
   underscored: false,

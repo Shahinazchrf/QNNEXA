@@ -365,7 +365,7 @@ app.post('/api/vip/appointment/create', async (req, res) => {
 
 // ==================== IMPORT MODELS ====================
 const { Survey, Agency } = require('./models');
-const { Op } = require('sequelize');
+const { Op } = require('sequelize');  // Add this with your other imports
 
 // ==================== ROUTES D'API ====================
 
@@ -442,34 +442,39 @@ app.get('/api/counters', async (req, res) => {
 // ==================== TICKET ROUTES ====================
 
 // Create normal ticket
+// Find this endpoint in your server.js and replace it entirely
 app.post('/api/tickets/generate', async (req, res) => {
   try {
     const { serviceCode, customerName } = req.body;
-    console.log('📝 Creating NORMAL ticket for service:', serviceCode);
+    console.log('='.repeat(50));
+    console.log('📝 TICKET CREATION ATTEMPT');
+    console.log('Service Code:', serviceCode);
+    console.log('Customer Name:', customerName);
+    console.log('='.repeat(50));
 
+    // Find service
+    console.log('🔍 Looking for service with code:', serviceCode);
     const service = await Service.findOne({ 
-      where: { name: serviceCode, is_active: true }
+      where: { code: serviceCode, is_active: true }
     });
     
     if (!service) {
+      console.log('❌ Service not found for code:', serviceCode);
       return res.status(400).json({
         success: false,
         error: `Service ${serviceCode} not available`
       });
     }
+    console.log('✅ Service found:', service.id, service.name);
 
+    // Generate ticket number
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     const lastTicket = await Ticket.findOne({
       where: {
         service_id: service.id,
-        ticket_number: { 
-          [Op.and]: [
-            { [Op.like]: `${serviceCode}%` },
-            { [Op.notLike]: `VIP%` }
-          ]
-        },
+        ticket_number: { [Op.like]: `${serviceCode}%` },
         createdAt: { [Op.gte]: today }
       },
       order: [['createdAt', 'DESC']]
@@ -484,8 +489,9 @@ app.post('/api/tickets/generate', async (req, res) => {
     }
 
     const ticketNumber = `${serviceCode}${seqNumber.toString().padStart(3, '0')}`;
-    console.log(`🎫 Generated ticket number: ${ticketNumber}`);
+    console.log('🎫 Generated ticket number:', ticketNumber);
 
+    // Count waiting tickets
     const waitingCount = await Ticket.count({
       where: {
         service_id: service.id,
@@ -495,49 +501,68 @@ app.post('/api/tickets/generate', async (req, res) => {
     
     const baseTime = service.estimated_time || 15;
     const estimatedWait = waitingCount * baseTime;
+    console.log('⏱️ Estimated wait time:', estimatedWait, 'minutes');
 
-    const ticket = await Ticket.create({
+    // Create ticket
+    console.log('💾 Attempting to save ticket to database...');
+    
+    const ticketData = {
       ticket_number: ticketNumber,
       service_id: service.id,
-      priority: 'normal',
       status: 'waiting',
+      priority: 'normal',
       customer_name: customerName || 'Customer',
       is_vip: false,
       is_appointment: false,
       estimated_wait_time: estimatedWait,
-    });
-
-    console.log(`✅ Normal ticket ${ticketNumber} created successfully`);
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    console.log('Ticket data:', JSON.stringify(ticketData, null, 2));
+    
+    const ticket = await Ticket.create(ticketData);
+    
+    console.log('✅ Ticket saved successfully! ID:', ticket.id);
+    console.log('='.repeat(50));
 
     res.status(201).json({
       success: true,
       message: 'Ticket generated successfully',
       ticket: {
-        number: ticketNumber,
+        id: ticket.id,
+        number: ticket.ticket_number,
         service: service.name,
         priority: 'normal',
-        is_vip: false,
         estimated_wait: estimatedWait,
-        created_at: ticket.createdAt,
-        message: `Please proceed to waiting area. Your ticket is ${ticketNumber}`
+        created_at: ticket.createdAt
       }
     });
 
   } catch (error) {
-    console.error('❌ Ticket generation error:', error);
+    console.error('❌ ERROR IN TICKET CREATION:');
+    console.error('Message:', error.message);
+    console.error('Name:', error.name);
+    console.error('Stack:', error.stack);
     
     if (error.name === 'SequelizeValidationError') {
-      const messages = error.errors.map(e => `${e.path}: ${e.message}`);
-      return res.status(400).json({
-        success: false,
-        error: 'Validation error',
-        details: messages
+      console.error('Validation Errors:');
+      error.errors.forEach(err => {
+        console.error(`  - ${err.path}: ${err.message} (Value: ${err.value})`);
       });
     }
     
+    if (error.name === 'SequelizeDatabaseError') {
+      console.error('Database Error - Check column names and types');
+      console.error('Original error:', error.parent);
+    }
+    
+    console.error('='.repeat(50));
+    
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      type: error.name
     });
   }
 });
@@ -600,9 +625,10 @@ app.post('/api/tickets/vip-appointment', async (req, res) => {
       });
     }
     
-    const service = await Service.findOne({ 
-      where: { name: serviceCode, is_active: true } 
-    });
+   // CHANGE THIS:
+const service = await Service.findOne({ 
+  where: { name: serviceCode, is_active: true } 
+});  // ✅ This is actually correct! Keep it as 'name'
     
     if (!service) {
       return res.status(400).json({
@@ -957,10 +983,10 @@ app.get('/api/queue/stats', async (req, res) => {
     let where = { status: 'waiting' };
     let service = null;
     
-    if (service_code) {
-      service = await Service.findOne({ where: { name: service_code } });
-      if (service) where.service_id = service.id;
-    }
+   if (service_code) {
+  service = await Service.findOne({ where: { name: service_code } });  // Use 'name'
+  if (service) where.service_id = service.id;
+}
     
     const tickets = await Ticket.findAll({
       where,
