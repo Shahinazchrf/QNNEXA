@@ -14,8 +14,8 @@ const QueuePage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Get service code from ticket data
-  const serviceCode = ticketData?.code || 'A';
-  const serviceName = ticketData?.service || 'Account Opening';
+  const serviceCode = ticketData?.code || 'XCH';
+  const serviceName = ticketData?.service || 'Currency Exchange';
   
   // Calculate correct wait time based on service
   const getBaseWaitTime = (code) => {
@@ -35,7 +35,7 @@ const QueuePage = () => {
   const baseTime = getBaseWaitTime(serviceCode);
   const waitTime = ahead * baseTime;
   
-  const ticketNumber = ticketData?.number || 'A4359';
+  const ticketNumber = ticketData?.number || 'XCH5731';
   
   const [queueData] = useState({
     position: position,
@@ -66,16 +66,10 @@ const QueuePage = () => {
         message: `Your turn is approaching. Only ${queueData.ahead} ${queueData.ahead === 1 ? 'person' : 'people'} ahead of you.`,
         time: timeString,
         isRead: false
-      },
-      {
-        id: 2,
-        message: `Ticket ${queueData.ticketNumber} generated for ${queueData.service}.`,
-        time: timeString,
-        isRead: false
       }
     ];
     setNotifications(newNotifications);
-  }, [queueData.ahead, queueData.ticketNumber, queueData.service]);
+  }, [queueData.ahead]);
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
@@ -144,7 +138,28 @@ const QueuePage = () => {
             <span className="nav-label">Chatbot</span>
           </button>
 
-          <button className="nav-item" onClick={() => handleNavigation('/satisfaction')}>
+          {/* FIXED SATISFACTION BUTTON */}
+          <button 
+            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
+            onClick={() => {
+              if (ticketData && ticketData.id) {
+                navigate('/satisfaction', { 
+                  state: { 
+                    ticket: {
+                      id: ticketData.id,
+                      number: queueData.ticketNumber,
+                      service: queueData.service,
+                      position: queueData.position
+                    }
+                  } 
+                });
+              } else {
+                alert('Please create a ticket first');
+                navigate('/create-ticket');
+              }
+              setMobileMenuOpen(false);
+            }}
+          >
             <span className="nav-icon">⭐</span>
             <span className="nav-label">Satisfaction</span>
           </button>
@@ -178,7 +193,28 @@ const QueuePage = () => {
           <span className="mobile-nav-icon">💬</span>
           <span>Chatbot</span>
         </button>
-        <button className="mobile-nav-item" onClick={() => handleNavigation('/satisfaction')}>
+        {/* FIXED MOBILE SATISFACTION BUTTON */}
+        <button 
+          className="mobile-nav-item" 
+          onClick={() => {
+            if (ticketData && ticketData.id) {
+              navigate('/satisfaction', { 
+                state: { 
+                  ticket: {
+                    id: ticketData.id,
+                    number: queueData.ticketNumber,
+                    service: queueData.service,
+                    position: queueData.position
+                  }
+                } 
+              });
+            } else {
+              alert('Please create a ticket first');
+              navigate('/create-ticket');
+            }
+            setMobileMenuOpen(false);
+          }}
+        >
           <span className="mobile-nav-icon">⭐</span>
           <span>Satisfaction</span>
         </button>
@@ -191,15 +227,15 @@ const QueuePage = () => {
         {/* Stats */}
         <div className="tracking-list">
           <div className="tracking-item">
-            <span className="tracking-label">Your position:</span>
+            <span className="tracking-label">YOUR POSITION:</span>
             <span className="tracking-value">{queueData.position}</span>
           </div>
           <div className="tracking-item">
-            <span className="tracking-label">People ahead:</span>
+            <span className="tracking-label">PEOPLE AHEAD:</span>
             <span className="tracking-value">{queueData.ahead}</span>
           </div>
           <div className="tracking-item">
-            <span className="tracking-label">Est. wait time:</span>
+            <span className="tracking-label">EST. WAIT TIME:</span>
             <span className="tracking-value">{queueData.waitTime} min</span>
           </div>
         </div>

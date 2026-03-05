@@ -12,6 +12,9 @@ const responseTime = require('response-time');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
+// Add this at the top of your server.js
+console.log('Server time:', new Date().toString());
+console.log('Server timezone offset:', new Date().getTimezoneOffset());
 
 const { User, Service, Ticket, Counter } = require('./models');
 
