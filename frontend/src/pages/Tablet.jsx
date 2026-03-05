@@ -1,7 +1,5 @@
 // frontend/src/pages/Tablet.jsx
 
-// frontend/src/pages/Tablet.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ticketService from '../services/ticketService';
@@ -10,126 +8,165 @@ import './Tablet.css';
 const Tablet = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
-  const [showQR, setShowQR] = useState(false);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [queueStats, setQueueStats] = useState({});
+  const [creatingTicket, setCreatingTicket] = useState(false);
+  const [error, setError] = useState('');
 
-  // Définir l'URL du QR code avec votre nouvelle URL ngrok
-  const qrUrl = 'https://subjectional-galilea-unthawing.ngrok-free.app/qonnexea';
+  // Your actual IP
+  const computerIP = '10.158.95.243';
+  const qrUrl = `http://${computerIP}:3000/qonnexea`;
 
   // Load services from API
   useEffect(() => {
     const loadData = async () => {
       try {
-        const servicesResponse = await ticketService.getServices();
-        if (servicesResponse.success) {
-          setServices(servicesResponse.services || []);
-        }
+        setLoading(true);
+        setError('');
         
-        const queueResponse = await ticketService.getQueueStatus();
-        if (queueResponse.success) {
-          setQueueStats(queueResponse.data || {});
+        const servicesResponse = await ticketService.getServices();
+        
+        if (servicesResponse.success && servicesResponse.services) {
+          setServices(servicesResponse.services);
+        } else {
+          setError('Failed to load services');
         }
       } catch (error) {
         console.error('Error loading tablet data:', error);
+        setError('Cannot connect to server');
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-    
-    // Refresh queue stats every 30 seconds
-    const interval = setInterval(async () => {
-      try {
-        const queueResponse = await ticketService.getQueueStatus();
-        if (queueResponse.success) {
-          setQueueStats(queueResponse.data || {});
-        }
-      } catch (error) {
-        console.error('Error refreshing queue stats:', error);
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const content = {
     en: {
-      welcome: "Welcome to AGB/Bienvenue chez AGB",
-      frenar: "FRENAR",
-      selectService: "Please select your service/Veuillez choisir votre service",
+      welcome: "Welcome to AGB",
+      selectService: "Please select your service",
+      waiting: "Wait",
       scanCode: "Scan this code to access",
       qonnexea: "QONNEXEA",
       trackTurn: "track your turn",
-      cancel: "Cancel/Return",
-      showQR: "Show QR Code",
-      hideQR: "Hide QR Code",
-      waiting: "Wait"
+      physicalTicket: "PHYSICAL TICKET"
     },
     fr: {
-      welcome: "Bienvenue chez AGB/Welcome to AGB",
-      frenar: "FRENAR",
-      selectService: "Veuillez choisir votre service/Please select your service",
+      welcome: "Bienvenue chez AGB",
+      selectService: "Veuillez choisir votre service",
+      waiting: "Attente",
       scanCode: "Scannez ce code pour accéder à",
       qonnexea: "QONNEXEA",
       trackTurn: "suivez votre tour",
-      cancel: "Annuler/Retour",
-      showQR: "Afficher le QR Code",
-      hideQR: "Masquer le QR Code",
-      waiting: "Attente"
+      physicalTicket: "TICKET PHYSIQUE"
     }
   };
 
   const t = content[language];
 
-  // Fonctions pour les services
-  const handleServiceClick = (service) => {
-    console.log(`Service sélectionné: ${service.code}`);
-    // Navigate to create ticket with selected service
-    navigate('/create-ticket', { state: { preselectedService: service } });
-  };
+  // ====== ALL FUNCTION DEFINITIONS ======
 
-  // Map service codes to display names and icons
-  const getServiceDisplay = (service) => {
-    const serviceMap = {
-      'W': { name: { en: 'Cash Operations', fr: 'Opérations Espèces' }, icon: '💰', desc: { en: 'Deposits, withdrawals', fr: 'Dépôts, retraits' } },
-      'D': { name: { en: 'Cash Operations', fr: 'Opérations Espèces' }, icon: '💰', desc: { en: 'Deposits, withdrawals', fr: 'Dépôts, retraits' } },
-      'A': { name: { en: 'Account Management', fr: 'Gestion de Compte' }, icon: '👤', desc: { en: 'Open/close accounts', fr: 'Ouvrir/fermer comptes' } },
-      'C': { name: { en: 'Customer Service', fr: 'Service Client' }, icon: '💬', desc: { en: 'Complaints, inquiries', fr: 'Réclamations, demandes' } },
-      'L': { name: { en: 'Loans & Credit', fr: 'Prêts & Crédits' }, icon: '🏦', desc: { en: 'Loan applications', fr: 'Demandes de prêt' } },
-      'XCH': { name: { en: 'Currency Exchange', fr: 'Change Devises' }, icon: '💱', desc: { en: 'Foreign currency', fr: 'Devises étrangères' } },
-      'INTL': { name: { en: 'International Transfer', fr: 'Virement International' }, icon: '🌍', desc: { en: 'International transfers', fr: 'Virements internationaux' } }
+  // Get display name for service based on code
+  const getServiceDisplayName = (code) => {
+    const serviceNames = {
+      'A': { en: 'Account Opening', fr: 'Ouverture de compte' },
+      'W': { en: 'Withdrawal', fr: 'Retrait' },
+      'D': { en: 'Deposit', fr: 'Dépôt' },
+      'L': { en: 'Loan', fr: 'Prêt' },
+      'C': { en: 'Complaint', fr: 'Réclamation' },
+      'XCH': { en: 'Currency Exchange', fr: 'Change' }
     };
     
-    const map = serviceMap[service.code] || { 
-      name: { en: service.name || service.code, fr: service.name || service.code }, 
-      icon: '🏢',
-      desc: { en: 'Banking services', fr: 'Services bancaires' }
-    };
-    
-    return {
-      name: map.name[language],
-      icon: map.icon,
-      desc: map.desc[language]
-    };
+    return serviceNames[code] ? serviceNames[code][language] : code;
   };
 
-  // Get estimated wait time for a service
-  const getWaitTime = (serviceCode) => {
-    // This would come from queueStats in a real implementation
-    const waitTimes = {
-      'W': '5-7',
-      'D': '5-7',
-      'A': '10-12',
-      'L': '15-20',
-      'C': '8-10',
-      'XCH': '5-8',
-      'INTL': '10-15'
+  // Get service icon based on code
+  const getServiceIcon = (code) => {
+    const icons = {
+      'A': '👤',
+      'W': '💰',
+      'D': '💵',
+      'L': '🏦',
+      'C': '💬',
+      'XCH': '💱'
     };
-    return waitTimes[serviceCode] || '10-15';
+    return icons[code] || '🏢';
   };
+
+  // Get wait time display
+  const getWaitTimeDisplay = (code) => {
+    const baseTimes = {
+      'A': 30,
+      'W': 5,
+      'D': 10,
+      'L': 45,
+      'C': 20,
+      'XCH': 20
+    };
+    const baseTime = baseTimes[code] || 15;
+    return `${baseTime}-${baseTime * 2}`;
+  };
+
+  // Sort services in desired order
+  const getSortedServices = () => {
+    const order = ['A', 'W', 'D', 'L', 'C', 'XCH'];
+    return [...services].sort((a, b) => {
+      return order.indexOf(a.name) - order.indexOf(b.name);
+    });
+  };
+
+  // ====== HANDLE PHYSICAL TICKET FUNCTION WITH DEBUG LOGS ======
+  const handlePhysicalTicket = async (service) => {
+    try {
+      setCreatingTicket(true);
+      setError('');
+      
+      const serviceCode = service.name;
+      console.log('========== PHYSICAL TICKET DEBUG ==========');
+      console.log('Service code:', serviceCode);
+      console.log('Ticket type to send: physical');
+      console.log('Service object:', service);
+      
+      const response = await ticketService.createNormalTicket(
+        serviceCode, 
+        'Walk-in Client',
+        'physical'  // ← THIS MUST BE EXACTLY 'physical'
+      );
+      
+      console.log('Response received:', response);
+      console.log('==========================================');
+      
+      if (response.success && response.ticket) {
+        console.log('✅ Ticket created successfully!');
+        console.log('Ticket type from response:', response.ticket.type);
+        
+        navigate('/physical-ticket', { 
+          state: { 
+            ticket: {
+              id: response.ticket.id,
+              number: response.ticket.number,
+              service: getServiceDisplayName(serviceCode),
+              code: serviceCode,
+              counter: Math.floor(Math.random() * 3) + 1,
+              estimated_wait: response.ticket.estimated_wait,
+              type: 'physical'
+            }
+          }
+        });
+      } else {
+        setError('Error creating ticket: ' + (response.error || 'Unknown error'));
+        console.error('❌ Ticket creation failed:', response.error);
+      }
+    } catch (error) {
+      console.error('❌ Error creating physical ticket:', error);
+      setError('Failed to create ticket. Please try again.');
+    } finally {
+      setCreatingTicket(false);
+    }
+  };
+
+  // ====== JSX RETURN ======
 
   return (
     <div className="tablet-container">
@@ -142,7 +179,7 @@ const Tablet = () => {
           <h2>{t.welcome}</h2>
         </div>
         <div className="language-section">
-          <span className="frenar">{t.frenar}</span>
+          <span className="frenar">FRENAR</span>
           <div className="lang-buttons">
             <button 
               className={`lang-btn ${language === 'en' ? 'active' : ''}`}
@@ -160,77 +197,57 @@ const Tablet = () => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Two Columns */}
       <div className="tablet-main">
-        {/* Left Side - Service Selection */}
+        {/* Left Side - Physical Ticket Service Selection */}
         <div className="services-panel">
           <h3 className="services-title">{t.selectService}</h3>
           
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+          
           <div className="services-grid">
             {loading ? (
-              <div className="loading-spinner"></div>
+              <div className="loading-spinner">Loading services...</div>
             ) : (
-              services.slice(0, 6).map((service) => {
-                const display = getServiceDisplay(service);
-                return (
-                  <button 
-                    key={service.id} 
-                    className="service-card" 
-                    onClick={() => handleServiceClick(service)}
-                  >
-                    <span className="service-icon">{display.icon}</span>
-                    <span className="service-main">{display.name}</span>
-                    <span className="service-sub">{display.desc}</span>
-                    <span className="service-wait">{t.waiting}: {getWaitTime(service.code)} min</span>
-                  </button>
-                );
-              })
+              getSortedServices().map((service) => (
+                <button 
+                  key={service.id} 
+                  className="service-card" 
+                  onClick={() => handlePhysicalTicket(service)}
+                  disabled={creatingTicket}
+                >
+                  <span className="service-icon">{getServiceIcon(service.name)}</span>
+                  <span className="service-main">{service.name}</span>
+                  <span className="service-sub">{getServiceDisplayName(service.name)}</span>
+                  <span className="service-wait">{t.waiting}: {getWaitTimeDisplay(service.name)} min</span>
+                  <span className="ticket-type-badge physical">{t.physicalTicket}</span>
+                </button>
+              ))
             )}
-            
-            {/* If less than 6 services, show placeholders */}
-            {!loading && services.length < 6 && Array(6 - services.length).fill(0).map((_, index) => (
-              <button key={`placeholder-${index}`} className="service-card disabled" disabled>
-                <span className="service-icon">🏢</span>
-                <span className="service-main">Loading...</span>
-                <span className="service-sub">Service unavailable</span>
-              </button>
-            ))}
           </div>
-
-          <button className="cancel-button" onClick={() => navigate('/')}>{t.cancel}</button>
         </div>
 
-        {/* Right Side - QR Code */}
+        {/* Right Side - QR Code for VIRTUAL tickets */}
         <div className="qr-panel">
           <p className="scan-text">{t.scanCode}</p>
+          <p className="virtual-label">VIRTUAL TICKETS</p>
           
-          {/* QR Code Button */}
-          <button className="qr-toggle-btn" onClick={() => setShowQR(!showQR)}>
-            {showQR ? t.hideQR : t.showQR}
-          </button>
-
-          {/* QR Code Display */}
-          {showQR && (
-            <div className="qr-container">
-              <div className="qr-code">
-                <img 
-  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://10.167.50.243:3000/qonnexea`}
-  alt="QR Code QONNEXEA"
-/>
-              </div>
-              <div className="qr-brand">
-                <span>{t.qonnexea}</span>
-                <span>{t.trackTurn}</span>
-              </div>
+          <div className="qr-container">
+            <div className="qr-code">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`} 
+                alt="QR Code for virtual tickets"
+              />
             </div>
-          )}
-          
-          {/* Queue Stats */}
-          {queueStats.total_waiting > 0 && (
-            <div className="queue-stats">
-              <p>{queueStats.total_waiting} people in queue</p>
+            <div className="qr-brand">
+              <span>{t.qonnexea}</span>
+              <span>{t.trackTurn}</span>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

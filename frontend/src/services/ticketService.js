@@ -1,3 +1,5 @@
+// frontend/src/services/ticketService.js
+
 import api from './api';
 import authService from './authService';
 
@@ -5,7 +7,9 @@ const ticketService = {
   // Get all services
   getServices: async () => {
     try {
+      console.log('Fetching services from API...');
       const response = await api.get('/services');
+      console.log('Services API response:', response);
       return response;
     } catch (error) {
       console.error('Error getting services:', error);
@@ -13,16 +17,27 @@ const ticketService = {
     }
   },
 
-  // Create normal ticket
-  createNormalTicket: async (serviceCode, customerName = 'Customer') => {
+  // Create normal ticket with debug logs
+  createNormalTicket: async (serviceCode, customerName = 'Customer', ticketType = 'virtual') => {
+    console.log('========== TICKET SERVICE DEBUG ==========');
+    console.log('1. Function called with:', { serviceCode, customerName, ticketType });
+    console.log('2. Ticket type being sent:', ticketType);
+    console.log('3. Type of ticketType:', typeof ticketType);
+    console.log('4. Value being sent to API:', { serviceCode, customerName, ticketType });
+    
     try {
       const response = await api.post('/tickets/generate', {
         serviceCode,
-        customerName
+        customerName,
+        ticketType
       });
+      
+      console.log('5. Response from server:', response);
+      console.log('6. Ticket type in response:', response.ticket?.type);
+      console.log('==========================================');
       return response;
     } catch (error) {
-      console.error('Error creating ticket:', error);
+      console.error('❌ Error creating ticket:', error);
       return { success: false, error: error.message };
     }
   },

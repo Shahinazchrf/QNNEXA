@@ -1,6 +1,5 @@
 // frontend/src/App.js
 
-// frontend/src/App.js
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
@@ -11,7 +10,7 @@ import QueuePage from './pages/QueuePage';
 import Satisfaction from './pages/Satisfaction';
 import FAQ from './pages/FAQ';
 import SupportChat from './pages/SupportChat';
-import CardsPage from './pages/CardsPage';  // ← DÉCOMMENTÉ
+import PhysicalTicketDisplay from './pages/PhysicalTicketDisplay';
 
 import EmployeeLogin from './pages/EmployeeLogin';
 import EmployeeDashboard from './pages/EmployeeDashboard';
@@ -20,6 +19,7 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import VipLogin from './pages/VipLogin';
 import VipDashboard from './pages/VipDashboard';
 import AdminLogin from './pages/AdminLogin';
+import TrackMyQueue from './pages/TrackMyQueue';
 
 import './App.css';
 
@@ -35,6 +35,10 @@ function App() {
 
           {/* Tablet Home */}
           <Route path="/" element={<Tablet />} />
+          <Route path="/tablet" element={<Tablet />} />
+
+          {/* Physical Ticket Display */}
+          <Route path="/physical-ticket" element={<PhysicalTicketDisplay />} />
 
           {/* Client Routes */}
           <Route path="/qonnexea" element={<QrScanResult />} />
@@ -44,7 +48,7 @@ function App() {
           <Route path="/satisfaction/:ticketId" element={<Satisfaction />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/support" element={<SupportChat />} />
-          <Route path="/cards" element={<CardsPage />} />  {/* ← ROUTE AJOUTÉE */}
+          <Route path="/track-queue" element={<TrackMyQueue />} />
 
           {/* VIP */}
           <Route

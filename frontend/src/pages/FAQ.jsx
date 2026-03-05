@@ -1,6 +1,5 @@
 // frontend/src/pages/FAQ.jsx
 
-// frontend/src/pages/FAQ.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './FAQ.css';
@@ -10,6 +9,7 @@ const FAQ = () => {
   const location = useLocation();
   const [darkMode, setDarkMode] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [openItems, setOpenItems] = useState({});
 
@@ -19,14 +19,6 @@ const FAQ = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-  }, [darkMode]);
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
@@ -42,6 +34,11 @@ const FAQ = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleNavigation = (path) => {
+    navigate(path);
+    setMobileMenuOpen(false);
   };
 
   const faqItems = [
@@ -80,12 +77,14 @@ const FAQ = () => {
 
   return (
     <div className={`faq-page ${darkMode ? 'dark' : ''}`}>
-      {/* Navbar avec bouton Tracking Queue */}
+      {/* Navbar */}
       <nav className="queue-navbar">
         <div className="nav-left">
-          <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
-          <span className="nav-brand">QONNEXA</span>
-          <span className="nav-slogan">Smart Queue Management System</span>
+          <div className="brand-container">
+            <span className="nav-logo">AGB</span>
+            <span className="nav-brand">QONNEXA</span>
+            <span className="nav-slogan">Smart Queue Management System</span>
+          </div>
         </div>
         
         <div className="nav-center">
@@ -95,66 +94,67 @@ const FAQ = () => {
         </div>
 
         <div className="nav-right">
-          <button 
-            className={`nav-item ${location.pathname === '/create-ticket' ? 'active' : ''}`}
-            onClick={() => navigate('/create-ticket')}
-            title="Go to Home"
-          >
+          <button className="nav-item" onClick={() => handleNavigation('/create-ticket')}>
             <span className="nav-icon">🏠</span>
             <span className="nav-label">Home</span>
           </button>
-          {/* BOUTON TRACKING QUEUE AJOUTÉ */}
-          <button 
-            className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`}
-            onClick={() => navigate('/queue')}
-            title="Track your queue"
-          >
+
+          <button className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`} onClick={() => handleNavigation('/queue')}>
             <span className="nav-icon">📊</span>
             <span className="nav-label">Tracking Queue</span>
           </button>
-          <button 
-            className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`}
-            onClick={() => navigate('/faq')}
-            title="Frequently Asked Questions"
-          >
+
+          <button className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`} onClick={() => handleNavigation('/faq')}>
             <span className="nav-icon">❓</span>
             <span className="nav-label">FAQ</span>
           </button>
-          <button 
-            className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`}
-            onClick={() => navigate('/support')}
-            title="Chat with Support"
-          >
+
+          <button className="nav-item" onClick={() => handleNavigation('/support')}>
             <span className="nav-icon">💬</span>
             <span className="nav-label">Chatbot</span>
           </button>
-          <button 
-            className={`nav-item ${location.pathname === '/cards' ? 'active' : ''}`}
-            onClick={() => navigate('/cards')}
-            title="Cards & Services"
-          >
-            <span className="nav-icon">💳</span>
-            <span className="nav-label">Cards</span>
-          </button>
-          <button 
-            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
-            onClick={() => navigate('/satisfaction')}
-            title="Give Feedback"
-          >
+
+          <button className="nav-item" onClick={() => handleNavigation('/satisfaction')}>
             <span className="nav-icon">⭐</span>
             <span className="nav-label">Satisfaction</span>
           </button>
-          <button 
-            className="dark-mode-btn"
-            onClick={() => setDarkMode(!darkMode)}
-            title={darkMode ? 'Light Mode' : 'Dark Mode'}
-          >
+
+          <button className="dark-mode-btn" onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? '☀️' : '🌙'}
+          </button>
+
+          {/* Mobile Menu Button */}
+          <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            ☰
           </button>
         </div>
       </nav>
 
-      {/* Contenu FAQ */}
+      {/* Mobile Menu */}
+      <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+        <button className="mobile-nav-item" onClick={() => handleNavigation('/create-ticket')}>
+          <span className="mobile-nav-icon">🏠</span>
+          <span>Home</span>
+        </button>
+        <button className={`mobile-nav-item ${location.pathname === '/queue' ? 'active' : ''}`} onClick={() => handleNavigation('/queue')}>
+          <span className="mobile-nav-icon">📊</span>
+          <span>Tracking Queue</span>
+        </button>
+        <button className={`mobile-nav-item ${location.pathname === '/faq' ? 'active' : ''}`} onClick={() => handleNavigation('/faq')}>
+          <span className="mobile-nav-icon">❓</span>
+          <span>FAQ</span>
+        </button>
+        <button className="mobile-nav-item" onClick={() => handleNavigation('/support')}>
+          <span className="mobile-nav-icon">💬</span>
+          <span>Chatbot</span>
+        </button>
+        <button className="mobile-nav-item" onClick={() => handleNavigation('/satisfaction')}>
+          <span className="mobile-nav-icon">⭐</span>
+          <span>Satisfaction</span>
+        </button>
+      </div>
+
+      {/* FAQ Content */}
       <div className="faq-container">
         <div className="faq-header">
           <h1 className="faq-main-title">Frequently Asked Questions</h1>

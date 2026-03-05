@@ -1,4 +1,5 @@
-// server.js - VERSION OPTIMISÉE
+// backend/src/server.js
+
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -8,6 +9,8 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const responseTime = require('response-time');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const { User, Service, Ticket, Counter } = require('./models');
@@ -27,8 +30,137 @@ const priorityRoutes = require('./routes/priorityRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const { sequelize } = require('./config/database');
 const surveyRoutes = require('./routes/surveyRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://10.158.95.243:3000',
+      'http://10.158.95.243:3001',
+      'http://10.158.95.243',
+      'https://subjectional-galilea-unthawing.ngrok-free.app'
+    ],
+    credentials: true
+  }
+});
+
+// Make io accessible globally
+global.io = io;
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('🟢 Client connected:', socket.id);
+  
+  // Client wants to track a specific ticket
+  socket.on('track-ticket', (ticketNumber) => {
+    console.log(`👀 Client ${socket.id} tracking ticket: ${ticketNumber}`);
+    socket.join(`ticket-${ticketNumber}`);
+  });
+  
+  // Client stops tracking
+  socket.on('untrack-ticket', (ticketNumber) => {
+    console.log(`👋 Client ${socket.id} stopped tracking: ${ticketNumber}`);
+    socket.leave(`ticket-${ticketNumber}`);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('🔴 Client disconnected:', socket.id);
+  });
+});
+
+// Function to broadcast ticket updates
+const broadcastTicketUpdate = async (ticketNumber) => {
+  try {
+    const { Ticket, Service, Counter } = require('./models');
+    const { Op } = require('sequelize');
+    
+    // Get fresh ticket data
+    const ticket = await Ticket.findOne({
+      where: { ticket_number: ticketNumber },
+      include: [
+        { model: Service, as: 'ticketService' },
+        { model: Counter, as: 'ticketCounter' }
+      ]
+    });
+    
+    if (!ticket) return;
+    
+    // Calculate real-time position
+    const position = await Ticket.count({
+      where: {
+        service_id: ticket.service_id,
+        status: 'waiting',
+        createdAt: { [Op.lt]: ticket.createdAt }
+      }
+    }) + 1;
+    
+    // Calculate wait time based on actual queue
+    const waitingTickets = await Ticket.findAll({
+      where: {
+        service_id: ticket.service_id,
+        status: 'waiting',
+        createdAt: { [Op.lt]: ticket.createdAt }
+      },
+      order: [['createdAt', 'ASC']]
+    });
+    
+    // Get average service time from completed tickets (real data)
+    const completedTickets = await Ticket.findAll({
+      where: {
+        service_id: ticket.service_id,
+        status: 'completed',
+        actual_service_time: { [Op.ne]: null }
+      },
+      limit: 50,
+      order: [['completed_at', 'DESC']]
+    });
+    
+    let avgServiceTime = 15; // default
+    if (completedTickets.length > 0) {
+      const totalTime = completedTickets.reduce((sum, t) => sum + (t.actual_service_time || 0), 0);
+      avgServiceTime = totalTime / completedTickets.length;
+    }
+    
+    // Calculate wait time: (people ahead + current being served) * avg time
+    const peopleAhead = waitingTickets.length;
+    const waitTime = Math.ceil((peopleAhead + 1) * avgServiceTime);
+    
+    // Broadcast to everyone tracking this ticket
+    io.to(`ticket-${ticketNumber}`).emit('ticket-update', {
+      ticket_number: ticket.ticket_number,
+      position: position,
+      people_ahead: peopleAhead,
+      wait_time: waitTime,
+      status: ticket.status,
+      counter: ticket.ticketCounter?.number,
+      updated_at: new Date()
+    });
+    
+    console.log(`📢 Broadcast update for ${ticketNumber}: position ${position}, wait ${waitTime}min`);
+    
+  } catch (error) {
+    console.error('Error broadcasting ticket update:', error);
+  }
+};
+
+// Call this whenever ticket status changes
+const updateTicketAndBroadcast = async (ticketId, updates) => {
+  const ticket = await Ticket.findByPk(ticketId);
+  if (ticket) {
+    await ticket.update(updates);
+    await broadcastTicketUpdate(ticket.ticket_number);
+  }
+};
 
 // ==================== CONFIGURATION DE SÉCURITÉ ====================
 
@@ -38,16 +170,16 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'", "ws:", "wss:", "http://10.158.95.243:3000", "http://localhost:3000"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"]
     }
   },
-  crossOriginEmbedderPolicy: false // Pour les API
+  crossOriginEmbedderPolicy: false
 }));
 
 // 2. Protection XSS
@@ -60,13 +192,16 @@ app.use(mongoSanitize());
 app.use(hpp());
 
 // 5. CORS configuré
-// Remplacer la configuration CORS existante par celle-ci
 const corsOptions = {
   origin: [
     'http://localhost:3000',
+    'http://localhost:3001',
     'http://127.0.0.1:3000',
-    'http://10.167.50.243:3000',  // Votre IP
-    'https://subjectional-galilea-unthawing.ngrok-free.app'  // Votre URL ngrok
+    'http://127.0.0.1:3001',
+    'http://10.158.95.243:3000',
+    'http://10.158.95.243:3001',
+    'http://10.158.95.243',
+    'https://subjectional-galilea-unthawing.ngrok-free.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -203,7 +338,8 @@ app.get('/', (req, res) => {
       'Auto-missed handling',
       'Satisfaction surveys',
       'Multi-agency support',
-      'Real-time monitoring'
+      'Real-time monitoring',
+      'WebSocket Live Updates'
     ]
   });
 });
@@ -221,10 +357,12 @@ app.get('/health', (req, res) => {
       heapUsed: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`
     },
     database: 'connected',
+    websocket: 'active',
     features: {
       ticket_monitoring: 'active',
       vip_support: 'enabled',
-      survey_system: 'ready'
+      survey_system: 'ready',
+      live_updates: 'enabled'
     }
   });
 });
@@ -235,7 +373,8 @@ app.get('/ready', async (req, res) => {
     await sequelize.authenticate();
     res.json({ 
       status: 'ready',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      websocket: 'ready'
     });
   } catch (error) {
     res.status(503).json({ 
@@ -245,8 +384,6 @@ app.get('/ready', async (req, res) => {
   }
 });
 
-// ==================== FIXED PUBLIC TICKET CREATION ====================
-// Public ticket creation (QR code)
 // ==================== PUBLIC TICKET CREATION ====================
 app.post('/api/public/ticket', async (req, res) => {
   try {
@@ -271,8 +408,12 @@ app.post('/api/public/ticket', async (req, res) => {
       customer_name: 'Walk-in Client',
       is_vip: false,
       is_appointment: false,
-      estimated_wait_time: 15
+      estimated_wait_time: 15,
+      ticket_type: 'virtual'
     });
+    
+    // Broadcast new ticket
+    setTimeout(() => broadcastTicketUpdate(ticket.ticket_number), 500);
     
     res.json({
       success: true,
@@ -292,7 +433,6 @@ app.post('/api/public/ticket', async (req, res) => {
   }
 });
 
-// ==================== FIXED VIP APPOINTMENT ====================
 // ==================== VIP APPOINTMENT ====================
 app.post('/api/vip/appointment/create', async (req, res) => {
   try {
@@ -341,8 +481,12 @@ app.post('/api/vip/appointment/create', async (req, res) => {
       is_vip: true,
       is_appointment: true,
       appointment_time: scheduledTime,
-      estimated_wait_time: 5
+      estimated_wait_time: 5,
+      ticket_type: 'virtual'
     });
+    
+    // Broadcast new ticket
+    setTimeout(() => broadcastTicketUpdate(ticket.ticket_number), 500);
     
     res.json({
       success: true,
@@ -365,7 +509,7 @@ app.post('/api/vip/appointment/create', async (req, res) => {
 
 // ==================== IMPORT MODELS ====================
 const { Survey, Agency } = require('./models');
-const { Op } = require('sequelize');  // Add this with your other imports
+const { Op } = require('sequelize');
 
 // ==================== ROUTES D'API ====================
 
@@ -383,6 +527,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/priority', priorityRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/survey', surveyRoutes);
+
 console.log('✅ Routes loaded:', [
   '/api/auth', '/api/employee', '/api/admin', '/api/queue',
   '/api/stats', '/api/priority', '/api/tickets'
@@ -441,41 +586,48 @@ app.get('/api/counters', async (req, res) => {
 
 // ==================== TICKET ROUTES ====================
 
-// Create normal ticket
-// Find this endpoint in your server.js and replace it entirely
+// Create normal ticket (physical or virtual)
+// ==================== TICKET GENERATION ====================
 app.post('/api/tickets/generate', async (req, res) => {
   try {
-    const { serviceCode, customerName } = req.body;
+    const { serviceCode, customerName, ticketType } = req.body;
     console.log('='.repeat(50));
     console.log('📝 TICKET CREATION ATTEMPT');
     console.log('Service Code:', serviceCode);
     console.log('Customer Name:', customerName);
+    console.log('Ticket Type RECEIVED:', ticketType);
     console.log('='.repeat(50));
 
+    if (!serviceCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'Service code is required'
+      });
+    }
+
     // Find service
-    console.log('🔍 Looking for service with code:', serviceCode);
     const service = await Service.findOne({ 
-      where: { code: serviceCode, is_active: true }
+      where: { name: serviceCode, is_active: true }
     });
     
     if (!service) {
-      console.log('❌ Service not found for code:', serviceCode);
       return res.status(400).json({
         success: false,
         error: `Service ${serviceCode} not available`
       });
     }
-    console.log('✅ Service found:', service.id, service.name);
 
     // Generate ticket number
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
     
     const lastTicket = await Ticket.findOne({
       where: {
         service_id: service.id,
         ticket_number: { [Op.like]: `${serviceCode}%` },
-        createdAt: { [Op.gte]: today }
+        createdAt: { [Op.between]: [today, tomorrow] }
       },
       order: [['createdAt', 'DESC']]
     });
@@ -489,7 +641,6 @@ app.post('/api/tickets/generate', async (req, res) => {
     }
 
     const ticketNumber = `${serviceCode}${seqNumber.toString().padStart(3, '0')}`;
-    console.log('🎫 Generated ticket number:', ticketNumber);
 
     // Count waiting tickets
     const waitingCount = await Ticket.count({
@@ -499,13 +650,20 @@ app.post('/api/tickets/generate', async (req, res) => {
       }
     });
     
-    const baseTime = service.estimated_time || 15;
-    const estimatedWait = waitingCount * baseTime;
-    console.log('⏱️ Estimated wait time:', estimatedWait, 'minutes');
+    const estimatedWait = (waitingCount + 1) * (service.estimated_time || 15);
 
-    // Create ticket
-    console.log('💾 Attempting to save ticket to database...');
+    // IMPORTANT: This is the fix - explicitly set ticket_type
+    let finalTicketType = 'virtual'; // default
     
+    // Check if ticketType exists and is 'physical'
+    if (ticketType === 'physical') {
+      finalTicketType = 'physical';
+      console.log('✅ Setting ticket type to: physical');
+    } else {
+      console.log('⚠️ Using default ticket type: virtual');
+    }
+
+    // Create ticket with explicit ticket_type
     const ticketData = {
       ticket_number: ticketNumber,
       service_id: service.id,
@@ -516,15 +674,27 @@ app.post('/api/tickets/generate', async (req, res) => {
       is_appointment: false,
       estimated_wait_time: estimatedWait,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      ticket_type: finalTicketType  // ← THIS IS THE KEY LINE
     };
     
-    console.log('Ticket data:', JSON.stringify(ticketData, null, 2));
+    console.log('📦 Saving to database:', JSON.stringify(ticketData, null, 2));
     
     const ticket = await Ticket.create(ticketData);
     
-    console.log('✅ Ticket saved successfully! ID:', ticket.id);
+    console.log('✅ Ticket saved! ID:', ticket.id);
+    console.log('✅ Ticket type in database:', ticket.ticket_type);
     console.log('='.repeat(50));
+
+    // Broadcast update via WebSocket
+    if (global.io) {
+      setTimeout(() => {
+        global.io.emit('ticket-created', {
+          ticket_number: ticket.ticket_number,
+          service: service.name
+        });
+      }, 500);
+    }
 
     res.status(201).json({
       success: true,
@@ -535,38 +705,19 @@ app.post('/api/tickets/generate', async (req, res) => {
         service: service.name,
         priority: 'normal',
         estimated_wait: estimatedWait,
-        created_at: ticket.createdAt
+        created_at: ticket.createdAt,
+        type: ticket.ticket_type  // Return the type
       }
     });
 
   } catch (error) {
-    console.error('❌ ERROR IN TICKET CREATION:');
-    console.error('Message:', error.message);
-    console.error('Name:', error.name);
-    console.error('Stack:', error.stack);
-    
-    if (error.name === 'SequelizeValidationError') {
-      console.error('Validation Errors:');
-      error.errors.forEach(err => {
-        console.error(`  - ${err.path}: ${err.message} (Value: ${err.value})`);
-      });
-    }
-    
-    if (error.name === 'SequelizeDatabaseError') {
-      console.error('Database Error - Check column names and types');
-      console.error('Original error:', error.parent);
-    }
-    
-    console.error('='.repeat(50));
-    
+    console.error('❌ ERROR:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
-      type: error.name
+      error: error.message
     });
   }
 });
-
 // VIP appointment booking
 app.post('/api/tickets/vip-appointment', async (req, res) => {
   try {
@@ -625,10 +776,9 @@ app.post('/api/tickets/vip-appointment', async (req, res) => {
       });
     }
     
-   // CHANGE THIS:
-const service = await Service.findOne({ 
-  where: { name: serviceCode, is_active: true } 
-});  // ✅ This is actually correct! Keep it as 'name'
+    const service = await Service.findOne({ 
+      where: { name: serviceCode, is_active: true } 
+    });
     
     if (!service) {
       return res.status(400).json({
@@ -699,8 +849,12 @@ const service = await Service.findOne({
       appointment_time: appointmentDate,
       appointment_reason: reason,
       estimated_wait_time: 0,
-      vip_code_used: vipCode
+      vip_code_used: vipCode,
+      ticket_type: 'virtual'
     });
+    
+    // Broadcast new ticket
+    setTimeout(() => broadcastTicketUpdate(ticket.ticket_number), 500);
     
     res.status(201).json({
       success: true,
@@ -779,7 +933,25 @@ app.post('/api/tickets/vip/generate', async (req, res) => {
         status: 'waiting'
       }
     });
-    const estimatedWait = Math.max(5, waitingCount * 5);
+    
+    // Calculate VIP wait time (priority)
+    const completedTickets = await Ticket.findAll({
+      where: {
+        service_id: service.id,
+        status: 'completed',
+        actual_service_time: { [Op.ne]: null }
+      },
+      limit: 50,
+      order: [['completed_at', 'DESC']]
+    });
+    
+    let avgServiceTime = service.estimated_time || 15;
+    if (completedTickets.length > 0) {
+      const totalTime = completedTickets.reduce((sum, t) => sum + (t.actual_service_time || 0), 0);
+      avgServiceTime = totalTime / completedTickets.length;
+    }
+    
+    const estimatedWait = Math.max(5, Math.ceil(waitingCount * avgServiceTime * 0.5));
     
     const ticket = await Ticket.create({
       ticket_number: ticketNumber,
@@ -790,8 +962,12 @@ app.post('/api/tickets/vip/generate', async (req, res) => {
       is_vip: true,
       is_appointment: false,
       vip_code_used: vip_code || 'SYSTEM_GENERATED',
-      estimated_wait_time: estimatedWait
+      estimated_wait_time: estimatedWait,
+      ticket_type: 'virtual'
     });
+    
+    // Broadcast new ticket
+    setTimeout(() => broadcastTicketUpdate(ticket.ticket_number), 500);
     
     res.json({
       success: true,
@@ -855,6 +1031,9 @@ app.post('/api/admin/tickets/prioritize', async (req, res) => {
       is_vip: new_priority === 'vip' ? 1 : 0,
       priority_changed_at: new Date()
     });
+    
+    // Broadcast update
+    await broadcastTicketUpdate(ticket.ticket_number);
     
     res.json({
       success: true,
@@ -947,8 +1126,13 @@ app.post('/api/admin/tickets/reassign', async (req, res) => {
       is_appointment: ticket.is_appointment,
       appointment_time: ticket.appointment_time,
       estimated_wait_time: await calculateWaitTime(newService.id, ticket.priority),
-      transferred_from: ticket.ticket_number
+      transferred_from: ticket.ticket_number,
+      ticket_type: ticket.ticket_type
     });
+    
+    // Broadcast updates for both tickets
+    await broadcastTicketUpdate(ticket.ticket_number);
+    await broadcastTicketUpdate(newTicket.ticket_number);
     
     res.json({
       success: true,
@@ -975,7 +1159,7 @@ app.post('/api/admin/tickets/reassign', async (req, res) => {
   }
 });
 
-// Get Queue Statistics - FIXED
+// Get Queue Statistics
 app.get('/api/queue/stats', async (req, res) => {
   try {
     const { service_code } = req.query;
@@ -983,10 +1167,10 @@ app.get('/api/queue/stats', async (req, res) => {
     let where = { status: 'waiting' };
     let service = null;
     
-   if (service_code) {
-  service = await Service.findOne({ where: { name: service_code } });  // Use 'name'
-  if (service) where.service_id = service.id;
-}
+    if (service_code) {
+      service = await Service.findOne({ where: { name: service_code } });
+      if (service) where.service_id = service.id;
+    }
     
     const tickets = await Ticket.findAll({
       where,
@@ -994,7 +1178,6 @@ app.get('/api/queue/stats', async (req, res) => {
       order: [['createdAt', 'ASC']]
     });
     
-    // FIXED: Version simplifiée qui utilise 'name' au lieu de 'code'
     const stats = {
       total_waiting: tickets.length,
       by_service: {},
@@ -1005,7 +1188,6 @@ app.get('/api/queue/stats', async (req, res) => {
       }))
     };
     
-    // Group by service
     tickets.forEach(t => {
       const serviceName = t.ticketService?.name || 'Unknown';
       stats.by_service[serviceName] = (stats.by_service[serviceName] || 0) + 1;
@@ -1039,7 +1221,6 @@ app.get('/api/queue/stats', async (req, res) => {
 });
 
 // Get queue status
-// Get queue status - VERSION CORRIGÉE
 app.get('/api/tickets/queue', async (req, res) => {
   try {
     const { serviceCode } = req.query;
@@ -1055,7 +1236,6 @@ app.get('/api/tickets/queue', async (req, res) => {
     
     const count = await Ticket.count({ where });
     
-    // Version simplifiée sans les colonnes problématiques
     const nextTickets = await Ticket.findAll({
       where,
       include: [{ model: Service, as: 'ticketService' }],
@@ -1122,7 +1302,7 @@ app.get('/api/tickets', async (req, res) => {
       count: tickets.length,
       tickets: tickets.map(t => ({
         id: t.id,
-        ticket_number: t.ticket_number,
+        number: t.ticket_number,
         status: t.status,
         priority: t.priority,
         is_vip: t.is_vip === 1 ? true : false,
@@ -1132,7 +1312,8 @@ app.get('/api/tickets', async (req, res) => {
         customer_name: t.customer_name,
         created_at: t.createdAt,
         called_at: t.called_at,
-        completed_at: t.completed_at
+        completed_at: t.completed_at,
+        ticket_type: t.ticket_type
       }))
     });
   } catch (error) {
@@ -1200,6 +1381,7 @@ app.get('/api/tickets/:id', async (req, res) => {
         is_appointment: ticket.is_appointment === 1 ? true : false,
         appointment_time: ticket.appointment_time,
         service: ticket.ticketService?.name,
+        service_code: ticket.ticketService?.name,
         counter: ticket.ticketCounter?.number,
         customer_name: ticket.customer_name,
         client: ticket.ticketClient,
@@ -1211,7 +1393,8 @@ app.get('/api/tickets/:id', async (req, res) => {
         estimated_wait: ticket.estimated_wait_time,
         actual_wait: ticket.actual_wait_time,
         position_in_queue: position,
-        has_survey: ticket.has_survey === 1 ? true : false
+        has_survey: ticket.has_survey === 1 ? true : false,
+        ticket_type: ticket.ticket_type
       }
     });
   } catch (error) {
@@ -1260,6 +1443,9 @@ app.post('/api/tickets/:id/cancel', async (req, res) => {
         });
       }
     }
+    
+    // Broadcast update
+    await broadcastTicketUpdate(ticket.ticket_number);
     
     res.json({
       success: true,
@@ -1392,6 +1578,9 @@ app.post('/api/tickets/call-next', async (req, res) => {
       }
     }
     
+    // Broadcast update
+    await broadcastTicketUpdate(nextTicket.ticket_number);
+    
     res.json({
       success: true,
       message: `Ticket ${nextTicket.ticket_number} called to counter`,
@@ -1463,6 +1652,18 @@ app.post('/api/tickets/:id/complete', async (req, res) => {
       }
     }
     
+    // Broadcast update to all tickets in queue (their positions changed)
+    const waitingTickets = await Ticket.findAll({
+      where: {
+        service_id: ticket.service_id,
+        status: 'waiting'
+      }
+    });
+    
+    for (const waitingTicket of waitingTickets) {
+      await broadcastTicketUpdate(waitingTicket.ticket_number);
+    }
+    
     res.json({
       success: true,
       message: `Ticket ${ticket.ticket_number} completed`,
@@ -1503,7 +1704,6 @@ async function checkMissedTickets() {
     const timeoutMs = timeoutMinutes * 60 * 1000;
     const cutoffTime = new Date(Date.now() - timeoutMs);
     
-    // Utiliser une requête SQL brute pour éviter le problème de colonne
     const missedTickets = await sequelize.query(
       `SELECT t.*, c.id as "counter.id", c.number as "counter.number", c.name as "counter.name"
        FROM tickets t
@@ -1534,13 +1734,14 @@ async function checkMissedTickets() {
       });
       
       if (ticket.counter_id) {
-        // Mettre à jour le compteur séparément
         await Counter.update(
           { status: 'active', current_ticket_id: null },
           { where: { id: ticket.counter_id } }
         );
-        console.log(`✅ Released counter`);
       }
+      
+      // Broadcast update
+      await broadcastTicketUpdate(ticket.ticket_number);
       
       console.log(`❌ Ticket ${ticket.ticket_number} marked as missed`);
     }
@@ -1917,11 +2118,13 @@ async function startServer() {
 
     startMissedTicketMonitor();
 
-    const server = app.listen(PORT, () => {
+    server.listen(PORT, '0.0.0.0', () => {
       console.log('='.repeat(70));
       console.log('🏦 BANK QUEUE SYSTEM - COMPLETE INTEGRATION');
       console.log('='.repeat(70));
-      console.log(`✅ Server running: http://localhost:${PORT}`);
+      console.log(`✅ Local access: http://localhost:${PORT}`);
+      console.log(`✅ Network access: http://10.158.95.243:${PORT}`);
+      console.log(`✅ WebSocket server ready`);
       console.log(`✅ Health check: http://localhost:${PORT}/health`);
       console.log('\n📋 TICKET MANAGEMENT:');
       console.log('  POST /api/tickets/generate       - Create NORMAL ticket');
@@ -1947,12 +2150,18 @@ async function startServer() {
       console.log('  GET  /api/test123                - Test endpoint');
       console.log('='.repeat(70));
       console.log('🔄 Auto-missed monitor: ACTIVE (runs every 5 minutes)');
+      console.log('📡 WebSocket: ACTIVE (live updates enabled)');
       console.log('='.repeat(70));
     });
     
     // Graceful shutdown
     const gracefulShutdown = (signal) => {
       console.log(`\n${signal} received. Starting graceful shutdown...`);
+      
+      // Close WebSocket connections
+      io.close(() => {
+        console.log('✅ WebSocket server closed');
+      });
       
       server.close(() => {
         console.log('✅ HTTP server closed');

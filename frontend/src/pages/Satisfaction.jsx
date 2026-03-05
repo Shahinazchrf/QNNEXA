@@ -10,8 +10,9 @@ const Satisfaction = () => {
   const location = useLocation();
   const [darkMode, setDarkMode] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // États pour le formulaire
+  // Form state
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [fastService, setFastService] = useState(false);
@@ -23,7 +24,10 @@ const Satisfaction = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Questions supplémentaires
+  const ticketInfo = location.state?.ticket;
+  const ticketNumber = ticketInfo?.number || 'Unknown';
+  const ticketService = ticketInfo?.service || 'Unknown';
+  
   const [answers, setAnswers] = useState({
     q1: '',
     q2: '',
@@ -31,22 +35,12 @@ const Satisfaction = () => {
     q4: ''
   });
 
-  // Update time every second
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // Toggle dark mode
-  useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-  }, [darkMode]);
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
@@ -64,26 +58,22 @@ const Satisfaction = () => {
     });
   };
 
+  const handleNavigation = (path) => {
+    navigate(path);
+    setMobileMenuOpen(false);
+  };
+
   const handleAnswerChange = (question, value) => {
     setAnswers({
       ...answers,
       [question]: value
     });
-    console.log(`Answer ${question} changed to:`, value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('='.repeat(50));
-    console.log('🔵 SURVEY SUBMIT BUTTON CLICKED');
-    console.log('Current answers:', answers);
-    console.log('q1 value:', answers.q1);
-    
-    // Use the answer from question 1 as the rating
     const selectedRating = parseInt(answers.q1);
-    console.log('Parsed rating:', selectedRating);
-    console.log('Comments:', comments);
     
     if (!selectedRating || isNaN(selectedRating) || selectedRating < 1 || selectedRating > 5) {
       alert('Please rate the waiting time (question 1)');
@@ -94,48 +84,43 @@ const Satisfaction = () => {
     setError('');
 
     try {
-      // For now, use a fixed ticket ID for testing
-      const ticketId = 'test-ticket-123';
-      console.log('🎫 Using ticket ID:', ticketId);
+      const ticketId = location.state?.ticket?.id;
       
-      console.log('📤 Sending survey data:', {
-        ticket_id: ticketId,
-        rating: selectedRating,
-        comments: comments
-      });
+      if (!ticketId) {
+        alert('No ticket ID found. Please create a ticket first.');
+        navigate('/create-ticket');
+        return;
+      }
       
       const response = await surveyService.submitSurvey(
         ticketId,
         selectedRating,
         comments
       );
-      
-      console.log('📥 API Response:', response);
 
       if (response.success) {
-        console.log('✅ Survey submitted successfully!');
         setSubmitted(true);
       } else {
-        console.error('❌ API Error:', response.error);
         setError(response.error || 'Failed to submit survey');
       }
     } catch (err) {
-      console.error('❌ Exception:', err);
       setError('Error submitting survey. Please try again.');
     } finally {
       setLoading(false);
-      console.log('='.repeat(50));
     }
   };
 
   if (submitted) {
     return (
       <div className={`satisfaction-page ${darkMode ? 'dark' : ''}`}>
+        {/* Navbar */}
         <nav className="queue-navbar">
           <div className="nav-left">
-            <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
-            <span className="nav-brand">QONNEXA</span>
-            <span className="nav-slogan">Smart Queue Management System</span>
+            <div className="brand-container">
+              <span className="nav-logo">AGB</span>
+              <span className="nav-brand">QONNEXA</span>
+              <span className="nav-slogan">Smart Queue Management System</span>
+            </div>
           </div>
           
           <div className="nav-center">
@@ -145,24 +130,15 @@ const Satisfaction = () => {
           </div>
 
           <div className="nav-right">
-            <button 
-              className="nav-item"
-              onClick={() => navigate('/create-ticket')}
-            >
+            <button className="nav-item" onClick={() => handleNavigation('/create-ticket')}>
               <span className="nav-icon">🏠</span>
               <span className="nav-label">Home</span>
             </button>
-            <button 
-              className="nav-item"
-              onClick={() => navigate('/queue')}
-            >
+            <button className="nav-item" onClick={() => handleNavigation('/queue')}>
               <span className="nav-icon">📊</span>
               <span className="nav-label">Tracking Queue</span>
             </button>
-            <button 
-              className="dark-mode-btn"
-              onClick={() => setDarkMode(!darkMode)}
-            >
+            <button className="dark-mode-btn" onClick={() => setDarkMode(!darkMode)}>
               {darkMode ? '☀️' : '🌙'}
             </button>
           </div>
@@ -189,11 +165,14 @@ const Satisfaction = () => {
 
   return (
     <div className={`satisfaction-page ${darkMode ? 'dark' : ''}`}>
+      {/* Navbar */}
       <nav className="queue-navbar">
         <div className="nav-left">
-          <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
-          <span className="nav-brand">QONNEXA</span>
-          <span className="nav-slogan">Smart Queue Management System</span>
+          <div className="brand-container">
+            <span className="nav-logo">AGB</span>
+            <span className="nav-brand">QONNEXA</span>
+            <span className="nav-slogan">Smart Queue Management System</span>
+          </div>
         </div>
         
         <div className="nav-center">
@@ -203,56 +182,65 @@ const Satisfaction = () => {
         </div>
 
         <div className="nav-right">
-          <button 
-            className="nav-item"
-            onClick={() => navigate('/create-ticket')}
-          >
+          <button className="nav-item" onClick={() => handleNavigation('/create-ticket')}>
             <span className="nav-icon">🏠</span>
             <span className="nav-label">Home</span>
           </button>
-          <button 
-            className="nav-item"
-            onClick={() => navigate('/queue')}
-          >
+
+          <button className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`} onClick={() => handleNavigation('/queue')}>
             <span className="nav-icon">📊</span>
             <span className="nav-label">Tracking Queue</span>
           </button>
-          <button 
-            className="nav-item"
-            onClick={() => navigate('/faq')}
-          >
+
+          <button className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`} onClick={() => handleNavigation('/faq')}>
             <span className="nav-icon">❓</span>
             <span className="nav-label">FAQ</span>
           </button>
-          <button 
-            className="nav-item"
-            onClick={() => navigate('/support')}
-          >
+
+          <button className="nav-item" onClick={() => handleNavigation('/support')}>
             <span className="nav-icon">💬</span>
             <span className="nav-label">Chatbot</span>
           </button>
-          <button 
-            className="nav-item"
-            onClick={() => navigate('/cards')}
-          >
-            <span className="nav-icon">💳</span>
-            <span className="nav-label">Cards</span>
-          </button>
-          <button 
-            className="nav-item active"
-            onClick={() => navigate('/satisfaction')}
-          >
+
+          <button className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`} onClick={() => handleNavigation('/satisfaction')}>
             <span className="nav-icon">⭐</span>
             <span className="nav-label">Satisfaction</span>
           </button>
-          <button 
-            className="dark-mode-btn"
-            onClick={() => setDarkMode(!darkMode)}
-          >
+
+          <button className="dark-mode-btn" onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? '☀️' : '🌙'}
+          </button>
+
+          {/* Mobile Menu Button */}
+          <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            ☰
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu */}
+      <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+        <button className="mobile-nav-item" onClick={() => handleNavigation('/create-ticket')}>
+          <span className="mobile-nav-icon">🏠</span>
+          <span>Home</span>
+        </button>
+        <button className={`mobile-nav-item ${location.pathname === '/queue' ? 'active' : ''}`} onClick={() => handleNavigation('/queue')}>
+          <span className="mobile-nav-icon">📊</span>
+          <span>Tracking Queue</span>
+        </button>
+        <button className={`mobile-nav-item ${location.pathname === '/faq' ? 'active' : ''}`} onClick={() => handleNavigation('/faq')}>
+          <span className="mobile-nav-icon">❓</span>
+          <span>FAQ</span>
+        </button>
+        <button className="mobile-nav-item" onClick={() => handleNavigation('/support')}>
+          <span className="mobile-nav-icon">💬</span>
+          <span>Chatbot</span>
+        </button>
+        <button className={`mobile-nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`} onClick={() => handleNavigation('/satisfaction')}>
+          <span className="mobile-nav-icon">⭐</span>
+          <span>Satisfaction</span>
+        </button>
+      </div>
 
       <div className="satisfaction-container">
         <div className="satisfaction-header">
@@ -264,15 +252,21 @@ const Satisfaction = () => {
         <p className="satisfaction-subtitle">How was your experience today?</p>
 
         {error && (
-          <div style={{ 
-            background: '#FFEBEE', 
-            color: '#D71920', 
-            padding: '12px', 
-            borderRadius: '8px',
-            marginBottom: '20px',
-            textAlign: 'center'
-          }}>
+          <div className="error-message">
             {error}
+          </div>
+        )}
+
+        {ticketInfo && (
+          <div className="ticket-info-card">
+            <div>
+              <span className="ticket-info-label">Ticket Number</span>
+              <div className="ticket-info-number">{ticketNumber}</div>
+            </div>
+            <div className="ticket-info-service">
+              <span className="ticket-info-label">Service</span>
+              <span className="ticket-info-service-name">{ticketService}</span>
+            </div>
           </div>
         )}
 
@@ -303,7 +297,7 @@ const Satisfaction = () => {
             </p>
           </div>
 
-          {/* Critères */}
+          {/* Criteria Checklist */}
           <div className="criteria-section">
             <div className="criteria-grid">
               <label className="criteria-item">
@@ -345,7 +339,7 @@ const Satisfaction = () => {
             </div>
           </div>
 
-          {/* Questions supplémentaires */}
+          {/* Questions Section */}
           <div className="questions-section">
             <h3>Additional Questions</h3>
             
@@ -440,7 +434,7 @@ const Satisfaction = () => {
             </div>
 
             <div className="question-item">
-              <p className="question-text">Would you recommend us to others?</p>
+              <p className="question-text">Would you recommend our service to others?</p>
               <div className="question-options">
                 <label className="option-label">
                   <input
@@ -476,7 +470,7 @@ const Satisfaction = () => {
             </div>
           </div>
 
-          {/* Comment Section */}
+          {/* Comments Section */}
           <div className="comments-section">
             <label className="comments-label">Comments (Optional)</label>
             <textarea

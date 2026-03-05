@@ -1,18 +1,13 @@
-// Utiliser l'IP actuelle si on est pas sur localhost
-const getBaseUrl = () => {
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5000/api';
-  } else {
-    // Utiliser la même IP que la page (ex: 10.167.50.243)
-    return `http://${hostname}:5000/api`;
-  }
-};
+// frontend/src/services/api.js
 
-const API_URL = getBaseUrl();const api = {
+// IMPORTANT: Use your actual IP address
+const API_URL = 'http://10.158.95.243:5000/api';
+
+const api = {
   // GET request
   get: async (endpoint) => {
     try {
+      console.log(`🌐 GET ${API_URL}${endpoint}`);
       const response = await fetch(`${API_URL}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -34,6 +29,7 @@ const API_URL = getBaseUrl();const api = {
   // POST request
   post: async (endpoint, data = {}) => {
     try {
+      console.log(`🌐 POST ${API_URL}${endpoint}`, data);
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: {

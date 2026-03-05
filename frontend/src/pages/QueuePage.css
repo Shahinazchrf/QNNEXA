@@ -1,7 +1,5 @@
 /* frontend/src/pages/QueuePage.css */
 
-/* frontend/src/pages/QueuePage.css */
-
 /* ===== GLOBAL ===== */
 .queue-page {
   min-height: 100vh;
@@ -26,31 +24,34 @@
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 15px;
+}
+
+.brand-container {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
 }
 
 .nav-logo {
   font-size: 28px;
   font-weight: 800;
   color: #0B2E59;
-  cursor: pointer;
   letter-spacing: 1px;
+  cursor: default;
 }
 
 .nav-brand {
   font-size: 20px;
   font-weight: 600;
   color: #D71920;
-  border-left: 2px solid #e0e0e0;
-  padding-left: 15px;
+  margin-top: 2px;
 }
 
 .nav-slogan {
-  font-size: 14px;
+  font-size: 12px;
   color: #666;
   font-style: italic;
-  border-left: 1px solid #e0e0e0;
-  padding-left: 15px;
+  margin-top: 2px;
 }
 
 .nav-center .datetime {
@@ -62,11 +63,11 @@
   border-radius: 30px;
 }
 
+/* Desktop Navigation */
 .nav-right {
   display: flex;
   align-items: center;
   gap: 8px;
-  position: relative;
 }
 
 .nav-item {
@@ -103,17 +104,74 @@
   font-size: 13px;
 }
 
-/* Style pour le badge de notification */
-.notification-badge {
-  background-color: #D71920;
+/* Mobile Menu Button */
+.mobile-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #0B2E59;
   color: white;
-  border-radius: 50%;
-  padding: 2px 6px;
-  font-size: 11px;
-  margin-left: 5px;
-  min-width: 18px;
+  border-radius: 8px;
+  font-size: 24px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+}
+
+/* Mobile Menu */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 80px;
+  left: 0;
+  right: 0;
+  background: white;
+  border-bottom: 2px solid #0B2E59;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  z-index: 999;
+  padding: 10px 0;
+}
+
+.mobile-menu.open {
+  display: block;
+}
+
+.mobile-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 30px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 16px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-nav-item:last-child {
+  border-bottom: none;
+}
+
+.mobile-nav-item:hover {
+  background: #f0f7ff;
+  color: #0B2E59;
+}
+
+.mobile-nav-item.active {
+  background: #0B2E59;
+  color: white;
+}
+
+.mobile-nav-icon {
+  font-size: 20px;
+  width: 30px;
   text-align: center;
-  font-weight: bold;
 }
 
 .dark-mode-btn {
@@ -135,35 +193,6 @@
   background: #0B2E59;
   color: white;
   transform: scale(1.05);
-}
-
-/* Style pour les notifications non lues */
-.notification-item.unread {
-  background-color: #f0f7ff;
-  border-left: 3px solid #0B2E59;
-}
-
-.notification-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.unread-dot {
-  color: #D71920;
-  font-size: 12px;
-  margin-left: 10px;
-}
-
-/* Dark mode */
-.queue-page.dark .notification-item.unread {
-  background-color: #1a3a5e;
-  border-left-color: #D71920;
-}
-
-.queue-page.dark .unread-dot {
-  color: #ff6b6b;
 }
 
 /* ===== MAIN CONTENT ===== */
@@ -292,10 +321,28 @@
   align-items: center;
   padding: 15px;
   border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .notification-item:last-child {
   border-bottom: none;
+}
+
+.notification-item:hover {
+  background: #f9f9f9;
+}
+
+.notification-item.unread {
+  background-color: #f0f7ff;
+  border-left: 3px solid #0B2E59;
+}
+
+.notification-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .notification-message {
@@ -310,188 +357,134 @@
   margin-left: 20px;
 }
 
-/* Style pour le lien View All */
-.view-all-link {
-  text-align: right;
-  margin-top: 15px;
-}
-
-.view-all-btn {
-  background: none;
-  border: none;
-  color: #0B2E59;
-  cursor: pointer;
-  font-size: 14px;
-  text-decoration: underline;
-  padding: 5px 10px;
-  transition: color 0.2s;
-}
-
-.view-all-btn:hover {
-  color: #1E5AA8;
-}
-
-/* ===== DARK MODE ===== */
-.queue-page.dark {
-  background: #1a1a1a;
-}
-
-.queue-page.dark .queue-navbar {
-  background: #2d2d2d;
-  border-bottom-color: #D71920;
-}
-
-.queue-page.dark .nav-logo {
-  color: #e9ecef;
-}
-
-.queue-page.dark .nav-brand {
-  color: #ff6b6b;
-}
-
-.queue-page.dark .nav-slogan {
-  color: #adb5bd;
-}
-
-.queue-page.dark .nav-center .datetime {
-  background: #404040;
-  color: #e9ecef;
-}
-
-.queue-page.dark .nav-item {
-  color: #adb5bd;
-}
-
-.queue-page.dark .nav-item:hover {
-  background: #404040;
-  color: white;
-}
-
-.queue-page.dark .nav-item.active {
-  background: #D71920;
-  color: white;
-}
-
-.queue-page.dark .tracking-list,
-.queue-page.dark .ticket-info,
-.queue-page.dark .service-table,
-.queue-page.dark .notifications-list {
-  background: #2d2d2d;
-}
-
-.queue-page.dark .main-title,
-.queue-page.dark .section-title {
-  color: #e9ecef;
-}
-
-.queue-page.dark .tracking-label {
-  color: #adb5bd;
-}
-
-.queue-page.dark .tracking-value {
-  color: #e9ecef;
-}
-
-.queue-page.dark .ticket-message {
-  color: #adb5bd;
-}
-
-.queue-page.dark .service-table td {
-  color: #e9ecef;
-  border-bottom-color: #404040;
-}
-
-.queue-page.dark .service-name {
-  color: #4a90e2;
-}
-
-.queue-page.dark .notification-item {
-  border-bottom-color: #404040;
-}
-
-.queue-page.dark .notification-message {
-  color: #e9ecef;
-}
-
-.queue-page.dark .notification-time {
-  color: #adb5bd;
-}
-
-.queue-page.dark .view-all-btn {
-  color: #e9ecef;
-}
-
-.queue-page.dark .view-all-btn:hover {
+.unread-dot {
   color: #D71920;
+  font-size: 12px;
+  margin-left: 10px;
 }
 
-/* ===== RESPONSIVE ===== */
+/* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
   .queue-navbar {
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px;
+    padding: 10px 15px;
   }
 
-  .nav-left {
-    flex-wrap: wrap;
-    justify-content: center;
+  .nav-logo {
+    font-size: 24px;
   }
 
-  .nav-brand, .nav-slogan {
+  .nav-brand {
+    font-size: 18px;
+  }
+
+  .nav-slogan {
+    font-size: 10px;
+  }
+
+  .nav-center .datetime {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
+  /* Hide desktop nav items */
+  .nav-right .nav-item:not(:last-child) {
     display: none;
   }
 
-  .nav-right {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 5px;
+  /* Show mobile menu button */
+  .mobile-menu-btn {
+    display: flex;
   }
 
-  .nav-label {
-    display: none;
-  }
-
-  .nav-item {
-    padding: 8px;
+  .dark-mode-btn {
+    width: 40px;
+    height: 40px;
+    margin-left: 5px;
   }
 
   .tracking-list {
     grid-template-columns: 1fr;
     gap: 15px;
+    padding: 20px;
   }
 
-  .ticket-number {
-    font-size: 48px;
+  .tracking-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  .notification-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
-
-  .notification-time {
-    margin-left: 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .queue-container {
-    padding: 0 15px;
-  }
-
-  .main-title {
-    font-size: 24px;
+  .tracking-label {
+    font-size: 16px;
   }
 
   .tracking-value {
     font-size: 24px;
   }
 
+  .ticket-number {
+    font-size: 48px;
+  }
+
+  .ticket-message {
+    font-size: 16px;
+  }
+
+  .service-table th,
+  .service-table td {
+    padding: 12px 15px;
+    font-size: 14px;
+  }
+
+  .notification-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .notification-time {
+    margin-left: 0;
+  }
+
+  .queue-container {
+    padding: 0 15px;
+    margin: 20px auto;
+  }
+
+  .main-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-logo {
+    font-size: 20px;
+  }
+
+  .nav-brand {
+    font-size: 16px;
+  }
+
+  .nav-slogan {
+    font-size: 9px;
+  }
+
+  .tracking-value {
+    font-size: 20px;
+  }
+
+  .ticket-number {
+    font-size: 36px;
+  }
+
   .service-table th,
   .service-table td {
     padding: 10px;
-    font-size: 14px;
+    font-size: 13px;
   }
 }
