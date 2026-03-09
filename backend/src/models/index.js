@@ -11,6 +11,8 @@ const Counter = require('./Counter');
 const Notification = require('./Notification');
 const Survey = require('./Survey');
 const Agency = require('./Agency');
+const Appointment = require('./Appointment');  // ← AJOUTE ICI
+const Advisor = require('./Advisor');          // ← AJOUTE ICI
 
 // ==================== DÉFINITION DES RELATIONS ====================
 
@@ -83,7 +85,7 @@ Notification.belongsTo(User, {
   as: 'notificationUser'
 });
 
-// 4. SURVEY RELATIONS - FIXED: No counter_id association
+// 4. SURVEY RELATIONS
 Ticket.hasOne(Survey, {
   foreignKey: 'ticket_id',
   as: 'ticketSurvey'
@@ -105,6 +107,15 @@ Counter.belongsTo(Agency, {
   as: 'counterAgency'
 });
 
+// 6. ADVISOR RELATIONS (une seule fois)
+Advisor.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Advisor.hasMany(Appointment, { foreignKey: 'advisor_id', as: 'Appointments' });
+
+// 7. APPOINTMENT RELATIONS (une seule fois)
+Appointment.belongsTo(User, { foreignKey: 'user_id', as: 'client' });
+Appointment.belongsTo(Advisor, { foreignKey: 'advisor_id', as: 'advisor' });
+Appointment.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
+
 // ==================== EXPORT MODELS ====================
 
 module.exports = {
@@ -115,5 +126,7 @@ module.exports = {
   Counter,
   Notification,
   Survey,
-  Agency
+  Agency,
+  Appointment,
+  Advisor
 };

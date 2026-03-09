@@ -4,6 +4,7 @@ const cors = require('cors');
 const compression = require('compression');
 const helmet = require('helmet');
 const xss = require('xss-clean');
+const notificationRoutes = require('./routes/notificationRoutes');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
@@ -126,6 +127,10 @@ app.use(express.json({
     req.rawBody = buf.toString();
   }
 }));
+
+
+
+app.use('/api/notifications', notificationRoutes);
 
 app.use(express.urlencoded({ 
   extended: true, 
@@ -291,7 +296,7 @@ app.post('/api/public/ticket', async (req, res) => {
     });
   }
 });
-
+/*
 // ==================== FIXED VIP APPOINTMENT ====================
 // ==================== VIP APPOINTMENT ====================
 app.post('/api/vip/appointment/create', async (req, res) => {
@@ -361,7 +366,7 @@ app.post('/api/vip/appointment/create', async (req, res) => {
       errors: error.errors ? error.errors.map(e => e.message) : []
     });
   }
-});
+});*/
 
 // ==================== IMPORT MODELS ====================
 const { Survey, Agency } = require('./models');
@@ -1917,8 +1922,12 @@ async function startServer() {
 
     startMissedTicketMonitor();
 
-    const server = app.listen(PORT, () => {
+   const server = app.listen(PORT, '0.0.0.0', () => {
       console.log('='.repeat(70));
+      console.log('🏦 BANK QUEUE SYSTEM - COMPLETE INTEGRATION');
+      console.log('='.repeat(70));
+      console.log(`✅ Server running: http://localhost:${PORT}`);
+      console.log(`✅ Also accessible from network: http://10.128.137.248:${PORT}`);
       console.log('🏦 BANK QUEUE SYSTEM - COMPLETE INTEGRATION');
       console.log('='.repeat(70));
       console.log(`✅ Server running: http://localhost:${PORT}`);

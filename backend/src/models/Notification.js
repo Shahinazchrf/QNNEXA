@@ -13,10 +13,11 @@ const Notification = sequelize.define('Notification', {
     type: DataTypes.UUID,
     allowNull: true
   },
-  ticket_id: {
-    type: DataTypes.UUID,
-    allowNull: false
-  },
+ ticket_id: {
+  type: DataTypes.UUID,
+  allowNull: true,  // ← CHANGE false → true
+  field: 'ticket_id'
+},
   type: {
     type: DataTypes.ENUM(
       'upcoming_turn',
