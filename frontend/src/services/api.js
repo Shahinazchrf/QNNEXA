@@ -1,11 +1,14 @@
-// Dans api.js - juste ça :
-const API_URL = 'http://10.254.49.248:5000/api';
+// frontend/src/services/api.js
 
+// IMPORTANT: Use your actual IP address - vérifiez que c'est la bonne IP
+// 10.158.95.243 semble être l'IP correcte (utilisée dans Tablet.jsx)
+const API_URL = 'http://10.158.95.243:5000/api';
 
 const api = {
   // GET request
   get: async (endpoint) => {
     try {
+      console.log(`🌐 GET ${API_URL}${endpoint}`);
       const response = await fetch(`${API_URL}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -27,6 +30,7 @@ const api = {
   // POST request
   post: async (endpoint, data = {}) => {
     try {
+      console.log(`🌐 POST ${API_URL}${endpoint}`, data);
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: {

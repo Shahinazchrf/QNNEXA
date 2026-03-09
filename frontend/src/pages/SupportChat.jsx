@@ -1,6 +1,5 @@
-//frontend/src/pages/SupportChat.js
-
 // frontend/src/pages/SupportChat.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './SupportChat.css';
@@ -10,6 +9,7 @@ const SupportChat = () => {
   const location = useLocation();
   const [darkMode, setDarkMode] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
     {
@@ -27,14 +27,6 @@ const SupportChat = () => {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-  }, [darkMode]);
-
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -49,6 +41,11 @@ const SupportChat = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleNavigation = (path) => {
+    navigate(path);
+    setMobileMenuOpen(false);
   };
 
   const quickActions = [
@@ -129,12 +126,14 @@ const SupportChat = () => {
 
   return (
     <div className={`support-chat-page ${darkMode ? 'dark' : ''}`}>
-      {/* Navbar avec bouton Tracking Queue */}
+      {/* Navbar */}
       <nav className="queue-navbar">
         <div className="nav-left">
-          <span className="nav-logo" onClick={() => navigate('/')}>AGB</span>
-          <span className="nav-brand">QONNEXA</span>
-          <span className="nav-slogan">Smart Queue Management System</span>
+          <div className="brand-container">
+            <span className="nav-logo">AGB</span>
+            <span className="nav-brand">QONNEXA</span>
+            <span className="nav-slogan">Smart Queue Management System</span>
+          </div>
         </div>
         
         <div className="nav-center">
@@ -144,57 +143,65 @@ const SupportChat = () => {
         </div>
 
         <div className="nav-right">
-          <button 
-            className={`nav-item ${location.pathname === '/create-ticket' ? 'active' : ''}`}
-            onClick={() => navigate('/create-ticket')}
-          >
+          <button className="nav-item" onClick={() => handleNavigation('/create-ticket')}>
             <span className="nav-icon">🏠</span>
             <span className="nav-label">Home</span>
           </button>
-          {/* BOUTON TRACKING QUEUE AJOUTÉ */}
-          <button 
-            className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`}
-            onClick={() => navigate('/queue')}
-          >
+
+          <button className={`nav-item ${location.pathname === '/queue' ? 'active' : ''}`} onClick={() => handleNavigation('/queue')}>
             <span className="nav-icon">📊</span>
             <span className="nav-label">Tracking Queue</span>
           </button>
-          <button 
-            className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`}
-            onClick={() => navigate('/faq')}
-          >
+
+          <button className={`nav-item ${location.pathname === '/faq' ? 'active' : ''}`} onClick={() => handleNavigation('/faq')}>
             <span className="nav-icon">❓</span>
             <span className="nav-label">FAQ</span>
           </button>
-          <button 
-            className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`}
-            onClick={() => navigate('/support')}
-          >
+
+          <button className={`nav-item ${location.pathname === '/support' ? 'active' : ''}`} onClick={() => handleNavigation('/support')}>
             <span className="nav-icon">💬</span>
             <span className="nav-label">Chatbot</span>
           </button>
-          <button 
-            className={`nav-item ${location.pathname === '/cards' ? 'active' : ''}`}
-            onClick={() => navigate('/cards')}
-          >
-            <span className="nav-icon">💳</span>
-            <span className="nav-label">Cards</span>
-          </button>
-          <button 
-            className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
-            onClick={() => navigate('/satisfaction')}
-          >
+
+          <button className="nav-item" onClick={() => handleNavigation('/satisfaction')}>
             <span className="nav-icon">⭐</span>
             <span className="nav-label">Satisfaction</span>
           </button>
-          <button 
-            className="dark-mode-btn"
-            onClick={() => setDarkMode(!darkMode)}
-          >
+
+          <button className="dark-mode-btn" onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? '☀️' : '🌙'}
+          </button>
+
+          {/* Mobile Menu Button */}
+          <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            ☰
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu */}
+      <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+        <button className="mobile-nav-item" onClick={() => handleNavigation('/create-ticket')}>
+          <span className="mobile-nav-icon">🏠</span>
+          <span>Home</span>
+        </button>
+        <button className={`mobile-nav-item ${location.pathname === '/queue' ? 'active' : ''}`} onClick={() => handleNavigation('/queue')}>
+          <span className="mobile-nav-icon">📊</span>
+          <span>Tracking Queue</span>
+        </button>
+        <button className={`mobile-nav-item ${location.pathname === '/faq' ? 'active' : ''}`} onClick={() => handleNavigation('/faq')}>
+          <span className="mobile-nav-icon">❓</span>
+          <span>FAQ</span>
+        </button>
+        <button className={`mobile-nav-item ${location.pathname === '/support' ? 'active' : ''}`} onClick={() => handleNavigation('/support')}>
+          <span className="mobile-nav-icon">💬</span>
+          <span>Chatbot</span>
+        </button>
+        <button className="mobile-nav-item" onClick={() => handleNavigation('/satisfaction')}>
+          <span className="mobile-nav-icon">⭐</span>
+          <span>Satisfaction</span>
+        </button>
+      </div>
 
       {/* Chat Content */}
       <div className="support-chat-container">

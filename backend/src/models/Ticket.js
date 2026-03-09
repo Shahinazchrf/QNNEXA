@@ -115,7 +115,18 @@ const Ticket = sequelize.define('Ticket', {
   notes: {
     type: DataTypes.TEXT,
     allowNull: true
-  }
+  },
+  // ADD THIS:
+  // backend/src/models/Ticket.js
+
+// Add this field in the model definition (around line 120, after 'notes')
+ticket_type: {
+  type: DataTypes.ENUM('physical', 'virtual'),
+  defaultValue: 'virtual',
+  allowNull: false,
+  field: 'ticket_type',
+  comment: 'Type of ticket: physical (from tablet) or virtual (from QR code)'
+}
   // ❌ REMOVED: transferred_from - this column doesn't exist in your database
 }, {
   tableName: 'tickets',

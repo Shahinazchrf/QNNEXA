@@ -1,0 +1,396 @@
+/* frontend/src/pages/TrackMyQueue.css */
+
+.track-queue-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0b2b5c 0%, #1e3a8a 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 20px;
+}
+
+.track-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.back-btn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 2px solid white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.back-btn:hover {
+  background: white;
+  color: #0b2b5c;
+}
+
+.track-header h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.track-header p {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.search-section {
+  max-width: 500px;
+  margin: 0 auto 30px;
+}
+
+.search-form {
+  display: flex;
+  gap: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 50px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.search-input {
+  flex: 1;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  outline: none;
+  background: #f5f5f5;
+}
+
+.search-btn {
+  padding: 15px 30px;
+  background: #D71920;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.search-btn:hover:not(:disabled) {
+  background: #b3131a;
+  transform: translateY(-2px);
+}
+
+.search-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.results-section {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.error-message {
+  background: #FFEBEE;
+  color: #D71920;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 16px;
+  border-left: 4px solid #D71920;
+}
+
+.ticket-card {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.ticket-info {
+  text-align: center;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.ticket-number {
+  font-size: 48px;
+  font-weight: 800;
+  color: #0b2b5c;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+}
+
+.ticket-service {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.ticket-time {
+  font-size: 14px;
+  color: #999;
+}
+
+.status-section {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 10px 30px;
+  border-radius: 50px;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.status-waiting {
+  background: #FFA500;
+}
+
+.status-called {
+  background: #0B2E59;
+}
+
+.status-serving {
+  background: #4CAF50;
+}
+
+.status-completed {
+  background: #666;
+}
+
+.status-cancelled {
+  background: #D71920;
+}
+
+.status-missed {
+  background: #999;
+}
+
+.wait-time {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fa 100%);
+  border-left: 4px solid #0b2b5c;
+  padding: 15px 20px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wait-label {
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.wait-value {
+  color: #0b2b5c;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.counter-info {
+  text-align: center;
+  margin: 20px 0;
+  padding: 20px;
+  background: #f0f7ff;
+  border-radius: 12px;
+  border: 2px solid #0b2b5c;
+}
+
+.counter-info h3 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.counter-number {
+  font-size: 48px;
+  font-weight: 800;
+  color: #0b2b5c;
+}
+
+.refresh-btn {
+  width: 100%;
+  padding: 15px;
+  background: #0b2b5c;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: all 0.3s;
+}
+
+.refresh-btn:hover {
+  background: #1e3a8a;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 600px) {
+  .search-form {
+    flex-direction: column;
+    border-radius: 20px;
+  }
+  
+  .search-input {
+    border-radius: 10px;
+  }
+  
+  .search-btn {
+    border-radius: 10px;
+  }
+  
+  .ticket-number {
+    font-size: 36px;
+  }
+  
+  .counter-number {
+    font-size: 36px;
+  }
+}
+
+/* Add to frontend/src/pages/TrackMyQueue.css */
+
+.connection-indicator {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.connected {
+  color: #4CAF50;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.disconnected {
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.live-dot {
+  font-size: 16px;
+  animation: pulse 1.5s infinite;
+}
+
+.dead-dot {
+  font-size: 16px;
+  color: #999;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.live-badge {
+  background: #4CAF50;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  animation: pulse 1.5s infinite;
+}
+
+.ticket-type-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 12px;
+  background: #f0f0f0;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Add to frontend/src/pages/TrackMyQueue.css */
+
+.ticket-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  width: fit-content;
+}
+
+.ticket-type-physical {
+  background: #e3f2fd;
+  color: #0b2b5c;
+  border: 1px solid #0b2b5c;
+}
+
+.ticket-type-virtual {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #7b1fa2;
+}
+
+.ticket-type-icon {
+  font-size: 14px;
+}
+
+.ticket-type-label {
+  letter-spacing: 0.5px;
+}
+
+/* Make physical tickets stand out more */
+.ticket-type-physical .ticket-type-icon {
+  animation: none;
+}
+
+.ticket-type-virtual .ticket-type-icon {
+  animation: none;
+}
+
+/* Optional: Add different background for physical ticket cards */
+.ticket-card.physical-ticket {
+  border-left: 4px solid #0b2b5c;
+}
+
+.ticket-card.virtual-ticket {
+  border-left: 4px solid #7b1fa2;
+}
+
+/* Add to frontend/src/pages/TrackMyQueue.css */
+
+.physical-note {
+  font-size: 14px;
+  color: #FFA500;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+.error-message {
+  background: #ffebee;
+  color: #D71920;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 16px;
+  border-left: 4px solid #D71920;
+  margin: 20px 0;
+}
