@@ -5,7 +5,6 @@ const cors = require('cors');
 const compression = require('compression');
 const helmet = require('helmet');
 const xss = require('xss-clean');
-const notificationRoutes = require('./routes/notificationRoutes');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
@@ -13,6 +12,7 @@ const responseTime = require('response-time');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
+
 // Add this at the top of your server.js
 console.log('Server time:', new Date().toString());
 console.log('Server timezone offset:', new Date().getTimezoneOffset());
@@ -34,6 +34,7 @@ const priorityRoutes = require('./routes/priorityRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const { sequelize } = require('./config/database');
 const surveyRoutes = require('./routes/surveyRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -266,8 +267,6 @@ app.use(express.json({
   }
 }));
 
-
-
 app.use('/api/notifications', notificationRoutes);
 
 app.use(express.urlencoded({ 
@@ -440,12 +439,7 @@ app.post('/api/public/ticket', async (req, res) => {
     });
   }
 });
-<<<<<<< HEAD
-/*
-// ==================== FIXED VIP APPOINTMENT ====================
-=======
 
->>>>>>> 0504c019250492bdae6190911c28041c012bfc1c
 // ==================== VIP APPOINTMENT ====================
 app.post('/api/vip/appointment/create', async (req, res) => {
   try {
@@ -518,7 +512,7 @@ app.post('/api/vip/appointment/create', async (req, res) => {
       errors: error.errors ? error.errors.map(e => e.message) : []
     });
   }
-});*/
+});
 
 // ==================== IMPORT MODELS ====================
 const { Survey, Agency } = require('./models');
@@ -597,9 +591,6 @@ app.get('/api/counters', async (req, res) => {
   }
 });
 
-// ==================== TICKET ROUTES ====================
-
-// Create normal ticket (physical or virtual)
 // ==================== TICKET GENERATION ====================
 app.post('/api/tickets/generate', async (req, res) => {
   try {
@@ -731,6 +722,7 @@ app.post('/api/tickets/generate', async (req, res) => {
     });
   }
 });
+
 // VIP appointment booking
 app.post('/api/tickets/vip-appointment', async (req, res) => {
   try {
@@ -2046,18 +2038,69 @@ app.post('/api/admin/counters/:counterId/services', async (req, res) => {
 // Get counter by ID (admin)
 app.get('/api/admin/counters/:id', async (req, res) => {
   try {
-    const counter = await Counter.findByPk(req.params.id, {
+    const { id } = req.params;
+    
+    const counter = await Counter.findByPk(id, {
       include: [
-        { model: User, as: 'counterEmployee' },
-        { model: Agency, as: 'counterAgency' }
+        { 
+          model: User, 
+          as: 'counterEmployee',
+          attributes: ['id', 'first_name', 'last_name']
+        },
+        {
+          model: Agency,
+          as: 'counterAgency'
+        }
       ]
     });
+    
     if (!counter) {
-      return res.status(404).json({ success: false, error: 'Counter not found' });
+      return res.status(404).json({
+        success: false,
+        error: 'Counter not found'
+      });
     }
-    res.json({ success: true, data: counter });
+    
+    res.json({
+      success: true,
+      counter
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Get counter error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update service
+app.put('/api/admin/services/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const service = await Service.findByPk(id);
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        error: 'Service not found'
+      });
+    }
+    
+    await service.update(updates);
+    
+    res.json({
+      success: true,
+      message: 'Service updated successfully',
+      service
+    });
+  } catch (error) {
+    console.error('❌ Update service error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 
@@ -2131,17 +2174,6 @@ async function startServer() {
 
     startMissedTicketMonitor();
 
-<<<<<<< HEAD
-   const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log('='.repeat(70));
-      console.log('🏦 BANK QUEUE SYSTEM - COMPLETE INTEGRATION');
-      console.log('='.repeat(70));
-      console.log(`✅ Server running: http://localhost:${PORT}`);
-      console.log(`✅ Also accessible from network: http://10.128.137.248:${PORT}`);
-      console.log('🏦 BANK QUEUE SYSTEM - COMPLETE INTEGRATION');
-      console.log('='.repeat(70));
-      console.log(`✅ Server running: http://localhost:${PORT}`);
-=======
     server.listen(PORT, '0.0.0.0', () => {
       console.log('='.repeat(70));
       console.log('🏦 BANK QUEUE SYSTEM - COMPLETE INTEGRATION');
@@ -2149,7 +2181,6 @@ async function startServer() {
       console.log(`✅ Local access: http://localhost:${PORT}`);
       console.log(`✅ Network access: http://10.158.95.243:${PORT}`);
       console.log(`✅ WebSocket server ready`);
->>>>>>> 0504c019250492bdae6190911c28041c012bfc1c
       console.log(`✅ Health check: http://localhost:${PORT}/health`);
       console.log('\n📋 TICKET MANAGEMENT:');
       console.log('  POST /api/tickets/generate       - Create NORMAL ticket');
@@ -2172,7 +2203,6 @@ async function startServer() {
       console.log('  GET  /api/stats/period           - Period statistics');
       console.log('  GET  /api/stats/realtime         - Real-time statistics');
       console.log('  GET  /api/admin/counters/:id     - Get counter by ID');
-      console.log('  GET  /api/test123                - Test endpoint');
       console.log('='.repeat(70));
       console.log('🔄 Auto-missed monitor: ACTIVE (runs every 5 minutes)');
       console.log('📡 WebSocket: ACTIVE (live updates enabled)');
@@ -2215,124 +2245,6 @@ async function startServer() {
     process.exit(1);
   }
 }
-
-// ==================== ENDPOINTS MANQUANTS AJOUTÉS ====================
-
-// Get counter by ID
-app.get('/api/admin/counters/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const counter = await Counter.findByPk(id, {
-      include: [
-        { 
-          model: User, 
-          as: 'counterEmployee',
-          attributes: ['id', 'first_name', 'last_name']
-        },
-        {
-          model: Agency,
-          as: 'counterAgency'
-        }
-      ]
-    });
-    
-    if (!counter) {
-      return res.status(404).json({
-        success: false,
-        error: 'Counter not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      counter
-    });
-  } catch (error) {
-    console.error('❌ Get counter error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Add services to counter
-app.post('/api/admin/counters/:counterId/services', async (req, res) => {
-  try {
-    const { counterId } = req.params;
-    const { service_codes } = req.body;
-    
-    if (!service_codes || !Array.isArray(service_codes)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Service codes array is required'
-      });
-    }
-    
-    const counter = await Counter.findByPk(counterId);
-    if (!counter) {
-      return res.status(404).json({
-        success: false,
-        error: 'Counter not found'
-      });
-    }
-    
-    const currentServices = counter.services || [];
-    const updatedServices = [...new Set([...currentServices, ...service_codes])];
-    
-    await counter.update({ services: updatedServices });
-    
-    res.json({
-      success: true,
-      message: 'Services added to counter successfully',
-      counter: {
-        id: counter.id,
-        number: counter.number,
-        services: updatedServices
-      }
-    });
-  } catch (error) {
-    console.error('❌ Add services to counter error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Update service
-app.put('/api/admin/services/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-    
-    const service = await Service.findByPk(id);
-    if (!service) {
-      return res.status(404).json({
-        success: false,
-        error: 'Service not found'
-      });
-    }
-    
-    await service.update(updates);
-    
-    res.json({
-      success: true,
-      message: 'Service updated successfully',
-      service
-    });
-  } catch (error) {
-    console.error('❌ Update service error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ==================== EMPLOYEE ROUTES ====================
-// Vérifiez que ces routes sont bien dans votre fichier routes/employeeRoutes.js
 
 console.log('✅ Endpoints manquants ajoutés!');
 
