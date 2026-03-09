@@ -14,8 +14,8 @@ const Tablet = () => {
   const [error, setError] = useState('');
 
   // Your actual IP
-  const computerIP = '10.158.95.243';
-  const qrUrl = `http://${computerIP}:3000/qonnexea`;
+const computerIP = '10.24.11.243';
+const qrUrl = `http://${computerIP}:3000/qonnexea`;
 
   // Load services from API
   useEffect(() => {

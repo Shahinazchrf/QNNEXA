@@ -197,9 +197,9 @@ app.use(hpp());
 // 5. CORS configuré
 const corsOptions = {
   origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
+   'http://localhost:3000',
+  'http://10.24.11.243:3000',
+  'http://10.24.11.243',
     'http://127.0.0.1:3001',
     'http://10.158.95.243:3000',
     'http://10.158.95.243:3001',
@@ -621,39 +621,59 @@ app.post('/api/tickets/generate', async (req, res) => {
     }
 
     // Generate ticket number
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const lastTicket = await Ticket.findOne({
-      where: {
-        service_id: service.id,
-        ticket_number: { [Op.like]: `${serviceCode}%` },
-        createdAt: { [Op.between]: [today, tomorrow] }
-      },
-      order: [['createdAt', 'DESC']]
-    });
+     // Generate ticket number - GLOBAL SEQUENCE (resets at 100)
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const tomorrow = new Date(today);
+tomorrow.setDate(tomorrow.getDate() + 1);
 
-    let seqNumber = 1;
-    if (lastTicket && lastTicket.ticket_number) {
-      const match = lastTicket.ticket_number.match(/\d+$/);
-      if (match) {
-        seqNumber = parseInt(match[0]) + 1;
-      }
+// Get the LAST ticket of the day (ANY service)
+const lastTicket = await Ticket.findOne({
+  where: {
+    createdAt: { [Op.between]: [today, tomorrow] }
+  },
+  order: [['createdAt', 'DESC']]
+});
+
+let globalSeqNumber = 1;
+if (lastTicket && lastTicket.ticket_number) {
+  // Extract the number part from any ticket (A001, W002, D003, etc.)
+  const match = lastTicket.ticket_number.match(/\d+$/);
+  if (match) {
+    globalSeqNumber = parseInt(match[0]) + 1;
+    // Reset to 1 if we reach 101 (since we want 1-100)
+    if (globalSeqNumber > 100) {
+      globalSeqNumber = 1;
     }
+  }
+}
 
-    const ticketNumber = `${serviceCode}${seqNumber.toString().padStart(3, '0')}`;
+// Format with leading zeros (001, 002, etc.)
+const seqPadded = globalSeqNumber.toString().padStart(3, '0');
+const ticketNumber = `${serviceCode}${seqPadded}`;
+
+console.log(`📊 Global sequence number: ${globalSeqNumber} (padded: ${seqPadded})`);
 
     // Count waiting tickets
-    const waitingCount = await Ticket.count({
-      where: {
-        service_id: service.id,
-        status: 'waiting'
-      }
-    });
-    
-    const estimatedWait = (waitingCount + 1) * (service.estimated_time || 15);
+    // Count ALL waiting tickets (global queue)
+const totalWaitingCount = await Ticket.count({
+  where: {
+    status: 'waiting'
+  }
+});
+
+// Count waiting tickets for this specific service
+const serviceWaitingCount = await Ticket.count({
+  where: {
+    service_id: service.id,
+    status: 'waiting'
+  }
+});
+
+// Estimated wait based on position in service queue
+const estimatedWait = (serviceWaitingCount + 1) * (service.estimated_time || 15);
+
+console.log(`📊 Global waiting: ${totalWaitingCount}, Service waiting: ${serviceWaitingCount}`);
 
     // IMPORTANT: This is the fix - explicitly set ticket_type
     let finalTicketType = 'virtual'; // default

@@ -3,7 +3,7 @@ const { Sequelize } = require('sequelize');
 const sequelize = new Sequelize(
   'bank_queue_pfe',
   'pfe_user',
-  'pfe_password123',
+  '22-06-2005ninaz',  // or whatever password you're using
  {
     host: 'localhost',
     dialect: 'mysql',

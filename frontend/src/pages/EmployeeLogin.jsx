@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
+import './EmployeeLogin.css';
 
-const EmployeeLogin = ({ onLogin }) => {
+const EmployeeLogin = ({ onLogin }) => {  // ← Add onLogin prop here
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,9 +18,6 @@ const EmployeeLogin = ({ onLogin }) => {
     setError('');
 
     try {
-      // For employee login, we use email field with username
-      const email = username.includes('@') ? username : `${username}@bank.com`;
-      
       const response = await authService.login(email, password);
       
       if (response.success) {
@@ -27,13 +25,17 @@ const EmployeeLogin = ({ onLogin }) => {
         
         // Check if user is employee or admin
         if (['employee', 'admin', 'super_admin'].includes(user.role)) {
-          onLogin(user);
+          // Call onLogin if it exists (for the /employee route)
+          if (onLogin) {
+            onLogin(user);
+          }
+          navigate('/employee');
         } else {
           setError('This account does not have employee privileges');
           authService.logout();
         }
       } else {
-        setError(response.error || 'Invalid username or password');
+        setError(response.error || 'Invalid email or password');
       }
     } catch (err) {
       setError('Login failed. Please try again.');
@@ -43,138 +45,48 @@ const EmployeeLogin = ({ onLogin }) => {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #0B2E59 0%, #1E5AA8 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      
-      <div style={{ 
-        background: 'white', 
-        borderRadius: '15px',
-        padding: '40px',
-        width: '100%',
-        maxWidth: '400px',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-      }}>
-        
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h1 style={{ 
-            fontSize: '48px', 
-            fontWeight: 'bold', 
-            color: '#0B2E59', 
-            marginBottom: '5px',
-            letterSpacing: '2px'
-          }}>
-            AGB
-          </h1>
-          <p style={{ color: '#666', fontSize: '14px' }}>Espace Guichetier</p>
+    <div className="employee-login-container">
+      <div className="login-box">
+        <div className="login-header">
+          <h1>AGB</h1>
+          <h2>QONNEXA</h2>
+          <p>Employee Portal</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              color: '#333',
-              fontSize: '14px',
-              fontWeight: 'bold'
-            }}>
-              Nom d'utilisateur
-            </label>
+          <div className="form-group">
+            <label>Email</label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 15px',
-                border: '2px solid #E0E0E0',
-                borderRadius: '8px',
-                fontSize: '16px',
-                outline: 'none'
-              }}
-              placeholder="Entrez votre nom d'utilisateur"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="employee@bank.com"
               required
             />
           </div>
 
-          <div style={{ marginBottom: '25px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              color: '#333',
-              fontSize: '14px',
-              fontWeight: 'bold'
-            }}>
-              Mot de passe
-            </label>
+          <div className="form-group">
+            <label>Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 15px',
-                border: '2px solid #E0E0E0',
-                borderRadius: '8px',
-                fontSize: '16px',
-                outline: 'none'
-              }}
-              placeholder="Entrez votre mot de passe"
+              placeholder="••••••••"
               required
             />
           </div>
 
-          {error && (
-            <div style={{ 
-              background: '#FFEBEE', 
-              color: '#D71920', 
-              padding: '12px', 
-              borderRadius: '8px',
-              marginBottom: '20px',
-              fontSize: '14px',
-              textAlign: 'center'
-            }}>
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              background: '#D71920',
-              color: 'white',
-              border: 'none',
-              padding: '15px',
-              borderRadius: '8px',
-              fontSize: '18px',
-              fontWeight: 'bold',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1
-            }}
-          >
-            {loading ? 'CONNEXION...' : 'SE CONNECTER'}
+          <button type="submit" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <div style={{ 
-          marginTop: '30px', 
-          padding: '15px', 
-          background: '#F5F5F5', 
-          borderRadius: '8px',
-          fontSize: '12px',
-          color: '#666'
-        }}>
-          <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>Comptes de test :</p>
-          <div>employee@bank.com / 1234 - Employé</div>
-          <div>admin@bank.com / 1234 - Admin</div>
+        <div className="login-footer">
+          <p>Demo credentials:</p>
+          <p>employee@bank.com / employee123</p>
+          <p>admin@bank.com / admin123</p>
         </div>
       </div>
     </div>
