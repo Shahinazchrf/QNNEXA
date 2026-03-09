@@ -173,8 +173,7 @@ const AdminLogin = ({ onLogin }) => {
           color: '#666'
         }}>
           <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>Comptes de test :</p>
-          <div>admin@bank.com / 1234 - Admin</div>
-          <div>super@bank.com / 1234 - Super Admin</div>
+          <div>admin@bank.com / admin123</div>
         </div>
       </div>
     </div>

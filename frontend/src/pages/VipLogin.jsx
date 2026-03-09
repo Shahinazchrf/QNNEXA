@@ -21,14 +21,29 @@ const VipLogin = ({ onLogin }) => {
       
       if (response.success) {
         const user = response.user;
+        console.log('🔍 User reçu:', user);
+        if (response.success) {
+  const user = response.user;
+  
+  console.log('🔍 USER COMPLET:', JSON.stringify(user, null, 2));
+  console.log('🔍 is_vip:', user.is_vip);
+  console.log('🔍 type is_vip:', typeof user.is_vip);
+  console.log('🔍 role:', user.role);
+  
+  if (user.is_vip || user.role === 'vip_client') {
+  onLogin(user);
+  
+} else {
+  setError('This account does not have VIP privileges');
+}
+}
         
-        // Check if user is VIP
-        if (user.role === 'vip_client' || user.is_vip === true) {
-          onLogin(user);
-        } else {
-          setError('This account does not have VIP privileges');
-          authService.logout();
-        }
+       if (user && (user.is_vip == 1 || user.is_vip === true || user.is_vip === '1' || user.role === 'vip_client')) {
+  onLogin(user);
+  
+} else {
+  setError('This account does not have VIP privileges');
+}
       } else {
         setError(response.error || 'Invalid email or password');
       }

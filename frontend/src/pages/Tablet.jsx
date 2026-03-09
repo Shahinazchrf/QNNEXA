@@ -213,8 +213,8 @@ const Tablet = () => {
           {showQR && (
             <div className="qr-container">
               <div className="qr-code">
-                <img 
-  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://10.167.50.243:3000/qonnexea`}
+               <img 
+  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://10.254.49.248:3000/qonnexea`}
   alt="QR Code QONNEXEA"
 />
               </div>
