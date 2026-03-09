@@ -6,20 +6,28 @@ const USER_KEY = 'user_data';
 const authService = {
   // Login
   login: async (email, password) => {
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      
-      if (response.success && response.token) {
-        localStorage.setItem(TOKEN_KEY, response.token);
-        localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-      }
-      
+  try {
+    const response = await api.post('/auth/login', { email, password });
+    
+    // Check if response already has success property
+    if (response.success && response.token) {
+      localStorage.setItem(TOKEN_KEY, response.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
       return response;
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: error.message };
+    } 
+    // If response is the data directly (no success wrapper)
+    else if (response.token && response.user) {
+      localStorage.setItem(TOKEN_KEY, response.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+      return { success: true, user: response.user, token: response.token };
     }
-  },
+    
+    return { success: false, error: 'Invalid response format' };
+  } catch (error) {
+    console.error('Login error:', error);
+    return { success: false, error: error.message };
+  }
+},
 
   // Register
   register: async (userData) => {

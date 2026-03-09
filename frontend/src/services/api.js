@@ -1,8 +1,8 @@
 // frontend/src/services/api.js
 
-// IMPORTANT: Use your actual IP address - vérifiez que c'est la bonne IP
-// 10.158.95.243 semble être l'IP correcte (utilisée dans Tablet.jsx)
-const API_URL = 'http://10.158.95.243:5000/api';
+
+// IMPORTANT: Use your actual IP address
+const API_URL = 'http://10.24.11.243:5000/api';
 
 const api = {
   // GET request

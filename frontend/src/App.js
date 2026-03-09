@@ -11,7 +11,6 @@ import Satisfaction from './pages/Satisfaction';
 import FAQ from './pages/FAQ';
 import SupportChat from './pages/SupportChat';
 import PhysicalTicketDisplay from './pages/PhysicalTicketDisplay';
-
 import EmployeeLogin from './pages/EmployeeLogin';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import CounterAdminDashboard from './pages/CounterAdminDashboard';
@@ -28,8 +27,9 @@ function App() {
   const [employeeUser, setEmployeeUser] = useState(null);
   const [adminUser, setAdminUser] = useState(null);
 
-  return (
+ return (
     <Router>
+      
       <div className="App">
         <Routes>
 
@@ -49,6 +49,9 @@ function App() {
           <Route path="/faq" element={<FAQ />} />
           <Route path="/support" element={<SupportChat />} />
           <Route path="/track-queue" element={<TrackMyQueue />} />
+
+          {/* Employee Login - ADD THIS NEW ROUTE HERE */}
+          <Route path="/employee-login" element={<EmployeeLogin />} />
 
           {/* VIP */}
           <Route

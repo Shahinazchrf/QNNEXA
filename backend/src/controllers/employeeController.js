@@ -1,5 +1,6 @@
 const { Ticket, Counter, Service, User } = require('../models');
 const { Op } = require('sequelize');
+const sequelize = require('sequelize');
 
 const employeeController = {
   // Call next ticket
@@ -34,14 +35,14 @@ const employeeController = {
           status: 'waiting',
           priority: 'vip'
         },
-        include: [Service],
+        include: [{ model: Service, as: 'ticketService' }], // FIXED: added 'as'
         order: [['createdAt', 'ASC']]
       });
 
       if (!nextTicket) {
         nextTicket = await Ticket.findOne({
           where: { status: 'waiting' },
-          include: [Service],
+          include: [{ model: Service, as: 'ticketService' }], // FIXED: added 'as'
           order: [['createdAt', 'ASC']]
         });
       }
@@ -72,7 +73,7 @@ const employeeController = {
         global.io.emit('ticket_called', {
           ticket_number: nextTicket.ticket_number,
           counter_id: counterId,
-          service: nextTicket.Service.name,
+          service: nextTicket.ticketService?.name, // FIXED: use alias
           called_at: new Date()
         });
       }
@@ -83,7 +84,7 @@ const employeeController = {
         ticket: {
           id: nextTicket.id,
           number: nextTicket.ticket_number,
-          service: nextTicket.Service.name,
+          service: nextTicket.ticketService?.name, // FIXED: use alias
           priority: nextTicket.priority,
           customer_name: nextTicket.customer_name,
           waiting_time: Math.floor((new Date() - nextTicket.createdAt) / 60000) + ' min'
@@ -91,6 +92,7 @@ const employeeController = {
       });
 
     } catch (error) {
+      console.error('Call next ticket error:', error);
       res.status(500).json({
         success: false,
         error: error.message
@@ -105,7 +107,10 @@ const employeeController = {
       const employeeId = req.user.id;
 
       const ticket = await Ticket.findByPk(ticketId, {
-        include: [Service, Counter]
+        include: [
+          { model: Service, as: 'ticketService' }, // FIXED: added 'as'
+          { model: Counter, as: 'ticketCounter' }  // FIXED: added 'as'
+        ]
       });
 
       if (!ticket) {
@@ -139,13 +144,14 @@ const employeeController = {
         message: `Now serving ticket ${ticket.ticket_number}`,
         ticket: {
           number: ticket.ticket_number,
-          service: ticket.Service.name,
+          service: ticket.ticketService?.name, // FIXED: use alias
           customer_name: ticket.customer_name,
           start_time: new Date()
         }
       });
 
     } catch (error) {
+      console.error('Start serving error:', error);
       res.status(500).json({
         success: false,
         error: error.message
@@ -160,7 +166,10 @@ const employeeController = {
       const employeeId = req.user.id;
 
       const ticket = await Ticket.findByPk(ticketId, {
-        include: [Service, Counter]
+        include: [
+          { model: Service, as: 'ticketService' }, // FIXED: added 'as'
+          { model: Counter, as: 'ticketCounter' }  // FIXED: added 'as'
+        ]
       });
 
       if (!ticket) {
@@ -208,6 +217,7 @@ const employeeController = {
       });
 
     } catch (error) {
+      console.error('Complete service error:', error);
       res.status(500).json({
         success: false,
         error: error.message
@@ -225,8 +235,8 @@ const employeeController = {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + normal);
-
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
       const [servedToday, waitingTickets, currentTicket, employeeStats] = await Promise.all([
         // Tickets served today by this employee
         Ticket.count({
@@ -237,20 +247,21 @@ const employeeController = {
           }
         }),
 
-        // Waiting tickets (for employee's services)
+        // Waiting tickets (for employee's services) - FIXED
         Ticket.count({
           where: { status: 'waiting' },
           include: [{
             model: Service,
+            as: 'ticketService', // ← ADDED alias
             where: counter?.services ? {
               code: { [Op.in]: counter.services }
             } : {}
           }]
         }),
 
-        // Current active ticket
+        // Current active ticket - FIXED
         counter?.current_ticket_id ? Ticket.findByPk(counter.current_ticket_id, {
-          include: [Service]
+          include: [{ model: Service, as: 'ticketService' }] // ← FIXED
         }) : null,
 
         // Employee performance stats
@@ -260,8 +271,8 @@ const employeeController = {
             status: 'completed'
           },
           attributes: [
-            [sequelize.fn('COUNT', 'id'), 'total_served'],
-            [sequelize.fn('AVG', sequelize.literal('julianday(completed_at) - julianday(called_at)') * 24 * 60), 'avg_service_time']
+            [sequelize.fn('COUNT', sequelize.col('id')), 'total_served'],
+            [sequelize.fn('AVG', sequelize.literal('TIMESTAMPDIFF(MINUTE, called_at, completed_at)')), 'avg_service_time']
           ]
         })
       ]);
@@ -277,11 +288,11 @@ const employeeController = {
           stats: {
             served_today: servedToday,
             waiting_tickets: waitingTickets,
-            avg_service_time: employeeStats[0]?.dataValues?.avg_service_time?.toFixed(normal) || '0'
+            avg_service_time: employeeStats[0]?.dataValues?.avg_service_time?.toFixed(1) || '0'
           },
           current_ticket: currentTicket ? {
             number: currentTicket.ticket_number,
-            service: currentTicket.Service?.name,
+            service: currentTicket.ticketService?.name, // FIXED: use alias
             customer_name: currentTicket.customer_name,
             waiting_since: currentTicket.createdAt
           } : null
@@ -289,6 +300,7 @@ const employeeController = {
       });
 
     } catch (error) {
+      console.error('Dashboard error:', error);
       res.status(500).json({
         success: false,
         error: error.message

@@ -210,6 +210,18 @@ const ticketService = {
     }
   },
 
+  // Get employee's counter - FIXED (moved outside)
+  getEmployeeCounter: async (employeeId) => {
+    try {
+      const token = authService.getToken();
+      const response = await api.getAuth(`/employee/counter/${employeeId}`, token);
+      return response;
+    } catch (error) {
+      console.error('Error getting employee counter:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
   // Transfer ticket (admin)
   transferTicket: async (ticketId, newServiceCode, reason = '') => {
     try {
