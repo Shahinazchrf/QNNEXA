@@ -661,3 +661,21 @@
   border-left: 4px solid #dc3545;
   font-weight: 500;
 }
+.serving-elsewhere {
+  background-color: #fff3cd;
+  opacity: 0.8;
+}
+
+.serving-badge {
+  background: #17a2b8;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-cell {
+  font-size: 13px;
+}
