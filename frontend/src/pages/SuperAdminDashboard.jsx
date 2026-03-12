@@ -1,4 +1,4 @@
-//frontend/src/pages/SuperAdminDashboard.js
+// frontend/src/pages/SuperAdminDashboard.jsx
 
 import React, { useState, useEffect } from 'react';
 import adminService from '../services/adminService';
@@ -34,6 +34,40 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
     averageSatisfaction: 4.3,
     busiestAgency: 'Hydra',
     fastestAgency: 'Dely Ibrahim'
+  });
+
+  // ===== MODAL STATES =====
+  const [showAgencyModal, setShowAgencyModal] = useState(false);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showCounterModal, setShowCounterModal] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+
+  // ===== FORM STATES =====
+  const [newAgency, setNewAgency] = useState({
+    code: '',
+    name: '',
+    city: '',
+    address: ''
+  });
+
+  const [newService, setNewService] = useState({
+    code: '',
+    name: '',
+    estimated_time: 15
+  });
+
+  const [newCounter, setNewCounter] = useState({
+    number: '',
+    name: '',
+    location: 'Main Hall'
+  });
+
+  const [newUser, setNewUser] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '123456',
+    role: 'employee'
   });
 
   // ===== AGENCY COMPARISON =====
@@ -113,28 +147,23 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
   }, []);
 
   // ===== AGENCY HANDLERS =====
-  const handleAddAgency = async () => {
-    const name = prompt('Agency name:');
-    if (!name) return;
-    
-    const location = prompt('Location:');
-    const code = prompt('Agency code (3 letters):', name.substring(0, 3).toUpperCase());
-    
+  const handleAddAgency = async (agencyData) => {
     try {
       const response = await adminService.createAgency({
-        code,
-        name,
-        address: location || 'Algiers',
-        city: 'Algiers',
+        code: agencyData.code,
+        name: agencyData.name,
+        address: agencyData.address || 'Algiers',
+        city: agencyData.city || 'Algiers',
         is_active: true
       });
       
       if (response.success) {
-        // Refresh agencies
         const agenciesResponse = await adminService.getAgencies();
         if (agenciesResponse.success) {
           setAgencies(agenciesResponse.data || []);
         }
+        setShowAgencyModal(false);
+        setNewAgency({ code: '', name: '', city: '', address: '' });
       } else {
         alert('Failed to create agency: ' + response.error);
       }
@@ -198,26 +227,21 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
   };
 
   // ===== SERVICE HANDLERS =====
-  const handleAddService = async () => {
-    const name = prompt('Service name:');
-    if (!name) return;
-    
-    const code = prompt('Service code (e.g., W, D, A):', name.substring(0, 1).toUpperCase());
-    const estimatedTime = prompt('Estimated time (minutes):', '15');
-    
+  const handleAddService = async (serviceData) => {
     try {
       const response = await adminService.createService({
-        code,
-        name,
-        estimated_time: parseInt(estimatedTime) || 15
+        code: serviceData.code,
+        name: serviceData.name,
+        estimated_time: parseInt(serviceData.estimated_time) || 15
       });
       
       if (response.success) {
-        // Refresh services
         const servicesResponse = await adminService.getServices();
         if (servicesResponse.success) {
           setServices(servicesResponse.services || []);
         }
+        setShowServiceModal(false);
+        setNewService({ code: '', name: '', estimated_time: 15 });
       } else {
         alert('Failed to create service: ' + response.error);
       }
@@ -281,27 +305,22 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
   };
 
   // ===== COUNTER HANDLERS =====
-  const handleAddCounter = async () => {
-    const number = prompt('Counter number (e.g., 5):');
-    if (!number) return;
-    
-    const name = prompt('Counter name:', `Counter ${number}`);
-    const location = prompt('Location:', 'Main Hall');
-    
+  const handleAddCounter = async (counterData) => {
     try {
       const response = await adminService.createCounter({
-        number: parseInt(number),
-        name,
-        location,
+        number: parseInt(counterData.number),
+        name: counterData.name || `Counter ${counterData.number}`,
+        location: counterData.location || 'Main Hall',
         is_active: true
       });
       
       if (response.success) {
-        // Refresh counters
         const countersResponse = await adminService.getCounters();
         if (countersResponse.success) {
           setCounters(countersResponse.counters || []);
         }
+        setShowCounterModal(false);
+        setNewCounter({ number: '', name: '', location: 'Main Hall' });
       } else {
         alert('Failed to create counter: ' + response.error);
       }
@@ -365,31 +384,24 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
   };
 
   // ===== USER HANDLERS =====
-  const handleAddUser = async () => {
-    const firstName = prompt('First name:');
-    if (!firstName) return;
-    
-    const lastName = prompt('Last name:');
-    const email = prompt('Email:', `${firstName.toLowerCase()}.${lastName.toLowerCase()}@bank.com`);
-    const role = prompt('Role (client/employee/admin):', 'employee');
-    const password = prompt('Password:', '123456');
-    
+  const handleAddUser = async (userData) => {
     try {
       const response = await adminService.createUser({
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName,
-        role,
+        email: userData.email,
+        password: userData.password || '123456',
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        role: userData.role,
         is_active: true
       });
       
       if (response.success) {
-        // Refresh users
         const usersResponse = await adminService.getUsers();
         if (usersResponse.success) {
           setUsers(usersResponse.data?.users || []);
         }
+        setShowUserModal(false);
+        setNewUser({ first_name: '', last_name: '', email: '', password: '123456', role: 'employee' });
         alert(`✅ User created successfully`);
       } else {
         alert('Failed to create user: ' + response.error);
@@ -515,7 +527,12 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '24px', color: '#0B2E59', fontWeight: 'bold' }}>🏢 Agency Management</h2>
-        <button onClick={handleAddAgency} style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>➕ Create Agency</button>
+        <button 
+          onClick={() => setShowAgencyModal(true)}
+          style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+        >
+          ➕ Create Agency
+        </button>
       </div>
 
       <div style={{ background: 'white', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
@@ -564,7 +581,12 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '24px', color: '#0B2E59', fontWeight: 'bold' }}>⚙️ Service Management</h2>
-        <button onClick={handleAddService} style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>➕ Create Service</button>
+        <button 
+          onClick={() => setShowServiceModal(true)}
+          style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+        >
+          ➕ Create Service
+        </button>
       </div>
 
       <div style={{ background: 'white', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
@@ -613,7 +635,10 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '24px', color: '#0B2E59', fontWeight: 'bold' }}>🪟 Counter Management</h2>
-        <button onClick={handleAddCounter} style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+        <button 
+          onClick={() => setShowCounterModal(true)}
+          style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+        >
           ➕ Create Counter
         </button>
       </div>
@@ -675,7 +700,10 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '24px', color: '#0B2E59', fontWeight: 'bold' }}>👥 User Management</h2>
-        <button onClick={handleAddUser} style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+        <button 
+          onClick={() => setShowUserModal(true)}
+          style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+        >
           ➕ Create User
         </button>
       </div>
@@ -782,6 +810,95 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
         {activeTab === 'counters' && renderCounters()}
         {activeTab === 'users' && renderUsers()}
       </div>
+
+      {/* MODALS - PLACÉS ICI À L'INTÉRIEUR DU RETURN */}
+
+      {/* Modal Agency */}
+      {showAgencyModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{ background: 'white', padding: '30px', borderRadius: '10px', width: '400px' }}>
+            <h3 style={{ marginBottom: '20px', color: '#0B2E59' }}>Create Agency</h3>
+            <input placeholder="Code" value={newAgency.code} onChange={(e) => setNewAgency({...newAgency, code: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input placeholder="Name" value={newAgency.name} onChange={(e) => setNewAgency({...newAgency, name: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input placeholder="City" value={newAgency.city} onChange={(e) => setNewAgency({...newAgency, city: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input placeholder="Address" value={newAgency.address} onChange={(e) => setNewAgency({...newAgency, address: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowAgencyModal(false)} style={{ padding: '10px 20px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '5px' }}>Cancel</button>
+              <button onClick={() => handleAddAgency(newAgency)} style={{ padding: '10px 20px', background: '#0B2E59', color: 'white', border: 'none', borderRadius: '5px' }}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Service */}
+      {showServiceModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{ background: 'white', padding: '30px', borderRadius: '10px', width: '400px' }}>
+            <h3 style={{ marginBottom: '20px', color: '#0B2E59' }}>Create Service</h3>
+            <input placeholder="Code (A, B, C...)" value={newService.code} onChange={(e) => setNewService({...newService, code: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input placeholder="Name" value={newService.name} onChange={(e) => setNewService({...newService, name: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input type="number" placeholder="Est. Time (minutes)" value={newService.estimated_time} onChange={(e) => setNewService({...newService, estimated_time: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowServiceModal(false)} style={{ padding: '10px 20px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '5px' }}>Cancel</button>
+              <button onClick={() => handleAddService(newService)} style={{ padding: '10px 20px', background: '#0B2E59', color: 'white', border: 'none', borderRadius: '5px' }}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Counter */}
+      {showCounterModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{ background: 'white', padding: '30px', borderRadius: '10px', width: '400px' }}>
+            <h3 style={{ marginBottom: '20px', color: '#0B2E59' }}>Create Counter</h3>
+            <input type="number" placeholder="Counter Number" value={newCounter.number} onChange={(e) => setNewCounter({...newCounter, number: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input placeholder="Name (optional)" value={newCounter.name} onChange={(e) => setNewCounter({...newCounter, name: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input placeholder="Location" value={newCounter.location} onChange={(e) => setNewCounter({...newCounter, location: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowCounterModal(false)} style={{ padding: '10px 20px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '5px' }}>Cancel</button>
+              <button onClick={() => handleAddCounter(newCounter)} style={{ padding: '10px 20px', background: '#0B2E59', color: 'white', border: 'none', borderRadius: '5px' }}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal User */}
+      {showUserModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{ background: 'white', padding: '30px', borderRadius: '10px', width: '400px' }}>
+            <h3 style={{ marginBottom: '20px', color: '#0B2E59' }}>Create User</h3>
+            <input placeholder="First Name" value={newUser.first_name} onChange={(e) => setNewUser({...newUser, first_name: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input placeholder="Last Name" value={newUser.last_name} onChange={(e) => setNewUser({...newUser, last_name: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <input placeholder="Email" value={newUser.email} onChange={(e) => setNewUser({...newUser, email: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+            <select value={newUser.role} onChange={(e) => setNewUser({...newUser, role: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '5px' }}>
+              <option value="employee">Employee</option>
+              <option value="admin">Admin</option>
+              <option value="client">Client</option>
+            </select>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowUserModal(false)} style={{ padding: '10px 20px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '5px' }}>Cancel</button>
+              <button onClick={() => handleAddUser(newUser)} style={{ padding: '10px 20px', background: '#0B2E59', color: 'white', border: 'none', borderRadius: '5px' }}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -1,64 +1,50 @@
+// frontend/src/services/adminService.js
+
 import api from './api';
 import authService from './authService';
 
 const adminService = {
-  // Get admin dashboard
-  getDashboard: async () => {
+  // ===== AGENCY MANAGEMENT =====
+  getAgencies: async () => {
     try {
       const token = authService.getToken();
-      const response = await api.getAuth('/admin/dashboard', token);
+      const response = await api.getAuth('/admin/agencies', token);
       return response;
     } catch (error) {
-      console.error('Error getting admin dashboard:', error);
+      console.error('Error getting agencies:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  },
+
+  createAgency: async (agencyData) => {
+    try {
+      const token = authService.getToken();
+      const response = await api.postAuth('/admin/agencies', agencyData, token);
+      return response;
+    } catch (error) {
+      console.error('Error creating agency:', error);
       return { success: false, error: error.message };
     }
   },
 
-  // ===== USER MANAGEMENT =====
-  getUsers: async (page = 1, limit = 20, role = null, search = null) => {
+  updateAgency: async (agencyId, agencyData) => {
     try {
       const token = authService.getToken();
-      let url = `/admin/users?page=${page}&limit=${limit}`;
-      if (role) url += `&role=${role}`;
-      if (search) url += `&search=${search}`;
-      
-      const response = await api.getAuth(url, token);
+      const response = await api.putAuth(`/admin/agencies/${agencyId}`, agencyData, token);
       return response;
     } catch (error) {
-      console.error('Error getting users:', error);
+      console.error('Error updating agency:', error);
       return { success: false, error: error.message };
     }
   },
 
-  createUser: async (userData) => {
+  deleteAgency: async (agencyId) => {
     try {
       const token = authService.getToken();
-      const response = await api.postAuth('/admin/users', userData, token);
+      const response = await api.deleteAuth(`/admin/agencies/${agencyId}`, token);
       return response;
     } catch (error) {
-      console.error('Error creating user:', error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  updateUser: async (userId, userData) => {
-    try {
-      const token = authService.getToken();
-      const response = await api.putAuth(`/admin/users/${userId}`, userData, token);
-      return response;
-    } catch (error) {
-      console.error('Error updating user:', error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  deleteUser: async (userId) => {
-    try {
-      const token = authService.getToken();
-      const response = await api.deleteAuth(`/admin/users/${userId}`, token);
-      return response;
-    } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('Error deleting agency:', error);
       return { success: false, error: error.message };
     }
   },
@@ -71,7 +57,7 @@ const adminService = {
       return response;
     } catch (error) {
       console.error('Error getting services:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, services: [] };
     }
   },
 
@@ -116,7 +102,7 @@ const adminService = {
       return response;
     } catch (error) {
       console.error('Error getting counters:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, counters: [] };
     }
   },
 
@@ -153,47 +139,62 @@ const adminService = {
     }
   },
 
-  // ===== AGENCY MANAGEMENT =====
-  getAgencies: async () => {
+  // ===== USER MANAGEMENT =====
+  getUsers: async (page = 1, limit = 20, role = null, search = null) => {
     try {
       const token = authService.getToken();
-      const response = await api.getAuth('/admin/agencies', token);
+      let url = `/admin/users?page=${page}&limit=${limit}`;
+      if (role) url += `&role=${role}`;
+      if (search) url += `&search=${search}`;
+      
+      const response = await api.getAuth(url, token);
       return response;
     } catch (error) {
-      console.error('Error getting agencies:', error);
+      console.error('Error getting users:', error);
+      return { success: false, error: error.message, data: { users: [] } };
+    }
+  },
+
+  createUser: async (userData) => {
+    try {
+      const token = authService.getToken();
+      const response = await api.postAuth('/admin/users', userData, token);
+      return response;
+    } catch (error) {
+      console.error('Error creating user:', error);
       return { success: false, error: error.message };
     }
   },
 
-  createAgency: async (agencyData) => {
+  updateUser: async (userId, userData) => {
     try {
       const token = authService.getToken();
-      const response = await api.postAuth('/admin/agencies', agencyData, token);
+      const response = await api.putAuth(`/admin/users/${userId}`, userData, token);
       return response;
     } catch (error) {
-      console.error('Error creating agency:', error);
+      console.error('Error updating user:', error);
       return { success: false, error: error.message };
     }
   },
 
-  updateAgency: async (agencyId, agencyData) => {
+  deleteUser: async (userId) => {
     try {
       const token = authService.getToken();
-      const response = await api.putAuth(`/admin/agencies/${agencyId}`, agencyData, token);
+      const response = await api.deleteAuth(`/admin/users/${userId}`, token);
       return response;
     } catch (error) {
-      console.error('Error updating agency:', error);
+      console.error('Error deleting user:', error);
       return { success: false, error: error.message };
     }
   },
 
-  deleteAgency: async (agencyId) => {
+  resetPassword: async (userId) => {
     try {
       const token = authService.getToken();
-      const response = await api.deleteAuth(`/admin/agencies/${agencyId}`, token);
+      const response = await api.postAuth(`/admin/users/${userId}/reset-password`, {}, token);
       return response;
     } catch (error) {
-      console.error('Error deleting agency:', error);
+      console.error('Error resetting password:', error);
       return { success: false, error: error.message };
     }
   },

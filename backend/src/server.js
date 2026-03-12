@@ -33,7 +33,9 @@ const priorityRoutes = require('./routes/priorityRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const { sequelize } = require('./config/database');
 const surveyRoutes = require('./routes/surveyRoutes');
-
+const superAdminRoutes = require('./routes/superAdminRoutes');
+// Dans server.js, vers la ligne 600 avec les autres routes
+// app.use('/api/superadmin', superAdminRoutes);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -544,6 +546,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/priority', priorityRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/survey', surveyRoutes);
+app.use('/api/superadmin', superAdminRoutes);
 
 console.log('✅ Routes loaded:', [
   '/api/auth', '/api/employee', '/api/admin', '/api/queue',
