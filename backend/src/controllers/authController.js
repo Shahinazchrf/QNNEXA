@@ -103,7 +103,8 @@ const authController = {
         });
       }
 
-     const isValidPassword = (password === user.password);
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.password);
       
       if (!isValidPassword) {
         return res.status(401).json({
@@ -126,20 +127,19 @@ const authController = {
         { expiresIn: '24h' }
       );
 
-     res.json({
-  success: true,
-  message: 'Login successful',
-  user: {
-    id: user.id,
-    email: user.email,
-    first_name: user.first_name,
-    last_name: user.last_name,
-    role: user.role,
-    phone: user.phone,
-    is_vip: user.is_vip  // ← AJOUTE CETTE LIGNE
-  },
-  token
-});
+      res.json({
+        success: true,
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          phone: user.phone
+        },
+        token
+      });
 
     } catch (error) {
       console.error('Login error:', error);

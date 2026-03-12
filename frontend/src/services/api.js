@@ -1,9 +1,7 @@
 // frontend/src/services/api.js
 
-
 // IMPORTANT: Use your actual IP address
-const API_URL = 'http://10.24.11.243:5000/api';
-
+const API_URL = 'http://10.30.245.243:5000/api';
 const api = {
   // GET request
   get: async (endpoint) => {

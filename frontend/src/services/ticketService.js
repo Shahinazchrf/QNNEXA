@@ -1,7 +1,13 @@
 // frontend/src/services/ticketService.js
 
+// IMPORTS MANQUANTS - AJOUTEZ CES LIGNES AU DÉBUT DU FICHIER
 import api from './api';
 import authService from './authService';
+
+// Fonction pour récupérer le token
+const getAuthToken = () => {
+  return localStorage.getItem('auth_token') || localStorage.getItem('token');
+};
 
 const ticketService = {
   // Get all services
@@ -45,13 +51,21 @@ const ticketService = {
   // Create VIP ticket
   createVIPTicket: async (serviceCode, vipCode, customerName = 'VIP Client') => {
     try {
-      const token = authService.getToken();
-      const response = await api.postAuth('/tickets/vip/generate', {
-        service_code: serviceCode,
-        vip_code: vipCode,
-        customer_name: customerName
-      }, token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch('http://10.24.11.243:5000/api/tickets/vip/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          service_code: serviceCode,
+          vip_code: vipCode,
+          customer_name: customerName
+        })
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error creating VIP ticket:', error);
       return { success: false, error: error.message };
@@ -61,18 +75,26 @@ const ticketService = {
   // Book VIP appointment
   bookVIPAppointment: async (serviceCode, appointmentTime, vipCode, reason = '') => {
     try {
-      const token = authService.getToken();
+      const token = getAuthToken();
       const user = authService.getCurrentUser();
       
-      const response = await api.postAuth('/tickets/vip-appointment', {
-        clientId: user?.id,
-        serviceCode,
-        appointmentTime,
-        reason,
-        vipCode
-      }, token);
+      const response = await fetch('http://10.24.11.243:5000/api/tickets/vip-appointment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          clientId: user?.id,
+          serviceCode,
+          appointmentTime,
+          reason,
+          vipCode
+        })
+      });
       
-      return response;
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error booking appointment:', error);
       return { success: false, error: error.message };
@@ -116,9 +138,17 @@ const ticketService = {
   // Cancel ticket
   cancelTicket: async (ticketId, reason = '') => {
     try {
-      const token = authService.getToken();
-      const response = await api.postAuth(`/tickets/${ticketId}/cancel`, { reason }, token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch(`http://10.24.11.243:5000/api/tickets/${ticketId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ reason })
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error cancelling ticket:', error);
       return { success: false, error: error.message };
@@ -128,10 +158,15 @@ const ticketService = {
   // Get all tickets (admin)
   getAllTickets: async (status = null, limit = 50) => {
     try {
-      const token = authService.getToken();
+      const token = getAuthToken();
       const url = status ? `/tickets?status=${status}&limit=${limit}` : `/tickets?limit=${limit}`;
-      const response = await api.getAuth(url, token);
-      return response;
+      const response = await fetch(`http://10.24.11.243:5000/api${url}`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error getting all tickets:', error);
       return { success: false, error: error.message };
@@ -153,11 +188,30 @@ const ticketService = {
   // Call next ticket (employee)
   callNextTicket: async (counterId) => {
     try {
-      const token = authService.getToken();
-      const response = await api.postAuth('/employee/call-next', { counterId }, token);
-      return response;
+      const token = getAuthToken();
+      
+      if (!token) {
+        console.error('❌ No token found');
+        return { success: false, error: 'No authentication token' };
+      }
+
+      console.log('📞 Calling next ticket for counter:', counterId);
+      console.log('🔑 Using token:', token.substring(0, 15) + '...');
+
+      const response = await fetch('http://10.24.11.243:5000/api/employee/call-next', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ counterId })
+      });
+      
+      const data = await response.json();
+      console.log('📨 Response:', data);
+      return data;
     } catch (error) {
-      console.error('Error calling next ticket:', error);
+      console.error('❌ Error calling next ticket:', error);
       return { success: false, error: error.message };
     }
   },
@@ -165,9 +219,17 @@ const ticketService = {
   // Complete ticket (employee)
   completeTicket: async (ticketId) => {
     try {
-      const token = authService.getToken();
-      const response = await api.postAuth(`/tickets/${ticketId}/complete`, {}, token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch('http://10.24.11.243:5000/api/employee/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ ticketId })
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error completing ticket:', error);
       return { success: false, error: error.message };
@@ -177,9 +239,17 @@ const ticketService = {
   // Start serving ticket (employee)
   startServing: async (ticketId) => {
     try {
-      const token = authService.getToken();
-      const response = await api.postAuth('/employee/start-serving', { ticketId }, token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch('http://10.24.11.243:5000/api/employee/start-serving', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ ticketId })
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error starting service:', error);
       return { success: false, error: error.message };
@@ -189,9 +259,14 @@ const ticketService = {
   // Get employee dashboard
   getEmployeeDashboard: async () => {
     try {
-      const token = authService.getToken();
-      const response = await api.getAuth('/employee/dashboard', token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch('http://10.24.11.243:5000/api/employee/dashboard', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error getting employee dashboard:', error);
       return { success: false, error: error.message };
@@ -201,21 +276,31 @@ const ticketService = {
   // Get current ticket for counter
   getCurrentTicket: async (counterId) => {
     try {
-      const token = authService.getToken();
-      const response = await api.getAuth(`/employee/ticket/current?counterId=${counterId}`, token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch(`http://10.24.11.243:5000/api/employee/ticket/current?counterId=${counterId}`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error getting current ticket:', error);
       return { success: false, error: error.message };
     }
   },
 
-  // Get employee's counter - FIXED (moved outside)
+  // Get employee's counter
   getEmployeeCounter: async (employeeId) => {
     try {
-      const token = authService.getToken();
-      const response = await api.getAuth(`/employee/counter/${employeeId}`, token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch(`http://10.24.11.243:5000/api/employee/counter/${employeeId}`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error getting employee counter:', error);
       return { success: false, error: error.message };
@@ -225,13 +310,21 @@ const ticketService = {
   // Transfer ticket (admin)
   transferTicket: async (ticketId, newServiceCode, reason = '') => {
     try {
-      const token = authService.getToken();
-      const response = await api.postAuth('/tickets/transfer', {
-        ticketId,
-        newServiceCode,
-        reason
-      }, token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch('http://10.24.11.243:5000/api/tickets/transfer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          ticketId,
+          newServiceCode,
+          reason
+        })
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error transferring ticket:', error);
       return { success: false, error: error.message };
@@ -241,12 +334,20 @@ const ticketService = {
   // Prioritize ticket (admin)
   prioritizeTicket: async (ticketId, priority, reason = '') => {
     try {
-      const token = authService.getToken();
-      const response = await api.postAuth('/priority/prioritize/' + ticketId, {
-        priority,
-        reason
-      }, token);
-      return response;
+      const token = getAuthToken();
+      const response = await fetch(`http://10.24.11.243:5000/api/priority/prioritize/${ticketId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          priority,
+          reason
+        })
+      });
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error prioritizing ticket:', error);
       return { success: false, error: error.message };

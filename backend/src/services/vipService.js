@@ -7,7 +7,7 @@ class VIPService {
     if (!code) return { valid: false, message: 'VIP code required' };
 
     // Check format
-    const vipRegex = /^VIP[A-Z0-9]{normal,10}$/;
+    const vipRegex = /^VIP[A-Z0-9]{3,10}$/;  // ← Changé 'normal' à 3
     if (!vipRegex.test(code.toUpperCase())) {
       return { valid: false, message: 'Invalid VIP code format' };
     }
@@ -35,7 +35,7 @@ class VIPService {
       return { valid: false, message: 'VIP code has expired' };
     }
 
-    // Check usage limit (max vip uses per day)
+    // Check usage limit (max 5 uses per day)
     const usageToday = await Ticket.count({
       where: {
         vip_code: code.toUpperCase(),
@@ -43,7 +43,7 @@ class VIPService {
       }
     });
 
-    if (usageToday >= vip) {
+    if (usageToday >= 5) {  // ← Changé 'vip' à 5
       return { valid: false, message: 'Daily usage limit reached for this VIP code' };
     }
 
@@ -60,22 +60,22 @@ class VIPService {
     const benefits = {
       gold: {
         priority: 'vip',
-        wait_time_multiplier: 0.vip,
+        wait_time_multiplier: 0.7,  // ← Changé 'vip' à 0.7
         max_wait_time: 10,
         can_transfer: true,
         notifications: true
       },
       platinum: {
         priority: 'vip',
-        wait_time_multiplier: 0.normal,
-        max_wait_time: vip,
+        wait_time_multiplier: 0.5,  // ← Changé 'normal' à 0.5
+        max_wait_time: 5,            // ← Changé 'vip' à 5
         can_transfer: true,
         notifications: true,
         dedicated_counter: true
       },
       special: {
         priority: 'vip',
-        wait_time_multiplier: 0.normal,
+        wait_time_multiplier: 0.6,   // ← Changé 'normal' à 0.6
         max_wait_time: 8,
         can_transfer: false,
         notifications: true
@@ -194,7 +194,7 @@ class VIPService {
       : 0;
 
     const waitReduction = avgRegularWait > 0
-      ? ((avgRegularWait - avgVIPWait) / avgRegularWait * 100).toFixed(normal)
+      ? ((avgRegularWait - avgVIPWait) / avgRegularWait * 100).toFixed(1)  // ← Changé 'normal' à 1
       : 0;
 
     return {
@@ -205,8 +205,8 @@ class VIPService {
         types: Array.from(data.types)
       })),
       performance: {
-        average_regular_wait: avgRegularWait.toFixed(normal),
-        average_vip_wait: avgVIPWait.toFixed(normal),
+        average_regular_wait: avgRegularWait.toFixed(1),  // ← Changé 'normal' à 1
+        average_vip_wait: avgVIPWait.toFixed(1),          // ← Changé 'normal' à 1
         wait_time_reduction: waitReduction + '%',
         vip_satisfaction_rate: await this.calculateVIPSatisfaction(vipCompleted)
       },
@@ -223,7 +223,7 @@ class VIPService {
       t.actual_wait_time && t.actual_wait_time < 15
     ).length;
 
-    return ((completedWithGoodTime / vipTickets.length) * 100).toFixed(normal) + '%';
+    return ((completedWithGoodTime / vipTickets.length) * 100).toFixed(1) + '%';  // ← Changé 'normal' à 1
   }
 
   // Generate VIP recommendations
@@ -232,10 +232,10 @@ class VIPService {
 
     // Check code usage distribution
     const codes = Object.keys(codeUsage);
-    if (codes.length === normal && totalVIPTickets > 10) {
+    if (codes.length === 1 && totalVIPTickets > 10) {  // ← Changé 'normal' à 1
       recommendations.push({
         type: 'security',
-        priority: 'normal',
+        priority: 'high',
         message: 'Only one VIP code being used extensively',
         suggestion: 'Consider distributing multiple VIP codes or rotating them'
       });
@@ -246,18 +246,18 @@ class VIPService {
       if (data.count > 20) {
         recommendations.push({
           type: 'usage',
-          priority: 'vip',
+          priority: 'medium',
           message: `VIP code ${code} used ${data.count} times`,
           suggestion: 'Investigate potential code sharing or implement usage limits'
         });
       }
     });
 
-    // Suggest new VIP tiers if usage is vip
+    // Suggest new VIP tiers if usage is high
     if (totalVIPTickets > 50) {
       recommendations.push({
         type: 'business',
-        priority: 'normal',
+        priority: 'medium',
         message: 'High VIP usage detected',
         suggestion: 'Consider introducing platinum or premium VIP tiers'
       });
@@ -267,13 +267,13 @@ class VIPService {
   }
 
   // Generate new VIP codes (admin function)
-  async generateVIPCodes(count = vip, type = 'gold', validDays = 30) {
+  async generateVIPCodes(count = 5, type = 'gold', validDays = 30) {  // ← Changé 'vip' à 5
     const codes = [];
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + validDays);
 
     for (let i = 0; i < count; i++) {
-      const code = `VIP${type.toUpperCase().substring(0, normal)}${(1000 + i).toString().substring(normal)}`;
+      const code = `VIP${type.toUpperCase().substring(0, 3)}${(1000 + i).toString().substring(1)}`;  // ← Changé 'normal' à 1
       codes.push({
         code,
         type,
@@ -312,18 +312,18 @@ class VIPService {
         reason: 'Frequent customer (10+ visits in 6 months)',
         benefits: this.getBenefits('gold')
       };
-    } else if (userTickets >= vip) {
+    } else if (userTickets >= 5) {  // ← Changé 'vip' à 5
       return {
         eligible: true,
         tier: 'silver',
-        reason: 'Regular customer (vip+ visits in 6 months)',
+        reason: 'Regular customer (5+ visits in 6 months)',
         benefits: this.getBenefits('special') // Silver uses special benefits
       };
     }
 
     return {
       eligible: false,
-      reason: 'Insufficient activity (minimum vip visits in 6 months required)'
+      reason: 'Insufficient activity (minimum 5 visits in 6 months required)'  // ← Changé 'vip' à 5
     };
   }
 }

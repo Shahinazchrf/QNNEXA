@@ -12,11 +12,10 @@ const Tablet = () => {
   const [loading, setLoading] = useState(true);
   const [creatingTicket, setCreatingTicket] = useState(false);
   const [error, setError] = useState('');
-  const [showQR, setShowQR] = useState(true); // Ajout de l'état showQR
 
   // Your actual IP
-const computerIP = '10.24.11.243';
-const qrUrl = `http://${computerIP}:3000/qonnexea`;
+const computerIP = '10.30.245.243';
+  const qrUrl = `http://${computerIP}:3000/qonnexea`;
 
   // Load services from API
   useEffect(() => {
@@ -51,9 +50,7 @@ const qrUrl = `http://${computerIP}:3000/qonnexea`;
       scanCode: "Scan this code to access",
       qonnexea: "QONNEXEA",
       trackTurn: "track your turn",
-      physicalTicket: "PHYSICAL TICKET",
-      showQR: "Show QR Code",
-      hideQR: "Hide QR Code"
+      physicalTicket: "PHYSICAL TICKET"
     },
     fr: {
       welcome: "Bienvenue chez AGB",
@@ -62,9 +59,7 @@ const qrUrl = `http://${computerIP}:3000/qonnexea`;
       scanCode: "Scannez ce code pour accéder à",
       qonnexea: "QONNEXEA",
       trackTurn: "suivez votre tour",
-      physicalTicket: "TICKET PHYSIQUE",
-      showQR: "Afficher QR Code",
-      hideQR: "Cacher QR Code"
+      physicalTicket: "TICKET PHYSIQUE"
     }
   };
 
@@ -241,26 +236,18 @@ const qrUrl = `http://${computerIP}:3000/qonnexea`;
           <p className="scan-text">{t.scanCode}</p>
           <p className="virtual-label">VIRTUAL TICKETS</p>
           
-          {/* QR Code Button */}
-          <button className="qr-toggle-btn" onClick={() => setShowQR(!showQR)}>
-            {showQR ? t.hideQR : t.showQR}
-          </button>
-
-          {/* QR Code Display */}
-          {showQR && (
-            <div className="qr-container">
-              <div className="qr-code">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`}
-                  alt="QR Code QONNEXEA"
-                />
-              </div>
-              <div className="qr-brand">
-                <span>{t.qonnexea}</span>
-                <span>{t.trackTurn}</span>
-              </div>
+          <div className="qr-container">
+            <div className="qr-code">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`} 
+                alt="QR Code for virtual tickets"
+              />
             </div>
-          )}
+            <div className="qr-brand">
+              <span>{t.qonnexea}</span>
+              <span>{t.trackTurn}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

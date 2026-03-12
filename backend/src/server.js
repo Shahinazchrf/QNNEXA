@@ -12,7 +12,6 @@ const responseTime = require('response-time');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
-
 // Add this at the top of your server.js
 console.log('Server time:', new Date().toString());
 console.log('Server timezone offset:', new Date().getTimezoneOffset());
@@ -34,7 +33,6 @@ const priorityRoutes = require('./routes/priorityRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const { sequelize } = require('./config/database');
 const surveyRoutes = require('./routes/surveyRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -197,16 +195,21 @@ app.use(mongoSanitize());
 app.use(hpp());
 
 // 5. CORS configuré
+// ==================== CONFIGURATION CORS ====================
 const corsOptions = {
   origin: [
-   'http://localhost:3000',
-  'http://10.24.11.243:3000',
-  'http://10.24.11.243',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
+    'http://10.30.245.243:3000',
+    'http://10.30.245.243:3001',
+    'http://10.24.11.243:3000',
+    'http://10.24.11.243:3001',
     'http://10.158.95.243:3000',
     'http://10.158.95.243:3001',
-    'http://10.158.95.243',
-    'https://subjectional-galilea-unthawing.ngrok-free.app'
+    'http://192.168.1.100:3000',  // Vous pouvez ajouter d'autres IP si besoin
+    'http://192.168.1.100:3001'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -214,6 +217,15 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Ajoutez ça juste après app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
 
 // 6. Rate limiting
 const createLimiter = (windowMs, max) => rateLimit({
@@ -266,8 +278,6 @@ app.use(express.json({
     req.rawBody = buf.toString();
   }
 }));
-
-app.use('/api/notifications', notificationRoutes);
 
 app.use(express.urlencoded({ 
   extended: true, 
@@ -591,6 +601,9 @@ app.get('/api/counters', async (req, res) => {
   }
 });
 
+// ==================== TICKET ROUTES ====================
+
+// Create normal ticket (physical or virtual)
 // ==================== TICKET GENERATION ====================
 app.post('/api/tickets/generate', async (req, res) => {
   try {
@@ -742,7 +755,6 @@ console.log(`📊 Global waiting: ${totalWaitingCount}, Service waiting: ${servi
     });
   }
 });
-
 // VIP appointment booking
 app.post('/api/tickets/vip-appointment', async (req, res) => {
   try {
@@ -2058,69 +2070,18 @@ app.post('/api/admin/counters/:counterId/services', async (req, res) => {
 // Get counter by ID (admin)
 app.get('/api/admin/counters/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    const counter = await Counter.findByPk(id, {
+    const counter = await Counter.findByPk(req.params.id, {
       include: [
-        { 
-          model: User, 
-          as: 'counterEmployee',
-          attributes: ['id', 'first_name', 'last_name']
-        },
-        {
-          model: Agency,
-          as: 'counterAgency'
-        }
+        { model: User, as: 'counterEmployee' },
+        { model: Agency, as: 'counterAgency' }
       ]
     });
-    
     if (!counter) {
-      return res.status(404).json({
-        success: false,
-        error: 'Counter not found'
-      });
+      return res.status(404).json({ success: false, error: 'Counter not found' });
     }
-    
-    res.json({
-      success: true,
-      counter
-    });
+    res.json({ success: true, data: counter });
   } catch (error) {
-    console.error('❌ Get counter error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Update service
-app.put('/api/admin/services/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-    
-    const service = await Service.findByPk(id);
-    if (!service) {
-      return res.status(404).json({
-        success: false,
-        error: 'Service not found'
-      });
-    }
-    
-    await service.update(updates);
-    
-    res.json({
-      success: true,
-      message: 'Service updated successfully',
-      service
-    });
-  } catch (error) {
-    console.error('❌ Update service error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -2223,6 +2184,7 @@ async function startServer() {
       console.log('  GET  /api/stats/period           - Period statistics');
       console.log('  GET  /api/stats/realtime         - Real-time statistics');
       console.log('  GET  /api/admin/counters/:id     - Get counter by ID');
+      console.log('  GET  /api/test123                - Test endpoint');
       console.log('='.repeat(70));
       console.log('🔄 Auto-missed monitor: ACTIVE (runs every 5 minutes)');
       console.log('📡 WebSocket: ACTIVE (live updates enabled)');
@@ -2265,6 +2227,124 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// ==================== ENDPOINTS MANQUANTS AJOUTÉS ====================
+
+// Get counter by ID
+app.get('/api/admin/counters/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const counter = await Counter.findByPk(id, {
+      include: [
+        { 
+          model: User, 
+          as: 'counterEmployee',
+          attributes: ['id', 'first_name', 'last_name']
+        },
+        {
+          model: Agency,
+          as: 'counterAgency'
+        }
+      ]
+    });
+    
+    if (!counter) {
+      return res.status(404).json({
+        success: false,
+        error: 'Counter not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      counter
+    });
+  } catch (error) {
+    console.error('❌ Get counter error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Add services to counter
+app.post('/api/admin/counters/:counterId/services', async (req, res) => {
+  try {
+    const { counterId } = req.params;
+    const { service_codes } = req.body;
+    
+    if (!service_codes || !Array.isArray(service_codes)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Service codes array is required'
+      });
+    }
+    
+    const counter = await Counter.findByPk(counterId);
+    if (!counter) {
+      return res.status(404).json({
+        success: false,
+        error: 'Counter not found'
+      });
+    }
+    
+    const currentServices = counter.services || [];
+    const updatedServices = [...new Set([...currentServices, ...service_codes])];
+    
+    await counter.update({ services: updatedServices });
+    
+    res.json({
+      success: true,
+      message: 'Services added to counter successfully',
+      counter: {
+        id: counter.id,
+        number: counter.number,
+        services: updatedServices
+      }
+    });
+  } catch (error) {
+    console.error('❌ Add services to counter error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update service
+app.put('/api/admin/services/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const service = await Service.findByPk(id);
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        error: 'Service not found'
+      });
+    }
+    
+    await service.update(updates);
+    
+    res.json({
+      success: true,
+      message: 'Service updated successfully',
+      service
+    });
+  } catch (error) {
+    console.error('❌ Update service error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ==================== EMPLOYEE ROUTES ====================
+// Vérifiez que ces routes sont bien dans votre fichier routes/employeeRoutes.js
 
 console.log('✅ Endpoints manquants ajoutés!');
 

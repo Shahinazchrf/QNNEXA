@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import './EmployeeLogin.css';
 
-const EmployeeLogin = ({ onLogin }) => {  // ← Add onLogin prop here
+const EmployeeLogin = ({ onLogin }) => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,9 +23,7 @@ const EmployeeLogin = ({ onLogin }) => {  // ← Add onLogin prop here
       if (response.success) {
         const user = response.user;
         
-        // Check if user is employee or admin
         if (['employee', 'admin', 'super_admin'].includes(user.role)) {
-          // Call onLogin if it exists (for the /employee route)
           if (onLogin) {
             onLogin(user);
           }
