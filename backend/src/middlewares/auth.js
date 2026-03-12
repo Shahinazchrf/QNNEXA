@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
-// Middleware d'authentification principal
+// ==================== MIDDLEWARE D'AUTHENTIFICATION ====================
 const authMiddleware = async (req, res, next) => {
   try {
     // 1. Récupérer le token du header
@@ -122,6 +122,8 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
+// ==================== MIDDLEWARE DE RÔLES ====================
+
 // Middleware pour vérifier le rôle employee
 const requireEmployee = (req, res, next) => {
   if (!req.user) {
@@ -158,6 +160,25 @@ const requireAdmin = (req, res, next) => {
     res.status(403).json({
       success: false,
       error: 'Admin access required'
+    });
+  }
+};
+
+// Middleware pour vérifier le rôle super admin
+const requireSuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required'
+    });
+  }
+
+  if (req.user.role === 'super_admin') {
+    next();
+  } else {
+    res.status(403).json({
+      success: false,
+      error: 'Super admin access required'
     });
   }
 };
@@ -206,11 +227,13 @@ const requireOwnerOrAdmin = (req, res, next) => {
   }
 };
 
+// ==================== EXPORT ====================
 module.exports = {
   authMiddleware,
   requireEmployee,
   requireAdmin,
+  requireSuperAdmin,
   requireRole,
   requireOwnerOrAdmin,
-  auth: authMiddleware  // AJOUTE CETTE LIGNE
+  auth: authMiddleware
 };

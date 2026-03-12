@@ -1,12 +1,11 @@
 // frontend/src/services/ticketService.js
 
-// IMPORTS MANQUANTS - AJOUTEZ CES LIGNES AU DÉBUT DU FICHIER
+// IMPORTS
 import api from './api';
-import authService from './authService';
 
-// Fonction pour récupérer le token
-const getAuthToken = () => {
-  return localStorage.getItem('auth_token') || localStorage.getItem('token');
+// Fonction simple pour récupérer le token
+const getToken = () => {
+  return localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
 };
 
 const ticketService = {
@@ -15,7 +14,6 @@ const ticketService = {
     try {
       console.log('Fetching services from API...');
       const response = await api.get('/services');
-      console.log('Services API response:', response);
       return response;
     } catch (error) {
       console.error('Error getting services:', error);
@@ -23,24 +21,14 @@ const ticketService = {
     }
   },
 
-  // Create normal ticket with debug logs
+  // Create normal ticket
   createNormalTicket: async (serviceCode, customerName = 'Customer', ticketType = 'virtual') => {
-    console.log('========== TICKET SERVICE DEBUG ==========');
-    console.log('1. Function called with:', { serviceCode, customerName, ticketType });
-    console.log('2. Ticket type being sent:', ticketType);
-    console.log('3. Type of ticketType:', typeof ticketType);
-    console.log('4. Value being sent to API:', { serviceCode, customerName, ticketType });
-    
     try {
       const response = await api.post('/tickets/generate', {
         serviceCode,
         customerName,
         ticketType
       });
-      
-      console.log('5. Response from server:', response);
-      console.log('6. Ticket type in response:', response.ticket?.type);
-      console.log('==========================================');
       return response;
     } catch (error) {
       console.error('❌ Error creating ticket:', error);
@@ -51,8 +39,8 @@ const ticketService = {
   // Create VIP ticket
   createVIPTicket: async (serviceCode, vipCode, customerName = 'VIP Client') => {
     try {
-      const token = getAuthToken();
-      const response = await fetch('http://10.24.11.243:5000/api/tickets/vip/generate', {
+      const token = getToken();
+      const response = await fetch('http://10.30.245.243:5000/api/tickets/vip/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,24 +63,20 @@ const ticketService = {
   // Book VIP appointment
   bookVIPAppointment: async (serviceCode, appointmentTime, vipCode, reason = '') => {
     try {
-      const token = getAuthToken();
-      const user = authService.getCurrentUser();
-      
-      const response = await fetch('http://10.24.11.243:5000/api/tickets/vip-appointment', {
+      const token = getToken();
+      const response = await fetch('http://10.30.245.243:5000/api/tickets/vip-appointment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify({
-          clientId: user?.id,
           serviceCode,
           appointmentTime,
-          reason,
-          vipCode
+          vipCode,
+          reason
         })
       });
-      
       const data = await response.json();
       return data;
     } catch (error) {
@@ -113,7 +97,7 @@ const ticketService = {
     }
   },
 
-  // Get ticket by ID or number
+  // Get ticket by ID
   getTicket: async (ticketId) => {
     try {
       const response = await api.get(`/tickets/${ticketId}`);
@@ -138,8 +122,8 @@ const ticketService = {
   // Cancel ticket
   cancelTicket: async (ticketId, reason = '') => {
     try {
-      const token = getAuthToken();
-      const response = await fetch(`http://10.24.11.243:5000/api/tickets/${ticketId}/cancel`, {
+      const token = getToken();
+      const response = await fetch(`http://10.30.245.243:5000/api/tickets/${ticketId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -158,9 +142,9 @@ const ticketService = {
   // Get all tickets (admin)
   getAllTickets: async (status = null, limit = 50) => {
     try {
-      const token = getAuthToken();
+      const token = getToken();
       const url = status ? `/tickets?status=${status}&limit=${limit}` : `/tickets?limit=${limit}`;
-      const response = await fetch(`http://10.24.11.243:5000/api${url}`, {
+      const response = await fetch(`http://10.30.245.243:5000/api${url}`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : ''
         }
@@ -188,17 +172,13 @@ const ticketService = {
   // Call next ticket (employee)
   callNextTicket: async (counterId) => {
     try {
-      const token = getAuthToken();
+      const token = getToken();
       
       if (!token) {
-        console.error('❌ No token found');
         return { success: false, error: 'No authentication token' };
       }
 
-      console.log('📞 Calling next ticket for counter:', counterId);
-      console.log('🔑 Using token:', token.substring(0, 15) + '...');
-
-      const response = await fetch('http://10.24.11.243:5000/api/employee/call-next', {
+      const response = await fetch('http://10.30.245.243:5000/api/employee/call-next', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +188,6 @@ const ticketService = {
       });
       
       const data = await response.json();
-      console.log('📨 Response:', data);
       return data;
     } catch (error) {
       console.error('❌ Error calling next ticket:', error);
@@ -219,8 +198,8 @@ const ticketService = {
   // Complete ticket (employee)
   completeTicket: async (ticketId) => {
     try {
-      const token = getAuthToken();
-      const response = await fetch('http://10.24.11.243:5000/api/employee/complete', {
+      const token = getToken();
+      const response = await fetch('http://10.30.245.243:5000/api/employee/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -237,30 +216,42 @@ const ticketService = {
   },
 
   // Start serving ticket (employee)
-  startServing: async (ticketId) => {
-    try {
-      const token = getAuthToken();
-      const response = await fetch('http://10.24.11.243:5000/api/employee/start-serving', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        },
-        body: JSON.stringify({ ticketId })
-      });
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error starting service:', error);
-      return { success: false, error: error.message };
+  // frontend/src/services/ticketService.js
+
+// Start serving ticket (employee) - VERSION CORRIGÉE
+startServing: async (ticketId) => {
+  try {
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+    
+    if (!token) {
+      return { success: false, error: 'No token' };
     }
-  },
+
+    console.log('▶️ Start serving ticket:', ticketId);
+    
+    const response = await fetch('http://10.30.245.243:5000/api/employee/start-serving', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ ticketId })
+    });
+    
+    const data = await response.json();
+    console.log('✅ Start serving response:', data);
+    return data;
+  } catch (error) {
+    console.error('Error starting service:', error);
+    return { success: false, error: error.message };
+  }
+},
 
   // Get employee dashboard
   getEmployeeDashboard: async () => {
     try {
-      const token = getAuthToken();
-      const response = await fetch('http://10.24.11.243:5000/api/employee/dashboard', {
+      const token = getToken();
+      const response = await fetch('http://10.30.245.243:5000/api/employee/dashboard', {
         headers: {
           'Authorization': token ? `Bearer ${token}` : ''
         }
@@ -276,8 +267,8 @@ const ticketService = {
   // Get current ticket for counter
   getCurrentTicket: async (counterId) => {
     try {
-      const token = getAuthToken();
-      const response = await fetch(`http://10.24.11.243:5000/api/employee/ticket/current?counterId=${counterId}`, {
+      const token = getToken();
+      const response = await fetch(`http://10.30.245.243:5000/api/employee/ticket/current?counterId=${counterId}`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : ''
         }
@@ -290,19 +281,31 @@ const ticketService = {
     }
   },
 
-  // Get employee's counter
+  // ⚠️ VERSION CORRIGÉE DE getEmployeeCounter ⚠️
   getEmployeeCounter: async (employeeId) => {
     try {
-      const token = getAuthToken();
-      const response = await fetch(`http://10.24.11.243:5000/api/employee/counter/${employeeId}`, {
+      const token = getToken();
+      
+      console.log('📡 Token présent:', token ? 'OUI' : 'NON');
+      
+      if (!token) {
+        console.error('❌ PAS DE TOKEN - Reconnectez-vous');
+        return { success: false, error: 'No token' };
+      }
+
+      const response = await fetch(`http://10.30.245.243:5000/api/employee/counter/${employeeId}`, {
+        method: 'GET',
         headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
+      
       const data = await response.json();
+      console.log('📥 Réponse compteur:', data);
       return data;
     } catch (error) {
-      console.error('Error getting employee counter:', error);
+      console.error('❌ Erreur compteur:', error);
       return { success: false, error: error.message };
     }
   },
@@ -310,8 +313,8 @@ const ticketService = {
   // Transfer ticket (admin)
   transferTicket: async (ticketId, newServiceCode, reason = '') => {
     try {
-      const token = getAuthToken();
-      const response = await fetch('http://10.24.11.243:5000/api/tickets/transfer', {
+      const token = getToken();
+      const response = await fetch('http://10.30.245.243:5000/api/tickets/transfer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -334,8 +337,8 @@ const ticketService = {
   // Prioritize ticket (admin)
   prioritizeTicket: async (ticketId, priority, reason = '') => {
     try {
-      const token = getAuthToken();
-      const response = await fetch(`http://10.24.11.243:5000/api/priority/prioritize/${ticketId}`, {
+      const token = getToken();
+      const response = await fetch(`http://10.30.245.243:5000/api/priority/prioritize/${ticketId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

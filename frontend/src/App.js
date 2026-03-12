@@ -19,6 +19,8 @@ import VipLogin from './pages/VipLogin';
 import VipDashboard from './pages/VipDashboard';
 import AdminLogin from './pages/AdminLogin';
 import TrackMyQueue from './pages/TrackMyQueue';
+import SuperAdminLogin from './pages/SuperAdminLogin';
+
 
 import './App.css';
 
@@ -157,6 +159,8 @@ function App() {
               />
             }
           />
+
+          <Route path="/superadmin-login" element={<SuperAdminLogin />} />
 
         </Routes>
       </div>
