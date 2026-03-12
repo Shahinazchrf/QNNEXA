@@ -1,7 +1,6 @@
 // frontend/src/pages/VipDashboard.jsx
 
 import React, { useState, useEffect } from 'react';
-
 import authService from '../services/authService';
 
 const VipDashboard = ({ user, onLogout }) => {
@@ -10,7 +9,7 @@ const VipDashboard = ({ user, onLogout }) => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+  const [bookedSlots, setBookedSlots] = useState([]);
   // Notifications state
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -18,12 +17,39 @@ const VipDashboard = ({ user, onLogout }) => {
   
   // Form state
   const [formData, setFormData] = useState({
+    serviceId: '',
     serviceCode: '',
     date: '',
     time: '',
     branch: 'Algiers Main',
     notes: ''
   });
+
+
+
+  // Ajoute avant le return du composant
+const loadBookedSlots = async (date, serviceId) => {
+  try {
+    const token = authService.getToken();
+    const response = await fetch(
+      `http://10.254.49.248:5000/api/vip/available-slots?date=${date}&serviceId=${serviceId}`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    const data = await response.json();
+    if (data.success) {
+      setBookedSlots(data.bookedSlots || []); // Stocke les créneaux pris
+    }
+  } catch (err) {
+    console.error('Error loading slots:', err);
+  }
+};
+
+// Appelle cette fonction quand la date ou le service change
+useEffect(() => {
+  if (formData.date && formData.serviceId) {
+    loadBookedSlots(formData.date, formData.serviceId);
+  }
+}, [formData.date, formData.serviceId]);
 
   // Charger les notifications
   const loadNotifications = async () => {
@@ -81,8 +107,10 @@ const VipDashboard = ({ user, onLogout }) => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
+        console.log('📦 Appointments data:', data);
+        
         if (data.success) {
-          setAppointments(data.appointments);
+          setAppointments(data.appointments || []);
         } else {
           setError('Erreur chargement rendez-vous');
         }
@@ -131,6 +159,8 @@ const VipDashboard = ({ user, onLogout }) => {
   ];
 
   const handleInputChange = (e) => {
+     console.log('📝 Champ modifié:', e.target.name, '=', e.target.value);  // ← AJOUTE ÇA
+  console.log('📝 Nouveau formData:', {...formData, [e.target.name]: e.target.value});  // ← AJOUTE ÇA
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -142,14 +172,6 @@ const VipDashboard = ({ user, onLogout }) => {
     setLoading(true);
     
     try {
-      // Trouver le service sélectionné
-      const selectedService = services.find(s => s.name === formData.serviceCode);
-      if (!selectedService) {
-        setError('Service not found');
-        setLoading(false);
-        return;
-      }
-
       const token = authService.getToken();
       const appointmentDateTime = `${formData.date}T${formData.time}:00`;
       
@@ -160,7 +182,7 @@ const VipDashboard = ({ user, onLogout }) => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          serviceId: selectedService.id,
+          serviceId: formData.serviceId,
           scheduledTime: appointmentDateTime,
           notes: formData.notes
         })
@@ -172,6 +194,7 @@ const VipDashboard = ({ user, onLogout }) => {
         alert('✅ Demande de rendez-vous envoyée');
         setShowAppointmentForm(false);
         setFormData({
+          serviceId: '',
           serviceCode: '',
           date: '',
           time: '',
@@ -185,7 +208,7 @@ const VipDashboard = ({ user, onLogout }) => {
         });
         const appointmentsData = await appointmentsRes.json();
         if (appointmentsData.success) {
-          setAppointments(appointmentsData.appointments);
+          setAppointments(appointmentsData.appointments || []);
         }
         
       } else {
@@ -199,85 +222,165 @@ const VipDashboard = ({ user, onLogout }) => {
     }
   };
 
-  const renderAppointments = () => (
+  // Fonction pour obtenir le nom du service
+  const getServiceName = (serviceId) => {
+    const service = services.find(s => s.id === serviceId);
+    return service ? (service.description || service.name || service.code || serviceId) : serviceId;
+  };
+
+const renderAppointments = () => {
+  // Séparer les RDV par catégorie
+  const now = new Date();
+  
+  const pastAppointments = appointments.filter(apt => {
+    const aptDate = new Date(apt.scheduled_time);
+    return aptDate < now;
+  });
+  
+  const pendingAppointments = appointments.filter(apt => {
+    const aptDate = new Date(apt.scheduled_time);
+    return aptDate >= now && (apt.status === 'pending' || apt.confirmation_status === 'pending');
+  });
+  
+  const confirmedAppointments = appointments.filter(apt => {
+    const aptDate = new Date(apt.scheduled_time);
+    return aptDate >= now && (apt.status === 'confirmed' || apt.confirmation_status === 'confirmed');
+  });
+
+  const renderAppointmentCard = (apt, type) => {
+    const isPending = apt.status === 'pending' || apt.confirmation_status === 'pending';
+    const isConfirmed = apt.status === 'confirmed' || apt.confirmation_status === 'confirmed';
+    
+    let borderColor = '#999'; // passé
+    if (type === 'pending') borderColor = '#FFA500';
+    if (type === 'confirmed') borderColor = '#0B2E59';
+    
+    return (
+      <div key={apt.id} style={{ 
+        background: 'white', 
+        padding: '20px', 
+        borderRadius: '10px', 
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)', 
+        borderLeft: `4px solid ${borderColor}`,
+        marginBottom: '10px',
+        opacity: type === 'past' ? 0.7 : 1
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
+              <h3 style={{ fontSize: '20px', color: '#0B2E59', fontWeight: 'bold' }}>
+                {apt.service?.name || getServiceName(apt.service_id)}
+              </h3>
+              <span style={{ 
+                background: '#D71920', 
+                color: 'white', 
+                padding: '3px 10px', 
+                borderRadius: '12px', 
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                VIP
+              </span>
+              <span style={{ 
+                background: isConfirmed ? '#0B2E59' : isPending ? '#FFA500' : '#999', 
+                color: 'white', 
+                padding: '3px 10px', 
+                borderRadius: '12px', 
+                fontSize: '12px'
+              }}>
+                {type === 'past' ? 'Passé' : isConfirmed ? 'Confirmé' : 'En attente'}
+              </span>
+            </div>
+            
+            <p style={{ color: '#666', marginBottom: '5px' }}>
+              📅 {apt.scheduled_time ? new Date(apt.scheduled_time).toLocaleDateString('fr-FR') : 'Date non définie'} 
+              {apt.scheduled_time && ` à ${new Date(apt.scheduled_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+            </p>
+            
+            {apt.advisor && (
+              <p style={{ color: '#0B2E59', marginBottom: '5px' }}>
+                👤 Conseiller: {apt.advisor.user?.first_name} {apt.advisor.user?.last_name}
+              </p>
+            )}
+            
+            {apt.notes && (
+              <p style={{ color: '#666', fontSize: '14px', fontStyle: 'italic' }}>
+                Notes: {apt.notes}
+              </p>
+            )}
+
+            {apt.confirmed_at && (
+              <p style={{ color: '#0B2E59', fontSize: '12px', marginTop: '5px' }}>
+                ✔ Confirmé le: {new Date(apt.confirmed_at).toLocaleDateString('fr-FR')} à {new Date(apt.confirmed_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '22px', color: '#0B2E59' }}>My VIP Appointments</h2>
+        <h2 style={{ fontSize: '22px', color: '#0B2E59' }}>Mes Rendez-vous VIP</h2>
         <button 
           onClick={() => setShowAppointmentForm(true)}
           style={{ background: '#0B2E59', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
         >
-          + New Appointment
+          + Nouveau rendez-vous
         </button>
       </div>
 
-      {loading && <p>Loading appointments...</p>}
+      {loading && <p>Chargement...</p>}
       {error && <p style={{ color: '#D71920' }}>{error}</p>}
 
       {!loading && appointments.length === 0 ? (
-        <p style={{ color: '#999', textAlign: 'center', padding: '40px' }}>No appointments found</p>
+        <p style={{ color: '#999', textAlign: 'center', padding: '40px' }}>Aucun rendez-vous trouvé</p>
       ) : (
-        <div style={{ display: 'grid', gap: '15px' }}>
-          {appointments.map(apt => (
-            <div key={apt.id} style={{ 
-              background: 'white', 
-              padding: '20px', 
-              borderRadius: '10px', 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)', 
-              borderLeft: apt.confirmation_status === 'confirmed' ? '4px solid #0B2E59' : '4px solid #FFA500'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
-                    <h3 style={{ fontSize: '20px', color: '#0B2E59', fontWeight: 'bold' }}>
-                      {apt.service?.name || apt.service_id}
-                    </h3>
-                    <span style={{ 
-                      background: '#D71920', 
-                      color: 'white', 
-                      padding: '3px 10px', 
-                      borderRadius: '12px', 
-                      fontSize: '12px',
-                      fontWeight: 'bold'
-                    }}>
-                      VIP
-                    </span>
-                    <span style={{ 
-                      background: apt.confirmation_status === 'confirmed' ? '#0B2E59' : '#FFA500', 
-                      color: 'white', 
-                      padding: '3px 10px', 
-                      borderRadius: '12px', 
-                      fontSize: '12px'
-                    }}>
-                      {apt.confirmation_status === 'confirmed' ? 'Confirmed' : 'Pending'}
-                    </span>
-                  </div>
-                  
-                  <p style={{ color: '#666', marginBottom: '5px' }}>
-                    📅 {new Date(apt.scheduled_time).toLocaleDateString()} at {new Date(apt.scheduled_time).toLocaleTimeString()} 
-                  </p>
-                  
-                  {apt.advisor && (
-                    <p style={{ color: '#0B2E59', marginBottom: '5px' }}>
-                      👤 Advisor: {apt.advisor.user?.first_name} {apt.advisor.user?.last_name}
-                    </p>
-                  )}
-                  
-                  {apt.notes && (
-                    <p style={{ color: '#666', fontSize: '14px', fontStyle: 'italic' }}>
-                      Notes: {apt.notes}
-                    </p>
-                  )}
-                </div>
-              </div>
+        <div>
+          {/* RDV Confirmés */}
+          {confirmedAppointments.length > 0 && (
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{ color: '#0B2E59', marginBottom: '15px', fontSize: '18px' }}>
+                ✅ À venir - Confirmés ({confirmedAppointments.length})
+              </h3>
+              {confirmedAppointments.map(apt => renderAppointmentCard(apt, 'confirmed'))}
             </div>
-          ))}
+          )}
+
+          {/* RDV En attente */}
+          {pendingAppointments.length > 0 && (
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{ color: '#FFA500', marginBottom: '15px', fontSize: '18px' }}>
+                ⏳ À venir - En attente ({pendingAppointments.length})
+              </h3>
+              {pendingAppointments.map(apt => renderAppointmentCard(apt, 'pending'))}
+            </div>
+          )}
+
+          {/* RDV Passés */}
+          {pastAppointments.length > 0 && (
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{ color: '#999', marginBottom: '15px', fontSize: '18px' }}>
+                📅 Passés ({pastAppointments.length})
+              </h3>
+              {pastAppointments.map(apt => renderAppointmentCard(apt, 'past'))}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
+};
+const renderAppointmentForm = () => {
+  // Générer les créneaux de 9h à 16h30 toutes les 30 minutes
+  const timeSlots = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
+  ];
 
-  const renderAppointmentForm = () => (
+  return (
     <div style={{ 
       position: 'fixed', 
       top: 0, 
@@ -292,44 +395,94 @@ const VipDashboard = ({ user, onLogout }) => {
     }}>
       <div style={{ 
         background: 'white', 
-        borderRadius: '15px', 
-        padding: '40px', 
+        borderRadius: '16px', 
+        padding: '32px', 
         width: '90%', 
-        maxWidth: '500px', 
+        maxWidth: '600px', 
         maxHeight: '90vh', 
-        overflow: 'auto' 
+        overflow: 'auto',
+        boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
       }}>
-        <h2 style={{ fontSize: '24px', color: '#0B2E59', marginBottom: '20px' }}>New VIP Appointment</h2>
-        <p style={{ color: '#D71920', marginBottom: '20px', fontSize: '14px' }}>
-          ⭐ Your appointment request will be sent for confirmation
-        </p>
         
-        {error && <p style={{ color: '#D71920', marginBottom: '15px' }}>{error}</p>}
-        
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '24px', color: '#0B2E59', margin: 0, fontWeight: '600' }}>
+            Schedule VIP Appointment
+          </h2>
+          <button 
+            onClick={() => setShowAppointmentForm(false)} 
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              fontSize: '24px', 
+              cursor: 'pointer',
+              color: '#666'
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ 
+            background: '#fee', 
+            color: '#c00', 
+            padding: '12px', 
+            borderRadius: '8px', 
+            marginBottom: '20px',
+            fontSize: '14px'
+          }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmitAppointment}>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>Service *</label>
+          
+          {/* Service Selection */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              color: '#0B2E59', 
+              fontWeight: '500',
+              fontSize: '14px'
+            }}>
+              Service *
+            </label>
             <select 
-              name="serviceCode" 
-              value={formData.serviceCode} 
+              name="serviceId" 
+              value={formData.serviceId} 
               onChange={handleInputChange} 
               required 
               style={{ 
                 width: '100%', 
                 padding: '12px', 
-                border: '1px solid #E0E0E0', 
-                borderRadius: '5px' 
+                border: '1px solid #ddd', 
+                borderRadius: '8px', 
+                fontSize: '16px',
+                background: 'white'
               }}
             >
               <option value="">Select a service</option>
               {services.map(s => (
-                <option key={s.id} value={s.name}>{s.name || s.code}</option>
+                <option key={s.id} value={s.id}>
+                  {s.description || s.name || s.code}
+                </option>
               ))}
             </select>
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>Date *</label>
+          {/* Date Selection */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              color: '#0B2E59', 
+              fontWeight: '500',
+              fontSize: '14px'
+            }}>
+              Date *
+            </label>
             <input 
               type="date" 
               name="date" 
@@ -340,31 +493,85 @@ const VipDashboard = ({ user, onLogout }) => {
               style={{ 
                 width: '100%', 
                 padding: '12px', 
-                border: '1px solid #E0E0E0', 
-                borderRadius: '5px' 
+                border: '1px solid #ddd', 
+                borderRadius: '8px', 
+                fontSize: '16px'
               }} 
             />
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>Time *</label>
-            <input 
-              type="time" 
-              name="time" 
-              value={formData.time} 
-              onChange={handleInputChange} 
-              required 
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                border: '1px solid #E0E0E0', 
-                borderRadius: '5px' 
-              }} 
-            />
-          </div>
+          {/* Time Slots */}
+          {formData.date && (
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '12px', 
+                color: '#0B2E59', 
+                fontWeight: '500',
+                fontSize: '14px'
+              }}>
+                Available Time Slots *
+              </label>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(4, 1fr)', 
+                gap: '10px'
+              }}>
+                {timeSlots.map(time => {
+                  // Vérifier si le créneau est déjà pris
+                 const isBooked = bookedSlots.includes(time);
+                  const isSelected = formData.time === time;
+                  
+                  let backgroundColor = '#f5f5f5';
+                  let textColor = '#333';
+                  let cursor = 'pointer';
+                  
+                  if (isBooked) {
+                    backgroundColor = '#f0f0f0';
+                    textColor = '#ccc';
+                    cursor = 'not-allowed';
+                  } else if (isSelected) {
+                    backgroundColor = '#0B2E59';
+                    textColor = 'white';
+                  }
+                  
+                  return (
+                    <button
+                      key={time}
+                      type="button"
+                      onClick={() => !isBooked && setFormData({...formData, time})}
+                      disabled={isBooked}
+                      style={{
+                        padding: '12px 8px',
+                        background: backgroundColor,
+                        color: textColor,
+                        border: isSelected ? '1px solid #0B2E59' : '1px solid #ddd',
+                        borderRadius: '8px',
+                        cursor: cursor,
+                        fontSize: '14px',
+                        fontWeight: isSelected ? '500' : 'normal',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {time}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>Branch *</label>
+          {/* Branch */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              color: '#0B2E59', 
+              fontWeight: '500',
+              fontSize: '14px'
+            }}>
+              Branch *
+            </label>
             <select 
               name="branch" 
               value={formData.branch} 
@@ -373,72 +580,93 @@ const VipDashboard = ({ user, onLogout }) => {
               style={{ 
                 width: '100%', 
                 padding: '12px', 
-                border: '1px solid #E0E0E0', 
-                borderRadius: '5px' 
+                border: '1px solid #ddd', 
+                borderRadius: '8px', 
+                fontSize: '16px',
+                background: 'white'
               }}
             >
               {branches.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>Notes (optional)</label>
+          {/* Notes */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              color: '#0B2E59', 
+              fontWeight: '500',
+              fontSize: '14px'
+            }}>
+              Notes (optional)
+            </label>
             <textarea 
               name="notes" 
               value={formData.notes} 
               onChange={handleInputChange} 
               rows="3" 
+              placeholder="Any special requests?"
               style={{ 
                 width: '100%', 
                 padding: '12px', 
-                border: '1px solid #E0E0E0', 
-                borderRadius: '5px' 
+                border: '1px solid #ddd', 
+                borderRadius: '8px', 
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                resize: 'vertical'
               }} 
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              type="submit" 
-              disabled={loading}
-              style={{ 
-                flex: 1, 
-                background: '#0B2E59', 
-                color: 'white', 
-                padding: '14px', 
-                border: 'none', 
-                borderRadius: '5px', 
-                fontSize: '16px', 
-                fontWeight: 'bold', 
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1
-              }}
-            >
-              {loading ? 'Sending...' : 'Send Request'}
-            </button>
+          {/* Buttons */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px', 
+            justifyContent: 'flex-end',
+            borderTop: '1px solid #eee',
+            paddingTop: '20px'
+          }}>
             <button 
               type="button" 
               onClick={() => setShowAppointmentForm(false)} 
               style={{ 
-                flex: 1, 
+                padding: '12px 24px', 
                 background: 'white', 
-                color: '#D71920', 
-                border: '1px solid #D71920', 
-                padding: '14px', 
-                borderRadius: '5px', 
-                fontSize: '16px', 
-                cursor: 'pointer' 
+                color: '#666', 
+                border: '1px solid #ddd', 
+                borderRadius: '8px', 
+                fontSize: '15px', 
+                cursor: 'pointer'
               }}
             >
               Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading || !formData.time}
+              style={{ 
+                padding: '12px 32px', 
+                background: '#0B2E59', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '8px', 
+                fontSize: '15px', 
+                fontWeight: '500', 
+                cursor: (loading || !formData.time) ? 'not-allowed' : 'pointer',
+                opacity: (loading || !formData.time) ? 0.7 : 1
+              }}
+            >
+              {loading ? 'Scheduling...' : 'Schedule'}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
+};
 
-  // Composant de notification corrigé
+  // Composant de notification
   const NotificationBell = () => (
     <div style={{ position: 'relative', display: 'inline-block' }}>
       <button
