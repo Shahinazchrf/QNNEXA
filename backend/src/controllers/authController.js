@@ -127,19 +127,22 @@ const authController = {
         { expiresIn: '24h' }
       );
 
+
+
+
       res.json({
-        success: true,
-        message: 'Login successful',
-        user: {
-          id: user.id,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: user.role,
-          phone: user.phone
-        },
-        token
-      });
+  success: true,
+  message: 'Login successful',
+  token,
+  user: {
+    id: user.id,
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    role: user.role,
+    is_vip: user.is_vip  // ← AJOUTE CETTE LIGNE
+  }
+});
 
     } catch (error) {
       console.error('Login error:', error);

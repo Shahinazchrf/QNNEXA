@@ -20,22 +20,34 @@ const AdminLogin = ({ onLogin }) => {
       // For admin login, we use email field with username
       const email = username.includes('@') ? username : `${username}@bank.com`;
       
-      const response = await authService.login(email, password);
+      // Utiliser fetch directement au lieu de authService.login
+      const response = await fetch('http://10.254.49.248:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
       
-      if (response.success) {
-        const user = response.user;
+      if (data.success) {
+        const user = data.user;
         
         // Check if user is admin
-        if (['admin', 'super_admin'].includes(user.role)) {
+        if (['admin', 'super_admin', 'counter_admin'].includes(user.role)) {
+          
+          // ✅ SAUVEGARDE DANS LOCALSTORAGE
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(user));
+          
           onLogin(user);
         } else {
           setError('This account does not have admin privileges');
-          authService.logout();
         }
       } else {
-        setError(response.error || 'Invalid username or password');
+        setError(data.error || 'Invalid username or password');
       }
     } catch (err) {
+      console.error('❌ Login error:', err);
       setError('Login failed. Please try again.');
     } finally {
       setLoading(false);

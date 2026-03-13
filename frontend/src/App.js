@@ -1,6 +1,6 @@
 // frontend/src/App.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Tablet from './pages/Tablet';
@@ -8,7 +8,6 @@ import QrScanResult from './pages/QrScanResult';
 import CreateTicket from './pages/CreateTicket';
 import QueuePage from './pages/QueuePage';           // Pour tickets VIRTUELS
 import TrackQueue from './pages/TrackQueue';          // Pour tickets PHYSIQUES
-import TrackMyQueue from './pages/TrackMyQueue';      // Alternative pour virtuels
 import Satisfaction from './pages/Satisfaction';
 import FAQ from './pages/FAQ';
 import SupportChat from './pages/SupportChat';
@@ -29,6 +28,38 @@ function App() {
   const [employeeUser, setEmployeeUser] = useState(null);
   const [adminUser, setAdminUser] = useState(null);
 
+  // ✅ SESSION - Garder la connexion après rafraîchissement
+  useEffect(() => {
+    console.log('🔍 Vérification localStorage...');
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    console.log('📦 token:', token ? 'oui' : 'non');
+    console.log('📦 userStr:', userStr);
+    
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        console.log('👤 Utilisateur trouvé:', user);
+        
+        if (user.is_vip || user.role === 'vip_client' || (user.role === 'client' && user.is_vip)) {
+          console.log('✅ VIP détecté, restauration...');
+          setVipUser(user);
+        } else if (user.role === 'employee') {
+          console.log('✅ Employé détecté, restauration...');
+          setEmployeeUser(user);
+        } else if (user.role === 'admin' || user.role === 'super_admin') {
+          console.log('✅ Admin détecté, restauration...');
+          setAdminUser(user);
+        }
+      } catch (e) {
+        console.error('❌ Erreur parsing:', e);
+      }
+    } else {
+      console.log('🚫 Aucune session trouvée');
+    }
+  }, []);
+
   return (
     <Router>
       <div className="App">
@@ -44,7 +75,7 @@ function App() {
           <Route path="/support" element={<SupportChat />} />
 
           {/* ===== SUIVI DES TICKETS ===== */}
-          <Route path="/queue" element={<QueuePage />} />           {/* VIRTUELS */} 
+          <Route path="/queue" element={<QueuePage />} />           {/* VIRTUELS */}
           <Route path="/track-queue" element={<TrackQueue />} />    {/* PHYSIQUES */}
 
           {/* ===== SATISFACTION ===== */}
@@ -59,7 +90,11 @@ function App() {
               employeeUser ? (
                 <EmployeeDashboard
                   employee={employeeUser}
-                  onLogout={() => setEmployeeUser(null)}
+                  onLogout={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setEmployeeUser(null);
+                  }}
                 />
               ) : (
                 <EmployeeLogin onLogin={(emp) => setEmployeeUser(emp)} />
@@ -74,7 +109,11 @@ function App() {
               vipUser ? (
                 <VipDashboard
                   user={vipUser}
-                  onLogout={() => setVipUser(null)}
+                  onLogout={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setVipUser(null);
+                  }}
                 />
               ) : (
                 <VipLogin onLogin={(user) => setVipUser(user)} />
@@ -89,7 +128,11 @@ function App() {
               adminUser ? (
                 <CounterAdminDashboard
                   admin={adminUser}
-                  onLogout={() => setAdminUser(null)}
+                  onLogout={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setAdminUser(null);
+                  }}
                 />
               ) : (
                 <AdminLogin onLogin={(user) => setAdminUser(user)} />
@@ -104,7 +147,11 @@ function App() {
             element={
               <SuperAdminDashboard
                 admin={{ first_name: 'Super', last_name: 'Admin' }}
-                onLogout={() => window.location.href = '/'}
+                onLogout={() => {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  window.location.href = '/';
+                }}
               />
             }
           />

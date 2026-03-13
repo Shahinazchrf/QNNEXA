@@ -3,7 +3,7 @@ const { Sequelize } = require('sequelize');
 const sequelize = new Sequelize(
   'bank_queue_pfe',
   'pfe_user',
-  '22-06-2005ninaz',
+  'pfe_password123',
   {
     host: 'localhost',
     dialect: 'mysql',
@@ -16,4 +16,5 @@ const sequelize = new Sequelize(
     }
   }
 );
+
 module.exports = { sequelize };
