@@ -1,4 +1,5 @@
 // models/Notification.js
+// models/Notification.js
 const database = require('../config/database');
 const sequelize = database.sequelize;
 const { DataTypes } = require('sequelize');
@@ -13,11 +14,11 @@ const Notification = sequelize.define('Notification', {
     type: DataTypes.UUID,
     allowNull: true
   },
- ticket_id: {
-  type: DataTypes.UUID,
-  allowNull: true,  // ← CHANGE false → true
-  field: 'ticket_id'
-},
+  ticket_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'ticket_id'
+  },
   type: {
     type: DataTypes.ENUM(
       'upcoming_turn',
@@ -26,10 +27,10 @@ const Notification = sequelize.define('Notification', {
       'vip_priority',
       'counter_change',
       'general',
-      'info',        // <-- AJOUTÉ
-      'warning',     // <-- AJOUTÉ
-      'success',     // <-- AJOUTÉ
-      'test'         // <-- AJOUTÉ
+      'info',
+      'warning',
+      'success',
+      'test'
     ),
     defaultValue: 'upcoming_turn'
   },

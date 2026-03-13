@@ -82,6 +82,10 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
       try {
         setLoading(true);
         
+          // 🔴 AJOUTE CES LOGS
+      console.log('📡 Token from authService:', authService.getToken());
+      console.log('📡 Admin user:', admin);
+
         // Get agencies
         const agenciesResponse = await adminService.getAgencies();
         if (agenciesResponse.success) {
@@ -288,21 +292,21 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
   };
 
   const handleDeleteService = async (id) => {
-    if (!window.confirm('Delete this service?')) return;
+  if (!window.confirm('Delete this service?')) return;
+  
+  try {
+    const response = await adminService.deleteService(id);
     
-    try {
-      const response = await adminService.deleteService(id);
-      
-      if (response.success) {
-        setServices(services.filter(s => s.id !== id));
-      } else {
-        alert('Failed to delete service');
-      }
-    } catch (err) {
-      console.error('Error deleting service:', err);
-      alert('Failed to delete service');
+    if (response.success) {
+      setServices(services.filter(s => s.id !== id));
+    } else {
+      alert('Failed to delete service: ' + response.error);
     }
-  };
+  } catch (err) {
+    console.error('Error deleting service:', err);
+    alert('Failed to delete service');
+  }
+};
 
   // ===== COUNTER HANDLERS =====
   const handleAddCounter = async (counterData) => {
@@ -349,22 +353,27 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
-  const handleToggleCounter = async (id) => {
-    const counter = counters.find(c => c.id === id);
-    try {
-      const response = await adminService.updateCounter(id, { 
-        is_active: !counter.is_active 
-      });
-      
-      if (response.success) {
-        setCounters(counters.map(c => 
-          c.id === id ? { ...c, is_active: !c.is_active } : c
-        ));
+const handleToggleCounter = async (id) => {
+  const counter = counters.find(c => c.id === id);
+  const newStatus = !counter.is_active;
+  
+  try {
+    const response = await adminService.updateCounter(id, { 
+      is_active: newStatus,
+      status: newStatus ? 'active' : 'inactive'  // ← Ajoute ceci
+    });
+    
+    if (response.success) {
+      // Recharge toute la liste
+      const countersResponse = await adminService.getCounters();
+      if (countersResponse.success) {
+        setCounters(countersResponse.counters || []);
       }
-    } catch (err) {
-      console.error('Error toggling counter:', err);
     }
-  };
+  } catch (err) {
+    console.error('Error toggling counter:', err);
+  }
+};
 
   const handleDeleteCounter = async (id) => {
     if (!window.confirm('Delete this counter?')) return;
@@ -855,24 +864,48 @@ const SuperAdminDashboard = ({ admin, onLogout }) => {
       )}
 
       {/* Modal Counter */}
-      {showCounterModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div style={{ background: 'white', padding: '30px', borderRadius: '10px', width: '400px' }}>
-            <h3 style={{ marginBottom: '20px', color: '#0B2E59' }}>Create Counter</h3>
-            <input type="number" placeholder="Counter Number" value={newCounter.number} onChange={(e) => setNewCounter({...newCounter, number: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-            <input placeholder="Name (optional)" value={newCounter.name} onChange={(e) => setNewCounter({...newCounter, name: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-            <input placeholder="Location" value={newCounter.location} onChange={(e) => setNewCounter({...newCounter, location: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '5px' }} />
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowCounterModal(false)} style={{ padding: '10px 20px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '5px' }}>Cancel</button>
-              <button onClick={() => handleAddCounter(newCounter)} style={{ padding: '10px 20px', background: '#0B2E59', color: 'white', border: 'none', borderRadius: '5px' }}>Create</button>
-            </div>
-          </div>
-        </div>
-      )}
+{showCounterModal && (
+  <div style={{
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(0,0,0,0.5)', display: 'flex',
+    alignItems: 'center', justifyContent: 'center', zIndex: 1000
+  }}>
+    <div style={{ background: 'white', padding: '30px', borderRadius: '10px', width: '400px' }}>
+      <h3 style={{ marginBottom: '20px', color: '#0B2E59' }}>Create Counter</h3>
+      
+      <input 
+        type="number" 
+        placeholder="Counter Number" 
+        value={newCounter.number} 
+        onChange={(e) => setNewCounter({...newCounter, number: e.target.value})} 
+        style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} 
+      />
+      
+      <input 
+        placeholder="Counter Name" 
+        value={newCounter.name} 
+        onChange={(e) => setNewCounter({...newCounter, name: e.target.value})} 
+        style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '5px' }} 
+      />
+      
+      <input 
+        placeholder="Location (e.g., Main Hall)" 
+        value={newCounter.location} 
+        onChange={(e) => setNewCounter({...newCounter, location: e.target.value})} 
+        style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '5px' }} 
+      />
+      
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+        <button onClick={() => setShowCounterModal(false)} style={{ padding: '10px 20px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          Cancel
+        </button>
+        <button onClick={() => handleAddCounter(newCounter)} style={{ padding: '10px 20px', background: '#0B2E59', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          Create
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Modal User */}
       {showUserModal && (

@@ -82,46 +82,69 @@ const TrackMyQueue = () => {
     };
   }, [socket, ticketData]);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+ const handleSearch = async (e) => {
+  e.preventDefault();
+  
+  if (!ticketNumber.trim()) {
+    alert('Please enter your ticket number');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+  setSearched(true);
+  setTicketData(null);
+
+  try {
+    // 1. Récupérer les infos du ticket
+    const response = await ticketService.getTicket(ticketNumber);
+    console.log('📥 Ticket response:', response);
     
-    if (!ticketNumber.trim()) {
-      alert('Please enter your ticket number');
-      return;
-    }
+    if (response.success && response.ticket) {
+      // ✅ POUR LES TICKETS VIRTUELS
+      if (response.ticket.ticket_type === 'virtual') {
+        console.log('✅ Virtual ticket found:', response.ticket);
+        
+        // 2. Récupérer la position depuis l'API /position
+        const positionResponse = await ticketService.getTicketPosition(ticketNumber);
+        console.log('📊 Position response:', positionResponse);
+        
+     if (positionResponse.success) {
+  console.log('📊 Position from API:', positionResponse.data.position);
+  
+  // ✅ Force la valeur
+  setLivePosition(positionResponse.data.position);
+  setLiveWaitTime(positionResponse.data.estimated_wait);
+  
+  // Met à jour ticketData aussi
+  response.ticket.position_in_queue = positionResponse.data.position;
+  response.ticket.estimated_wait = positionResponse.data.estimated_wait;
+  
+  // 🔴 LOG DE VÉRIFICATION
+  console.log('🎫 Updated ticket data:', response.ticket);
+}
 
-    setLoading(true);
-    setError('');
-    setSearched(true);
-    setTicketData(null);
-
-    try {
-      const response = await ticketService.getTicket(ticketNumber);
-      
-      if (response.success && response.ticket) {
-        // Check if it's a physical ticket
-        if (response.ticket.ticket_type === 'physical') {
-          console.log('✅ Physical ticket found:', response.ticket);
-          setTicketData(response.ticket);
-          setLivePosition(response.ticket.position_in_queue);
-          setLiveWaitTime(response.ticket.estimated_wait);
-        } else {
-          // Virtual ticket - show error
-          setError('❌ This is a virtual ticket. Please use the virtual ticket tracking system.');
-          setTicketData(null);
-        }
+setTicketData(response.ticket);  
+        setTicketData(response.ticket);
+        setLivePosition(response.ticket.position_in_queue);
+        setLiveWaitTime(response.ticket.estimated_wait);
       } else {
-        setError('Ticket not found. Please check your ticket number and try again.');
+        // Physical ticket - show error
+        setError('❌ This is a physical ticket. Please use the physical ticket tracking system.');
         setTicketData(null);
       }
-    } catch (err) {
-      console.error('Error searching ticket:', err);
-      setError('Error searching for ticket. Please try again.');
+    } else {
+      setError('Ticket not found. Please check your ticket number and try again.');
       setTicketData(null);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    console.error('Error searching ticket:', err);
+    setError('Error searching for ticket. Please try again.');
+    setTicketData(null);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getStatusText = (status) => {
     const statusMap = {
@@ -181,7 +204,7 @@ const TrackMyQueue = () => {
         </button>
         <h1>Track My Queue</h1>
         <p>Enter your ticket number to see your current position</p>
-        <p className="physical-note">🔍 Only physical tickets can be tracked here</p>
+        <p className="virtual-note">📱 Only virtual tickets can be tracked here</p>
       </div>
 
       {/* Search Form */}
@@ -220,7 +243,7 @@ const TrackMyQueue = () => {
                 )}
               </div>
 
-              {/* Ticket Type Badge - Shows PHYSICAL */}
+              {/* Ticket Type Badge */}
               {ticketData.ticket_type && (
                 <div className={`ticket-type-badge ${getTicketTypeInfo(ticketData.ticket_type).className}`}>
                   <span className="ticket-type-icon">{getTicketTypeInfo(ticketData.ticket_type).icon}</span>
@@ -246,25 +269,26 @@ const TrackMyQueue = () => {
                 </div>
               </div>
 
-              {/* Queue Position & Wait Time - LIVE UPDATES */}
-              {ticketData.status === 'waiting' && (
-                <>
-                  <div className="wait-time">
-                    <span className="wait-label">Current Position:</span>
-                    <span className="wait-value">
-                      {livePosition || ticketData.position_in_queue || '?'}
-                      {livePosition && <span className="live-badge">LIVE</span>}
-                    </span>
-                  </div>
-                  <div className="wait-time">
-                    <span className="wait-label">Estimated Wait:</span>
-                    <span className="wait-value">
-                      {formatWaitTime(liveWaitTime || ticketData.estimated_wait)}
-                      {liveWaitTime && <span className="live-badge">LIVE</span>}
-                    </span>
-                  </div>
-                </>
-              )}
+{/* Queue Position & Wait Time - LIVE UPDATES */}
+{ticketData.status === 'waiting' && (
+  <>
+    <div className="wait-time">
+      <span className="wait-label">Current Position:</span>
+      <span className="wait-value">
+        {/* 🔴 IGNORE ticketData.position_in_queue, utilise SEULEMENT la valeur de l'API */}
+        {livePosition || 'Calcul en cours...'}
+        {livePosition && <span className="live-badge">LIVE</span>}
+      </span>
+    </div>
+    <div className="wait-time">
+      <span className="wait-label">Estimated Wait:</span>
+      <span className="wait-value">
+        {formatWaitTime(liveWaitTime || ticketData.estimated_wait)}
+        {liveWaitTime && <span className="live-badge">LIVE</span>}
+      </span>
+    </div>
+  </>
+)}
 
               {/* Counter Info if called or serving */}
               {(ticketData.status === 'called' || ticketData.status === 'serving') && (

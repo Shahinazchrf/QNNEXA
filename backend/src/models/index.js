@@ -13,6 +13,7 @@ const Survey = require('./Survey');
 const Agency = require('./Agency');
 const Appointment = require('./Appointment');  // ← AJOUTE ICI
 const Advisor = require('./Advisor');          // ← AJOUTE ICI
+const FAQ = require('./FAQ');
 
 // ==================== DÉFINITION DES RELATIONS ====================
 
@@ -128,5 +129,6 @@ module.exports = {
   Survey,
   Agency,
   Appointment,
-  Advisor
+  Advisor,
+  FAQ
 };

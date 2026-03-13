@@ -213,7 +213,21 @@ const adminService = {
       console.error('Error generating report:', error);
       return { success: false, error: error.message };
     }
+  },
+
+  // ===== SURVEYS =====
+getSurveys: async () => {
+  try {
+    const token = authService.getToken();
+    const response = await api.getAuth('/admin/surveys', token);
+    return response;
+  } catch (error) {
+    console.error('Error getting surveys:', error);
+    return { success: false, error: error.message, data: [] };
   }
+},
+
 };
+
 
 export default adminService;

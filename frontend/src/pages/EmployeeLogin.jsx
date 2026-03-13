@@ -1,5 +1,4 @@
 // frontend/src/pages/EmployeeLogin.jsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
@@ -13,38 +12,34 @@ const EmployeeLogin = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  try {
-    console.log('📤 Submitting login form...');
-    const response = await authService.login(email, password);
-    console.log('📥 Login response:', response);
-    
-    if (response.success) {
-      const user = response.user;
-      console.log('✅ Login successful for user:', user);
+    try {
+      const response = await authService.login(email, password);
       
-      if (['employee', 'admin', 'super_admin'].includes(user.role)) {
-        if (onLogin) {
-          onLogin(user);
+      if (response.success) {
+        const user = response.user;
+        
+        if (['employee', 'admin', 'super_admin'].includes(user.role)) {
+          if (onLogin) {
+            onLogin(user);
+          }
+          navigate('/employee');
+        } else {
+          setError('This account does not have employee privileges');
+          authService.logout();
         }
-        navigate('/employee');
       } else {
-        setError('This account does not have employee privileges');
-        authService.logout();
+        setError(response.error || 'Invalid email or password');
       }
-    } else {
-      setError(response.error || 'Invalid email or password');
+    } catch (err) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error('❌ Login error:', err);
-    setError('Login failed. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="employee-login-container">

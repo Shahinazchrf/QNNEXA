@@ -100,14 +100,13 @@ const broadcastTicketUpdate = async (ticketNumber) => {
     
     if (!ticket) return;
     
-    // Calculate real-time position
-    const position = await Ticket.count({
-      where: {
-        service_id: ticket.service_id,
-        status: 'waiting',
-        createdAt: { [Op.lt]: ticket.createdAt }
-      }
-    }) + 1;
+   // Calculate real-time position - GLOBALEMENT
+const position = await Ticket.count({
+  where: {
+    status: 'waiting',
+    createdAt: { [Op.lt]: ticket.createdAt }
+  }
+}) + 1;
     
     // Calculate wait time based on actual queue
     const waitingTickets = await Ticket.findAll({
@@ -1276,11 +1275,12 @@ app.get('/api/tickets/queue', async (req, res) => {
     
     const count = await Ticket.count({ where });
     
+    // ✅ CHANGE DE 5 À 50 POUR VOIR TOUS LES TICKETS
     const nextTickets = await Ticket.findAll({
       where,
       include: [{ model: Service, as: 'ticketService' }],
       order: [['createdAt', 'ASC']],
-      limit: 5
+      limit: 50  // ← ICI
     });
     
     const activeCounters = await Counter.count({
@@ -1298,6 +1298,7 @@ app.get('/api/tickets/queue', async (req, res) => {
         next_tickets: nextTickets.map(t => ({
           number: t.ticket_number,
           service: t.ticketService?.name,
+          ticket_type: t.ticket_type,  // ← AJOUTE ÇA
           waiting_since: t.createdAt
         })),
         estimated_wait: count * 10,
@@ -1536,23 +1537,16 @@ app.get('/api/tickets/:id/position', async (req, res) => {
       });
     }
     
+    // ✅ Compter TOUS les tickets en attente, PAS SEULEMENT ceux du même service
     const position = await Ticket.count({
       where: {
-        service_id: ticket.service_id,
         status: 'waiting',
-        [Op.or]: [
-          { priority: { [Op.gt]: ticket.priority } },
-          {
-            priority: ticket.priority,
-            createdAt: { [Op.lt]: ticket.createdAt }
-          }
-        ]
+        createdAt: { [Op.lt]: ticket.createdAt }
       }
     }) + 1;
     
     const totalInQueue = await Ticket.count({
       where: {
-        service_id: ticket.service_id,
         status: 'waiting'
       }
     });

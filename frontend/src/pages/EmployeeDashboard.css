@@ -679,3 +679,52 @@
 .status-cell {
   font-size: 13px;
 }
+
+/* Type badges */
+.type-cell {
+  text-align: center;
+}
+
+.type-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.type-badge.physical {
+  background: #e3f2fd;
+  color: #0b2b5c;
+  border: 1px solid #0b2b5c;
+}
+
+.type-badge.virtual {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #7b1fa2;
+}
+
+.queue-list-section {
+  max-height: 500px;
+  overflow-y: auto;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.queue-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Pour que l'en-tête reste fixe */
+.queue-table thead {
+  position: sticky;
+  top: 0;
+  background: #0b2b5c;
+  color: white;
+  z-index: 10;
+}

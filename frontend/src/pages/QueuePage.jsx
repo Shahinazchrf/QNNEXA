@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import ticketService from '../services/ticketService';  // ← AJOUTE CET IMPORT
 import './QueuePage.css';
 
 const QueuePage = () => {
@@ -12,41 +13,71 @@ const QueuePage = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [livePosition, setLivePosition] = useState(null);
+  const [liveWaitTime, setLiveWaitTime] = useState(null);
   
   // Get service code from ticket data
-  const serviceCode = ticketData?.code || 'XCH';
+  const serviceCode = ticketData?.code || ticketData?.service_code || 'XCH';
   const serviceName = ticketData?.service || 'Currency Exchange';
+  const ticketNumber = ticketData?.number || 'XCH5731';
   
   // Calculate correct wait time based on service
   const getBaseWaitTime = (code) => {
     const times = {
-      'A': 30,  // Account Opening
-      'W': 5,   // Withdrawal
-      'D': 10,  // Deposit
-      'L': 45,  // Loan
-      'C': 20,  // Complaint
-      'XCH': 20 // Currency Exchange
+      'A': 30,
+      'W': 5,
+      'D': 10,
+      'L': 45,
+      'C': 20,
+      'XCH': 20
     };
     return times[code] || 15;
   };
 
-  const position = ticketData?.position || 3;
-  const ahead = Math.max(0, position - 1);
-  const baseTime = getBaseWaitTime(serviceCode);
-  const waitTime = ahead * baseTime;
-  
-  const ticketNumber = ticketData?.number || 'XCH5731';
-  
-  const [queueData] = useState({
-    position: position,
-    ahead: ahead,
-    waitTime: waitTime,
+  const [queueData, setQueueData] = useState({
+    position: ticketData?.position_in_queue || 3,
+    ahead: Math.max(0, (ticketData?.position_in_queue || 3) - 1),
+    waitTime: (Math.max(0, (ticketData?.position_in_queue || 3) - 1)) * getBaseWaitTime(serviceCode),
     ticketNumber: ticketNumber,
     service: serviceName,
     serviceCode: serviceCode
   });
   
   const [notifications, setNotifications] = useState([]);
+
+  // ✅ Récupérer la position depuis l'API
+  useEffect(() => {
+    const fetchPosition = async () => {
+      if (ticketNumber) {
+        try {
+          const positionResponse = await ticketService.getTicketPosition(ticketNumber);
+          if (positionResponse.success) {
+            const newPosition = positionResponse.data.position;
+            const newAhead = Math.max(0, newPosition - 1);
+            const newWaitTime = newAhead * getBaseWaitTime(serviceCode);
+            
+            setLivePosition(newPosition);
+            setLiveWaitTime(newWaitTime);
+            
+            setQueueData(prev => ({
+              ...prev,
+              position: newPosition,
+              ahead: newAhead,
+              waitTime: newWaitTime
+            }));
+          }
+        } catch (err) {
+          console.error('Error fetching position:', err);
+        }
+      }
+    };
+    
+    fetchPosition();
+    
+    // Rafraîchir toutes les 10 secondes
+    const interval = setInterval(fetchPosition, 10000);
+    return () => clearInterval(interval);
+  }, [ticketNumber, serviceCode]);
 
   // Update time every second
   useEffect(() => {
@@ -138,7 +169,6 @@ const QueuePage = () => {
             <span className="nav-label">Chatbot</span>
           </button>
 
-          {/* FIXED SATISFACTION BUTTON */}
           <button 
             className={`nav-item ${location.pathname === '/satisfaction' ? 'active' : ''}`}
             onClick={() => {
@@ -168,7 +198,6 @@ const QueuePage = () => {
             {darkMode ? '☀️' : '🌙'}
           </button>
 
-          {/* Mobile Menu Button */}
           <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             ☰
           </button>
@@ -193,7 +222,6 @@ const QueuePage = () => {
           <span className="mobile-nav-icon">💬</span>
           <span>Chatbot</span>
         </button>
-        {/* FIXED MOBILE SATISFACTION BUTTON */}
         <button 
           className="mobile-nav-item" 
           onClick={() => {
@@ -229,6 +257,7 @@ const QueuePage = () => {
           <div className="tracking-item">
             <span className="tracking-label">YOUR POSITION:</span>
             <span className="tracking-value">{queueData.position}</span>
+            {livePosition && <span className="live-badge">LIVE</span>}
           </div>
           <div className="tracking-item">
             <span className="tracking-label">PEOPLE AHEAD:</span>

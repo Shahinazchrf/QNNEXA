@@ -8,25 +8,27 @@ const USER_KEY = 'user_data';
 const authService = {
   // Login
   login: async (email, password) => {
-  try {
-    const response = await fetch('http://10.30.245.243:5000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success && data.token) {
-      localStorage.setItem('auth_token', data.token);  // <- Important: 'auth_token'
-      localStorage.setItem('user', JSON.stringify(data.user));
-      return { success: true, user: data.user };
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      console.log('📥 Login response:', data);
+      
+      if (data.success && data.token) {
+        localStorage.setItem(TOKEN_KEY, data.token);
+        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+        return { success: true, user: data.user, token: data.token };
+      }
+      return { success: false, error: data.error || 'Login failed' };
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      return { success: false, error: error.message };
     }
-    return { success: false, error: data.error };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-},
+  },
 
   // Get current user
   getCurrentUser: () => {

@@ -44,40 +44,32 @@ const CreateTicket = () => {
     return serviceMap[serviceCode] || { name: serviceCode, icon: '🏢', time: '15 min' };
   };
 
-  const handleCreateTicket = async () => {
-    if (!selectedService) {
-      alert('Please select a service');
-      return;
-    }
-
+  const handleCreateTicket = async (serviceCode) => {
     try {
       setLoading(true);
+      setError('');
+      
+      console.log('🎫 Creating ticket for service:', serviceCode);
+      console.log('🎫 Ticket type:', 'virtual');
       
       const response = await ticketService.createNormalTicket(
-        selectedService.name,
+        serviceCode, 
         'Mobile User',
         'virtual'
       );
       
+      console.log('📥 Response:', response);
+      
       if (response.success && response.ticket) {
-        navigate('/queue', { 
-          state: { 
-            ticket: {
-              id: response.ticket.id,
-              number: response.ticket.number,
-              service: getServiceDisplay(selectedService.name).name,
-              code: selectedService.name,
-              estimated_wait: response.ticket.estimated_wait || 15,
-              position: 3 // You'll get this from API
-            }
-          }
-        });
+        console.log('✅ Ticket created:', response.ticket);
+        navigate('/queue', { state: { ticket: response.ticket } });
       } else {
-        alert('Error creating ticket: ' + (response.error || 'Unknown error'));
+        console.error('❌ Creation failed:', response.error);
+        setError(response.error || 'Error creating ticket');
       }
     } catch (err) {
-      console.error('Error:', err);
-      setError('Error creating ticket');
+      console.error('❌ Exception:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -125,7 +117,7 @@ const CreateTicket = () => {
 
         <div className="action-buttons">
           <button
-            onClick={handleCreateTicket}
+            onClick={() => handleCreateTicket(selectedService?.name)} // ← CORRIGÉ ICI
             className="create-btn"
             disabled={!selectedService || loading}
           >

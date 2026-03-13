@@ -6,7 +6,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Tablet from './pages/Tablet';
 import QrScanResult from './pages/QrScanResult';
 import CreateTicket from './pages/CreateTicket';
-import QueuePage from './pages/QueuePage';
+import QueuePage from './pages/QueuePage';           // Pour tickets VIRTUELS
+import TrackQueue from './pages/TrackQueue';          // Pour tickets PHYSIQUES
+import TrackMyQueue from './pages/TrackMyQueue';      // Alternative pour virtuels
 import Satisfaction from './pages/Satisfaction';
 import FAQ from './pages/FAQ';
 import SupportChat from './pages/SupportChat';
@@ -18,9 +20,7 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import VipLogin from './pages/VipLogin';
 import VipDashboard from './pages/VipDashboard';
 import AdminLogin from './pages/AdminLogin';
-import TrackMyQueue from './pages/TrackMyQueue';
 import SuperAdminLogin from './pages/SuperAdminLogin';
-
 
 import './App.css';
 
@@ -29,48 +29,30 @@ function App() {
   const [employeeUser, setEmployeeUser] = useState(null);
   const [adminUser, setAdminUser] = useState(null);
 
- return (
+  return (
     <Router>
-      
       <div className="App">
         <Routes>
 
-          {/* Tablet Home */}
+          {/* ===== PAGES PUBLIQUES ===== */}
           <Route path="/" element={<Tablet />} />
           <Route path="/tablet" element={<Tablet />} />
-
-          {/* Physical Ticket Display */}
           <Route path="/physical-ticket" element={<PhysicalTicketDisplay />} />
-
-          {/* Client Routes */}
           <Route path="/qonnexea" element={<QrScanResult />} />
           <Route path="/create-ticket" element={<CreateTicket />} />
-          <Route path="/queue" element={<QueuePage />} />
-          <Route path="/satisfaction" element={<Satisfaction />} />
-          <Route path="/satisfaction/:ticketId" element={<Satisfaction />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/support" element={<SupportChat />} />
-          <Route path="/track-queue" element={<TrackMyQueue />} />
 
-          {/* Employee Login - ADD THIS NEW ROUTE HERE */}
+          {/* ===== SUIVI DES TICKETS ===== */}
+          <Route path="/queue" element={<QueuePage />} />           {/* VIRTUELS */} 
+          <Route path="/track-queue" element={<TrackQueue />} />    {/* PHYSIQUES */}
+
+          {/* ===== SATISFACTION ===== */}
+          <Route path="/satisfaction" element={<Satisfaction />} />
+          <Route path="/satisfaction/:ticketId" element={<Satisfaction />} />
+
+          {/* ===== EMPLOYÉ ===== */}
           <Route path="/employee-login" element={<EmployeeLogin />} />
-
-          {/* VIP */}
-          <Route
-            path="/vip"
-            element={
-              vipUser ? (
-                <VipDashboard
-                  user={vipUser}
-                  onLogout={() => setVipUser(null)}
-                />
-              ) : (
-                <VipLogin onLogin={(user) => setVipUser(user)} />
-              )
-            }
-          />
-
-          {/* Employee */}
           <Route
             path="/employee"
             element={
@@ -85,7 +67,22 @@ function App() {
             }
           />
 
-          {/* Admin */}
+          {/* ===== VIP ===== */}
+          <Route
+            path="/vip"
+            element={
+              vipUser ? (
+                <VipDashboard
+                  user={vipUser}
+                  onLogout={() => setVipUser(null)}
+                />
+              ) : (
+                <VipLogin onLogin={(user) => setVipUser(user)} />
+              )
+            }
+          />
+
+          {/* ===== ADMIN ===== */}
           <Route
             path="/admin"
             element={
@@ -100,7 +97,8 @@ function App() {
             }
           />
 
-          {/* Super Admin */}
+          {/* ===== SUPER ADMIN ===== */}
+          <Route path="/superadmin-login" element={<SuperAdminLogin />} />
           <Route
             path="/superadmin"
             element={
@@ -110,8 +108,6 @@ function App() {
               />
             }
           />
-
-          <Route path="/superadmin-login" element={<SuperAdminLogin />} />
 
         </Routes>
       </div>

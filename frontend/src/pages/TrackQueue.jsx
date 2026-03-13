@@ -1,8 +1,7 @@
-//src/pages/TrackQueue.jsx
+// src/pages/TrackQueue.jsx
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Navbar from '../components/common/Navbar';
 import ticketService from '../services/ticketService';
 import './TrackQueue.css';
 
@@ -40,8 +39,22 @@ const TrackQueue = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await ticketService.trackTicket(number);
-      setTicket(data);
+      const response = await ticketService.getTicket(number);
+      
+      if (response.success && response.ticket) {
+        if (response.ticket.ticket_type === 'physical') {
+          const positionResponse = await ticketService.getTicketPosition(number);
+          if (positionResponse.success) {
+            response.ticket.position = positionResponse.data.position;
+            response.ticket.estimated_wait = positionResponse.data.estimated_wait;
+          }
+          setTicket(response.ticket);
+        } else {
+          setError('❌ This is a virtual ticket. Please use the virtual ticket tracking system.');
+        }
+      } else {
+        setError('Ticket not found');
+      }
     } catch (err) {
       setError('Ticket not found');
     } finally {
@@ -67,11 +80,10 @@ const TrackQueue = () => {
 
   return (
     <div className="track-container">
-      <Navbar />
-      
       <div className="track-header">
         <h1>🔍 Track My Queue</h1>
         <p>Enter your ticket number to see your current position</p>
+        <p className="physical-note">🏧 Only physical tickets can be tracked here</p>
       </div>
 
       {!ticket ? (
@@ -82,7 +94,7 @@ const TrackQueue = () => {
               type="text"
               value={ticketNumber}
               onChange={(e) => setTicketNumber(e.target.value.toUpperCase())}
-              placeholder="e.g., W001 or VIPW001"
+              placeholder="e.g., A001, W043"
               className="track-input"
             />
           </div>
@@ -122,7 +134,7 @@ const TrackQueue = () => {
                 <div className="track-detail-row">
                   <span className="track-detail-label">Position:</span>
                   <span className="track-detail-value track-position">
-                    {getPosition() || 'N/A'}
+                    {ticket.position || getPosition() || 'N/A'}
                   </span>
                 </div>
                 <div className="track-detail-row">
@@ -146,7 +158,7 @@ const TrackQueue = () => {
                 ></div>
               </div>
               <p className="track-progress-text">
-                {getPosition()} of {stats?.total_waiting || '?'} waiting
+                {getPosition() || ticket.position} of {stats?.total_waiting || '?'} waiting
               </p>
             </div>
           )}
@@ -175,30 +187,7 @@ const TrackQueue = () => {
         </div>
       )}
 
-      {stats && (
-        <div className="track-stats">
-          <h3>Live Queue</h3>
-          <div className="track-stats-grid">
-            <div className="track-stat-card">
-              <div className="track-stat-value">{stats.total_waiting || 0}</div>
-              <div className="track-stat-label">Waiting</div>
-            </div>
-          </div>
-          {stats.next_tickets && stats.next_tickets.length > 0 && (
-            <div className="track-next-tickets">
-              <h4>Next tickets:</h4>
-              <div className="track-next-list">
-                {stats.next_tickets.map((t, index) => (
-                  <div key={index} className="track-next-item">
-                    <span className="track-next-number">{t.number}</span>
-                    <span className="track-next-service">{t.service}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* ✅ SUPPRIME TOUT CE BLOC */}
     </div>
   );
 };

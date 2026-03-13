@@ -12,35 +12,39 @@ const SuperAdminLogin = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      const response = await authService.login(email, password);
+  try {
+    const response = await authService.login(email, password);
+    
+    if (response.success) {
+      const user = response.user;
       
-      if (response.success) {
-        const user = response.user;
+      // Vérifier si c'est un super admin
+      if (user.role === 'super_admin') {
+        // Sauvegarde manuelle du token
+        localStorage.setItem('auth_token', response.token);
+        localStorage.setItem('user', JSON.stringify(user));
         
-        // Vérifier si c'est un super admin
-        if (user.role === 'super_admin') {
-          if (onLogin) {
-            onLogin(user);
-          }
-          navigate('/superadmin');
-        } else {
-          setError('This account does not have super admin privileges');
-          authService.logout();
+        if (onLogin) {
+          onLogin(user);
         }
+        navigate('/superadmin');
       } else {
-        setError(response.error || 'Invalid email or password');
+        setError('This account does not have super admin privileges');
+        authService.logout();
       }
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    } finally {
-      setLoading(false);
+    } else {
+      setError(response.error || 'Invalid email or password');
     }
-  };
+  } catch (err) {
+    setError('Login failed. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={{

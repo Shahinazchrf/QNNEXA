@@ -170,30 +170,34 @@ const ticketService = {
   },
 
   // Call next ticket (employee)
-  callNextTicket: async (counterId) => {
-    try {
-      const token = getToken();
-      
-      if (!token) {
-        return { success: false, error: 'No authentication token' };
-      }
-
-      const response = await fetch('http://10.30.245.243:5000/api/employee/call-next', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ counterId })
-      });
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('❌ Error calling next ticket:', error);
-      return { success: false, error: error.message };
+callNextTicket: async (counterId) => {
+  try {
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+    
+    if (!token) {
+      console.error('❌ No token found');
+      return { success: false, error: 'No authentication token' };
     }
-  },
+
+    console.log('📞 Calling next ticket for counter:', counterId);
+    
+    const response = await fetch('http://10.30.245.243:5000/api/employee/call-next', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ counterId })
+    });
+    
+    const data = await response.json();
+    console.log('📨 Response:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error calling next ticket:', error);
+    return { success: false, error: error.message };
+  }
+},
 
   // Complete ticket (employee)
   completeTicket: async (ticketId) => {

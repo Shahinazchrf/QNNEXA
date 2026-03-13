@@ -58,6 +58,7 @@ const EmployeeDashboard = () => {
           counter: ticket.counter || null,
           called_by: ticket.called_by || null,
           is_vip: ticket.is_vip || false,
+          ticket_type: ticket.ticket_type || 'physical',
           created_at: ticket.waiting_since || new Date().toISOString()
         }));
         
@@ -547,6 +548,7 @@ const EmployeeDashboard = () => {
                   <th>POSITION</th>
                   <th>TICKET</th>
                   <th>SERVICE</th>
+                  <th>TYPE</th>
                   <th>VIP</th>
                   <th>WAITING SINCE</th>
                 </tr>
@@ -561,6 +563,13 @@ const EmployeeDashboard = () => {
                     <td className="ticket-cell">{ticket.number}</td>
                     <td>
                       <span className="service-badge">{ticket.service}</span>
+                    </td>
+                    <td className="type-cell">
+                      {ticket.ticket_type === 'physical' ? (
+                        <span className="type-badge physical">🏧 PHYSICAL</span>
+                      ) : (
+                        <span className="type-badge virtual">📱 VIRTUAL</span>
+                      )}
                     </td>
                     <td className="vip-cell">
                       {ticket.is_vip ? (
